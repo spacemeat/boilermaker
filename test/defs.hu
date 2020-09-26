@@ -1,0 +1,94 @@
+@{ app: boma, boma-version: 1.0.0 }
+{
+    config: {
+        args: "-I./test"
+        languages: {
+            c++: {
+                includeFiles: [
+                    //{ file: humon.h, system: true }
+                    test/sample.hpp
+                ]
+                outputDirs: {
+                    header: cpp/inc
+                    source: cpp/src
+                }
+                outputFiles: {
+                    header: og.h
+                }
+                namespace: og
+                indent: { type: space, num: 4 }
+                const: east
+                features: {
+                    copyable: false
+                    movable: false
+                    deserialize: true
+                    serialize: true
+                    observable: true
+                    diffable: true
+                    observeChildDiffs: true
+                }
+            }
+        }
+    }
+
+    pods: {
+        general: {
+            programName: string
+            version: { type: array, of: ["unsigned int", 3] }
+            numWorkers: "unsigned int"
+        }
+
+        assetDb: {
+            dbPath: string
+            cacheDir: string
+            cacheFile: string
+            cacheMapWindowSize: "unsigned int"    // in MB
+        }
+
+        swapchainImageView: {
+            viewType: og.VkImageViewType
+            components: { type: array, of: [og.VkComponentSwizzle, 3] }
+            aspectMask: { type: og.VkImageAspectFlagBits, flags: true }
+        }
+
+        swapchain: {
+            formatPriorities: { type: vector, of: { type: pair, of: [ og.VkFormat, og.VkColorSpaceKHR ] } }
+            numViews: "unsigned int"
+            imageUsages: { type: vector, of: string }
+            imageSharing: bool
+            pretransform: og.VkSurfaceTransformFlagBitsKHR
+            windowAlpha: og.VkCompositeAlphaFlagBitsKHR
+            presentModePriorities: { type: vector, of: { type: pair, of: [ og.VkPresentModeKHR, uint32_t ] } }
+            clipped: bool
+            imageView: swapchainImageView
+        }
+
+        graphics: {
+            isConfigured: bool
+            headless: bool
+            fullscreen: bool
+            width: "unsigned int"
+            height: "unsigned int"
+            vulkanValidationEnabled: bool
+            vulkanValidationLayers: { type: vector, of: string }
+            vulkanValidationReports: { type: vector, of: string }
+            vulkanExtensions: { type: vector, of: string }
+            deviceExtensions: { type: vector, of: string }
+            minGraphicsQueues: "unsigned int"
+            desiredGraphicsQueues: "unsigned int"
+            minComputeQueues: "unsigned int"
+            desiredComputeQueues: "unsigned int"
+            minTransferQueues: "unsigned int"
+            desiredTransferQueues: "unsigned int"
+            minDeviceFeatures: { type: vector, of: string }
+            desiredDeviceFeatures: { type: vector, of: string }
+            swapchain: swapchain
+        }
+
+        config: {
+            general: general
+            assetDb: assetDb
+            graphics: graphics            
+        }
+    }
+}

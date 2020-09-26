@@ -1,0 +1,15 @@
+@{ app: boma-lang, boma-lang-version: 1.0.0 }
+{
+    c++: {
+        stdTypeIncludes: {
+            string: <string>
+            vector: <vector>
+            pair: <utility>
+            array: <array>
+            optional: <optional>
+            variant: <variant>
+        }
+        code: {
+        }
+    }
+}
