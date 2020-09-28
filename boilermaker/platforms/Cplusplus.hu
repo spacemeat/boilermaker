@@ -1,0 +1,36 @@
+@{ app: boma, boma-version: 1.0.0, boma-platform: c++ }
+{
+    stdTypeIncludes: {
+        string: <string>
+        vector: <vector>
+        pair: <utility>
+        array: <array>
+        optional: <optional>
+        variant: <variant>
+    }
+    //includeFiles: []
+    outputPaths: {
+        header: cpp/inc/og.hpp
+        source: cpp/src/\*.cpp
+        inline: cpp/inc/inl/_*.inl.hpp
+    }
+    settings: {
+        namespace: boma
+        indent: { type: space, num: 4 }
+        const: west
+        noexcept: false
+        headerOnly: false
+    }
+    features: {
+        copyable: true
+        movable: true
+        getters: true
+        setters: true
+        privateMembers: true
+        deserialize: true
+        serialize: true
+        observable: true
+        diffable: true
+        observeChildDiffs: true
+    }
+}

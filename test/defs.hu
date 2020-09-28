@@ -1,32 +1,19 @@
 @{ app: boma, boma-version: 1.0.0 }
 {
     config: {
-        args: "-I./test"
-        languages: {
-            c++: {
-                includeFiles: [
-                    //{ file: humon.h, system: true }
-                    test/sample.hpp
-                ]
-                outputDirs: {
-                    header: cpp/inc
-                    source: cpp/src
-                }
-                outputFiles: {
-                    header: og.h
-                }
+        c++: {
+            args: "-I./test"
+            includeFiles: [
+                //{ file: humon.h, system: true }
+                test/sample.hpp
+            ]
+            settings: {
                 namespace: og
-                indent: { type: space, num: 4 }
                 const: east
-                features: {
-                    copyable: false
-                    movable: false
-                    deserialize: true
-                    serialize: true
-                    observable: true
-                    diffable: true
-                    observeChildDiffs: true
-                }
+                noexcept: true
+                headerOnly: true
+            }
+            features: {
             }
         }
     }
