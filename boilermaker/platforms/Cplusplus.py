@@ -116,11 +116,7 @@ class CplusplusDef(PlatformDef):
         if ofNode:
             builtType = f"{builtType}<"
             if ofNode.kind == humonEnums.NodeKind.LIST:
-                for i in range(0, len(ofNode)):
-                    chNode = ofNode[i]
-                    if i > 0:
-                        builtType = f"{builtType}, "
-                    builtType = f"{builtType}{self.getRecursiveType(chNode)}"
+                builtType += ', '.join([f'{self.getRecursiveType(chNode)}' for chNode in ofNode])
             elif ofNode.kind == humonEnums.NodeKind.DICT:
                 builtType = f"{builtType}{self.getRecursiveType(ofNode)}"
             else:
@@ -133,14 +129,13 @@ class CplusplusDef(PlatformDef):
 
     def preprocess(self, podsNode):
         self.pods = {}
-        for i in range(0, podsNode.numChildren):
-            podNode = podsNode[i]
+        for podNode in podsNode:
             podName = podNode.key
             self.pods[podName] = {}
-            for j in range(0, len(podNode)):
-                memberNode = podNode[j]
+            for memberNode in podNode:
                 memberType = self.getRecursiveType(memberNode)
                 self.pods[podName][memberNode.key] = memberType
+        
 
         for incFile in self.getIncludeFiles():
             self.enums = {*self.enums, *processHeader(os.path.join(os.path.dirname(self.defPath), incFile[0]))}
@@ -189,6 +184,9 @@ class CplusplusDef(PlatformDef):
             elif typeName == 'variant':
                 src += '#include <variant>\n'
 
+        if self.getFeature('deserialize') == 'true':
+                src += '#include <humon/humon.hpp>\n'
+
         incFiles = self.getIncludeFiles()
         if incFiles:
             for incFile, isSystemInclude in incFiles:
@@ -214,6 +212,9 @@ class CplusplusDef(PlatformDef):
 '''
             if self.getFeature('defaultConstructible') == 'true':
                 src += f'{memberIndent}{podName}(){noexceptStr};\n'
+
+            if self.getFeature('deserialize') == 'true':
+                src += f'{memberIndent}{podName}(hu::Node const & node){noexceptStr};\n'
 
             needSwap = False
 
@@ -344,6 +345,16 @@ class CplusplusDef(PlatformDef):
 {ind1}{self.cavePerson(f'{scope}{podName}::default ctr')}
 }}
 '''
+
+        if self.getFeature('deserialize') == 'true':
+            src += f'''
+{scope}{podName}::{podName}(hu::Node const & node){noexceptStr}
+{{
+{ind1}{self.cavePerson(f'{scope}{podName}::ctr from humon')}
+
+}}
+'''
+
 
         needSwap = False
 

@@ -20,8 +20,7 @@ def processTrove_1_0(defEntry, trove, version, ppArgs):
         if argsNode:
             defEntry['config'].preprocessArgs.append(argsNode.value)
         langsNode = configNode['platforms']
-        for i in range(0, len(langsNode)):
-            langNode = langsNode[i]
+        for langNode in langsNode:
             if str(langNode.key).lower() == "c++":
                 defEntry['config'].platforms['c++'] = langNode.objectify()
                 cpp10.processCplusplus_1_0(defEntry['config'].platforms['c++'], langNode)

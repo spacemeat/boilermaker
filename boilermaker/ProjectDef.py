@@ -8,8 +8,7 @@ class ProjectDef:
         self.trove, self.version, _ = loadHumonFile(path)
         self.platformDefs = {}
         configNode = self.trove.root['config']
-        for i in range(0, configNode.numChildren):
-            platformNode = configNode[i]
+        for platformNode in configNode:
             platformName = platformNode.key
             if platformName == 'c++':
                 backup = platformDefaultDefs.get(platformName, None)
