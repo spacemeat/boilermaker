@@ -13,7 +13,7 @@ class ProjectDef:
             platformName = platformNode.key
             if platformName == 'c++':
                 backup = platformDefaultDefs.get(platformName, None)
-                self.platformDefs[platformName] = CplusplusDef(platformNode, backup[0])
+                self.platformDefs[platformName] = CplusplusDef(platformNode, path, backup[0])
 
 
     def getPlatformValue(self, platformName, nodeAddress):
@@ -39,10 +39,15 @@ class ProjectDef:
     def getPodsNode(self):
         podsNode = self.trove.getNodeByAddress(f'/pods')
         return podsNode
+    
+
+    def preprocess(self):
+        for platform in self.platformDefs.values():
+            platform.preprocess(self.getPodsNode())
         
 
     def generateCode(self):
         podsNode = self.getPodsNode()
-        for platformName, platform in self.platformDefs.items():            
-            platform.generateArtifacts(podsNode)
+        for platformName, platform in self.platformDefs.items():
+            platform.generateArtifacts()
     

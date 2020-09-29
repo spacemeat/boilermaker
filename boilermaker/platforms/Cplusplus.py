@@ -1,5 +1,5 @@
 import os
-from pathlib import Path
+from pathlib import Path, PurePath
 
 from pygccxml import utils
 from pygccxml import declarations
@@ -18,7 +18,7 @@ def reportEnums(enums):
             print (value)
 
 
-def parseHeader(config, filename):
+def processHeader(filename):
     # Find the location of the xml generator (castxml or gccxml)
     generator_path, generator_name = utils.find_xml_generator()
 
@@ -54,15 +54,24 @@ def parseHeader(config, filename):
     return enums
 
 
+def makeRelativePath(sourceDir, destinationPath):
+    common = os.path.commonpath([sourceDir, destinationPath])
+    relativePath = ''
+    while str(sourceDir) != str(common):
+        sourceDir = str(PurePath(sourceDir).parent)
+        relativePath += '../'
+    return os.path.join(relativePath, str(PurePath(destinationPath).relative_to(common)))
+
+
 class CplusplusDef(PlatformDef):
-    def __init__(self, node, backupDef=None):
-        super().__init__(node, backupDef)
+    def __init__(self, node, defPath, backupDef=None):
+        super().__init__(node, defPath, backupDef)
         self.seenTypes = []
+        self.enums = {}
 
 
     def getIncludeFiles(self):
-        #configIncFiles = self.getValue(f'includeFiles')
-        configIncFiles = self.node['includeFiles'].objectify()
+        configIncFiles = self.node['includeFiles'].objectify()  # TODO: don't objectify here
         incFiles = []
         for inc in configIncFiles:
             if type(inc) == 'dict':
@@ -75,7 +84,18 @@ class CplusplusDef(PlatformDef):
     def fixupScope(self, typeName):
         if typeName in ['vector', 'string', 'pair', 'array', 'optional', 'variant']:
             return 'std::' + typeName
+        elif typeName in self.pods:
+            namespace = self.getSetting('namespace')
+            return f'{namespace}::{typeName}' if namespace else typeName
         return typeName.replace('.', '::')
+
+
+    def const(self, typee):
+        eastConst = self.getSetting('const') == 'east'
+        if eastConst:
+            return f'{typee} const'
+        else:
+            return f'const {typee}'
 
 
     def recordUseOfType(self, typeName):
@@ -111,33 +131,50 @@ class CplusplusDef(PlatformDef):
         return builtType
 
 
-    def processPods(self, podsNode):
-        pods = {}
+    def preprocess(self, podsNode):
+        self.pods = {}
         for i in range(0, podsNode.numChildren):
             podNode = podsNode[i]
             podName = podNode.key
-            pods[podName] = {}
+            self.pods[podName] = {}
             for j in range(0, len(podNode)):
                 memberNode = podNode[j]
                 memberType = self.getRecursiveType(memberNode)
-                pods[podName][memberNode.key] = memberType
-        return pods
+                self.pods[podName][memberNode.key] = memberType
+
+        for incFile in self.getIncludeFiles():
+            self.enums = {*self.enums, *processHeader(os.path.join(os.path.dirname(self.defPath), incFile[0]))}
 
 
     def genCtorSignature(self, podName, pod):
+        namespace = self.getSetting('namespace')
+        usingNamespace = namespace != ''
+        scope = f'{namespace}::' if usingNamespace else ''
+
         src = f'{podName}('
         for memberName, memberType in pod.items():
-            if self.getSetting('const') == 'east':
-                src += f'{memberType} const'
-            else:
-                src += f'const {memberType}'
-            src += f' & {memberName}{", " if memberName != list(pod.keys())[-1] else ""}'
+            src += f'{self.const(memberType)} & {memberName}{", " if memberName != list(pod.keys())[-1] else ""}'
         src += ')'
         return src
 
 
-    def generateHeader(self, pods):
+    def generateHeader(self):
+        headerOnly = self.getSetting('headerOnly') == 'true'
+
+        indentChars = self.getIndent()
+        indent = 0
+        nsIndent = ''
+        clIndent = indentChars * 1
+        memberIndent = indentChars * 2
+
+        eastConst = self.getSetting('const') == 'east'
+        noexcept = self.getSetting('noexcept') == 'true'
+        noexceptStr = ' noexcept' if noexcept else ''
+        namespace = self.getSetting('namespace')
+        usingNamespace = namespace != ''
+
         src = ''
+
         for typeName in self.seenTypes:
             if typeName == 'vector':
                 src += '#include <vector>\n'
@@ -158,93 +195,70 @@ class CplusplusDef(PlatformDef):
                 if isSystemInclude:
                     src += f'#include <{incFile}>\n'
                 else:
-                    src += f'#include "{incFile}"\n'
+                    headerDir = os.path.dirname(self.getOutputPath('header'))
+                    includePath = os.path.join(os.path.dirname(self.defPath), incFile)
+                    relativeIncPath = makeRelativePath(headerDir, includePath)
+                    src += f'#include "{relativeIncPath}"\n'
         src += '\n'
-
-        indentChars = self.getIndent()
-        indent = 0
-        nsIndent = ''
-        clIndent = indentChars * 1
-        memberIndent = indentChars * 2
-
-        eastConst = self.getSetting('const') == 'east'
-        noexcept = self.getSetting('noexcept') == 'true'
-        noexceptStr = ' noexcept' if noexcept else ''
-        namespace = self.getSetting('namespace')
-        usingNamespace = namespace != ''
 
         if usingNamespace:
             src += f'{nsIndent}namespace {namespace}\n{nsIndent}{{\n'
             indent += 1
 
-        for podName, pod in pods.items():
+        for podName, pod in self.pods.items():
             src += f'''
 {clIndent}class {podName}
 {clIndent}{{
 {clIndent}public:
-{memberIndent}{self.genCtorSignature(podName, pod)}{noexceptStr};\n'''
+{memberIndent}{self.genCtorSignature(podName, pod)}{noexceptStr};
+'''
+            if self.getFeature('defaultConstructible') == 'true':
+                src += f'{memberIndent}{podName}(){noexceptStr};\n'
+
+            needSwap = False
 
             # copy ctr, copy assignment
             if not self.getFeature('copyable') == 'true':
-                src += f'{memberIndent}{podName}('
-                if eastConst:
-                    src += f'{podName} const '
-                else:
-                    src += f'const {podName} '
-                src += '& rhs) = delete;\n'
-
-                src += f'{memberIndent}{podName} & operator =('
-                if eastConst:
-                    src += f'{podName} const '
-                else:
-                    src += f'const {podName} '
-                src += '& rhs) = delete;\n'
-            elif noexcept:
-                src += f'{memberIndent}{podName}('
-                if eastConst:
-                    src += f'{podName} const '
-                else:
-                    src += f'const {podName} '
-                src += '& rhs) noexcept;\n'
-
-                src += f'{memberIndent}{podName} & operator =('
-                if eastConst:
-                    src += f'{podName} const '
-                else:
-                    src += f'const {podName} '
-                src += '& rhs) noexcept;\n'
+                src += f'{memberIndent}{podName}({self.const(podName)} & rhs) = delete;\n'
+                src += f'{memberIndent}{podName} & operator =({self.const(podName)} & rhs) = delete;\n'
+            else:
+                src += f'{memberIndent}{podName}({self.const(podName)} & rhs){noexceptStr};\n'
+                src += f'{memberIndent}{podName} & operator =({podName} rhs){noexceptStr};\n'
+                needSwap = True
 
             # move ctr, move assignment
             if not self.getFeature('movable') == 'true':
                 src += f'{memberIndent}{podName}({podName} && rhs) = delete;\n'
                 src += f'{memberIndent}{podName} & operator =({podName} && rhs) = delete;\n'
-            elif noexcept:
+            else:
                 src += f'{memberIndent}{podName}({podName} && rhs){noexceptStr};\n'
                 src += f'{memberIndent}{podName} & operator =({podName} && rhs){noexceptStr};\n'
+                needSwap = True
 
             # dtr
-            src += f'{memberIndent}~{podName}();\n\n'
+            src += f'{memberIndent}{"virtual " if self.getFeature("virtualDestructor") == "true" else ""}~{podName}();\n'
+
+            if needSwap:
+                endl = '\n'
+                src += f'''
+{memberIndent}friend void swap({podName} & lhs, {podName} & rhs){noexceptStr}
+{memberIndent}{{
+{memberIndent}    using std::swap;
+{"".join([f"{memberIndent}    swap(lhs.{v}, rhs.{v});{endl}" for v in pod.keys()])}{memberIndent}}}
+
+'''
 
             # member getters
             for memberName, memberType in pod.items():
                 if self.getFeature('getters') == 'true':
-                    if eastConst:
-                        src += f'{memberIndent}{memberType} const '
-                    else:
-                        src += f'{memberIndent}const {memberType} '
-                    src += f'& get_{memberName}() const{noexceptStr};\n'
+                    src += f'{memberIndent}{self.const(memberType)} & get_{memberName}() const{noexceptStr};\n'
                     src += f'{memberIndent}{memberType} &       get_{memberName}(){noexceptStr};\n'
             src += '\n'
 
             # member setters
             for memberName, memberType in pod.items():
                 if self.getFeature('setters') == 'true':
-                    src += f'{memberIndent}void set_{memberName}('
-                    if eastConst:
-                        src += f'{memberType} const '
-                    else:
-                        src += f'const {memberType} '
-                    src += f'& newVal) noexcept;\n'
+                    src += f'{memberIndent}void set_{memberName}({self.const(memberType)} & newVal) noexcept;\n'
             src += '\n'
 
             # TODO: other features here
@@ -260,7 +274,7 @@ class CplusplusDef(PlatformDef):
             src += f'{clIndent}}};\n\n'
             
             # TODO: Use computed path from defs file
-            if self.getSetting('headerOnly') == 'true':
+            if headerOnly:
                 src += f'#include "inl/_{podName}.inl.hpp"\n'
 
         if usingNamespace:
@@ -270,40 +284,161 @@ class CplusplusDef(PlatformDef):
         return src
 
 
-    def generateHeaderFile(self, pods):
-        src = self.generateHeader(pods)
+    def generateHeaderFile(self):
+        src = self.generateHeader()
 
-        outputPath = self.getOutputPath('header')
-        Path(os.path.dirname(outputPath)).mkdir(parents=True, exist_ok=True)
+        #outputPath = self.getOutputPath('header')
+        headerPath = self.getOutputPath('header')
+        Path(os.path.dirname(headerPath)).mkdir(parents=True, exist_ok=True)
 
-        print (f"Building header: {outputPath}")
-        f = open(f"{outputPath}", 'wt')
+        print (f"Building header: {headerPath}")
+        f = open(f"{headerPath}", 'wt')
         print(src, file = f)
         f.close()
 
 
+    def cavePerson(self, msg):
+        if self.getSetting('cavepersonCtrs') == 'true':
+            return f'std::cout << "{msg}\\n";\n'
+        else:
+            return ''
+
+
     def generateSrc(self, podName, pod):
-        return '// just you wait, this is gonna be SO $$$$\n'
+        headerOnly = self.getSetting('headerOnly') == 'true'
+
+        indentChars = self.getIndent()
+        ind1 =     indentChars * 1
+        ind____2 = indentChars * 2
+
+        eastConst = self.getSetting('const') == 'east'
+        noexcept = self.getSetting('noexcept') == 'true'
+        noexceptStr = ' noexcept' if noexcept else ''
+        namespace = self.getSetting('namespace')
+        usingNamespace = namespace != ''
+        if usingNamespace:
+            scope = namespace + '::'
+
+        src = ''
+        if self.getSetting('cavepersonCtrs') == 'true':
+            src += '#include <iostream>\n'
+
+        if not headerOnly:
+            headerPath = self.getOutputPath('header')
+            headerFile = os.path.basename(headerPath)
+            src += f'#include "../inc/{headerFile}"\n'
+
+        # constructor
+        src += f'''
+{scope}{podName}::{self.genCtorSignature(podName, pod)}{noexceptStr}
+: {', '.join([f"{v}({v})" for v in pod.keys()])}
+{{
+{ind1}{self.cavePerson(f'{scope}{podName}::ctr')}
+}}
+'''
+
+        if self.getFeature('defaultConstructible') == 'true':
+            src += f'''
+{scope}{podName}::{podName}(){noexceptStr}
+{{
+{ind1}{self.cavePerson(f'{scope}{podName}::default ctr')}
+}}
+'''
+
+        needSwap = False
+
+        if self.getFeature('copyable') == 'true':
+            src += f'''
+{scope}{podName}::{podName}({self.const(podName)} & rhs){noexceptStr}
+: {', '.join([f"{v}(rhs.{v})" for v in pod.keys()])}
+{{
+{ind1}{self.cavePerson(f'{scope}{podName}::copy ctr')}
+}}
+'''
+            src += f'''
+{scope}{podName} & {scope}{podName}::operator =({scope}{podName} rhs){noexceptStr}
+{{
+{ind1}{self.cavePerson(f'{scope}{podName}::copy assign')}
+{ind1}swap(*this, rhs);
+{ind1}return *this;
+}}
+'''
+            needSwap = True
+
+        if self.getFeature('movable') == 'true':
+            src += f'''
+{scope}{podName}::{podName}({scope}{podName} && rhs){noexceptStr}
+: {', '.join([f"{v}(std::move(rhs.{v}))" for v in pod.keys()])}
+{{
+{ind1}{self.cavePerson(f'{scope}{podName}::move ctr')}
+}}
+'''
+            src += f'''
+{scope}{podName} & {scope}{podName}::operator =({scope}{podName} && rhs){noexceptStr}
+{{
+{ind1}{self.cavePerson(f'{scope}{podName}::move assign')}
+{ind1}swap(*this, rhs);
+{ind1}return *this;
+}}
+'''
+            needSwap = True
+
+        # dtr
+        src += f'''
+{"virtual " if self.getFeature("virtualDestructor" == "true") else ""}{scope}{podName}::~{podName}()
+{{
+{ind1}{self.cavePerson(f'{scope}{podName}::dtr')}
+}}
+'''
+
+        # member getters
+        for memberName, memberType in pod.items():
+            if self.getFeature('getters') == 'true':
+                src += f'''
+{self.const(memberType)} & {scope}{podName}::get_{memberName}() const{noexceptStr}
+{{
+{ind1}return {memberName};
+}}
+'''
+                src += f'''
+{memberType} & {scope}{podName}::get_{memberName}(){noexceptStr}
+{{
+{ind1}return {memberName};
+}}
+'''
+        src += '\n'
+
+        # member setters
+        for memberName, memberType in pod.items():
+            if self.getFeature('setters') == 'true':
+                src += f'''
+void {scope}{podName}::set_{memberName}({self.const(memberType)} & newVal) noexcept
+{{
+{ind1}{memberName} = newVal;
+}}
+'''
+        src += '\n'
+
+        return src
 
 
-    def generateSrcFiles(self, pods):
+    def generateSrcFiles(self):
         srcType = 'source'
-        if self.getSetting('headerOnly'):
+        if self.getSetting('headerOnly') == 'true':
             srcType = 'inline'
 
-        for podName, pod in pods.items():
+        for podName, pod in self.pods.items():
             src = self.generateSrc(podName, pod)
 
-            outputPath = self.getOutputPath(srcType, podName)
-            Path(os.path.dirname(outputPath)).mkdir(parents=True, exist_ok=True)
+            srcPath = self.getOutputPath(srcType, podName)
+            Path(os.path.dirname(srcPath)).mkdir(parents=True, exist_ok=True)
 
-            print (f"Building source: {outputPath}")
-            f = open(f"{outputPath}", 'wt')
+            print (f"Building source: {srcPath}")
+            f = open(f"{srcPath}", 'wt')
             print(src, file = f)
             f.close()
 
 
-    def generateArtifacts(self, podsNode):
-        pods = self.processPods(podsNode)
-        self.generateHeaderFile(pods)
-        self.generateSrcFiles(pods)
+    def generateArtifacts(self):
+        self.generateHeaderFile()
+        self.generateSrcFiles()

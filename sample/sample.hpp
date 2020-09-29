@@ -1,3 +1,5 @@
+#pragma once
+
 #define ENUM enum
 
 namespace og
@@ -28,7 +30,7 @@ namespace og
         ROTATE270
     };
 
-    typedef ENUM VkCompositeAlpha
+    typedef ENUM VkCompositeAlpha_tag
     {
         OPAQUE,
         PREMULTIPLIED,
@@ -37,7 +39,7 @@ namespace og
     } VkCompositeAlpha;
 
 
-    typedef ENUM class VkPresentModeKHR
+    typedef ENUM class VkPresentModeKHR_tag
     {
         IMMEDIATE,
         MAILBOX,
@@ -45,7 +47,7 @@ namespace og
     } VkPresentModeKHR;
 
 
-    typedef ENUM class VkFormat
+    typedef ENUM class VkFormat_tag
     {
         VK_FORMAT_UNDEFINED,
         VK_FORMAT_R8_UNORM,
@@ -53,21 +55,21 @@ namespace og
     } VkFormat;
 
 
-    typedef ENUM class VkColorSpaceKHR
+    typedef ENUM class VkColorSpaceKHR_tag
     {
         VK_FORMAT_UNDEFINED,
         VK_FORMAT_R8_UNORM,
         VK_FORMAT_R8G8B8_UNORM
     } VkColorSpaceKHR;
 
-    typedef ENUM class VkSurfaceTransformFlagBitsKHR
+    typedef ENUM class VkSurfaceTransformFlagBitsKHR_tag
     {
         VK_FORMAT_UNDEFINED,
         VK_FORMAT_R8_UNORM,
         VK_FORMAT_R8G8B8_UNORM
     } VkSurfaceTransformFlagBitsKHR;
     
-    typedef ENUM class VkCompositeAlphaFlagBitsKHR
+    typedef ENUM class VkCompositeAlphaFlagBitsKHR_tag
     {
         VK_FORMAT_UNDEFINED,
         VK_FORMAT_R8_UNORM,
@@ -75,7 +77,7 @@ namespace og
     } VkCompositeAlphaFlagBitsKHR;
     
 
-    typedef ENUM class VkImageViewType
+    typedef ENUM class VkImageViewType_tag
     {
         VK_FORMAT_UNDEFINED,
         VK_FORMAT_R8_UNORM,

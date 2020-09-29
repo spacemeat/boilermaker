@@ -5,15 +5,23 @@
             args: "-I./test"
             includeFiles: [
                 //{ file: humon.h, system: true }
-                test/sample.hpp
+                sample.hpp
             ]
+            outputPaths: {
+                header: gen-cpp/inc/og.hpp
+                source: 'gen-cpp/src/*.cpp'
+                inline: gen-cpp/inc/inl/_*.inl.hpp
+            }
             settings: {
                 namespace: og
                 const: east
                 noexcept: true
-                headerOnly: true
+                headerOnly: false
+                cavepersonCtrs: true
             }
             features: {
+                defaultConstructible: true
+                virtualDestructor: true
             }
         }
     }

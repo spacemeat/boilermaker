@@ -1,10 +1,12 @@
+import os.path
 from humon import humon, enums as humonEnums
 from .loader import loadHumonFile
 
 class PlatformDef:
-    def __init__(self, node, backupDef=None):
+    def __init__(self, node, defPath, backupDef=None):
         '''Make a PlatformDef. Generally should be a base class for a specific platform.'''
         self.node = node
+        self.defPath = defPath
         self.backupDef = backupDef
     
 
@@ -36,7 +38,7 @@ class PlatformDef:
             val = str(val)
             if podName:
                 val = val.replace('*', podName)
-        return val
+        return os.path.join(os.path.dirname(self.defPath), val)
 
 
     def getSetting(self, key):

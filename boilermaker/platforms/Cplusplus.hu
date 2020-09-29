@@ -8,10 +8,9 @@
         optional: <optional>
         variant: <variant>
     }
-    //includeFiles: []
     outputPaths: {
         header: cpp/inc/og.hpp
-        source: cpp/src/\*.cpp
+        source: 'cpp/src/*.cpp'
         inline: cpp/inc/inl/_*.inl.hpp
     }
     settings: {
@@ -20,8 +19,11 @@
         const: west
         noexcept: false
         headerOnly: false
+        cavepersonCtrs: false
     }
     features: {
+        defaultConstructable: false
+        virtualDestructor: false
         copyable: true
         movable: true
         getters: true

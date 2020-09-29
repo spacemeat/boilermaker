@@ -92,7 +92,7 @@ def loadDefaultPlatformDefs():
     for huPath in [f'{scriptDir}/{f}' for f in os.listdir(scriptDir) if os.path.isfile(f'{scriptDir}/{f}') and f.endswith('.hu')]:
         trove, version, platformName = loadHumonFile(huPath)
         if platformName == 'c++':
-            defaultDefs[platformName] = (CplusplusDef(trove.root), trove, version)
+            defaultDefs[platformName] = (CplusplusDef(trove.root, huPath), trove, version)
         else:
             raise RuntimeError(f"Unsupported platform '{platformName}'")
 
@@ -115,4 +115,5 @@ def main():
 
     if defFile:
         projectDef = loadProjectDef(os.path.realpath(defFile))
+        projectDef.preprocess()
         projectDef.generateCode()
