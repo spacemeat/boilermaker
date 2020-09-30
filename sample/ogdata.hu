@@ -1,0 +1,55 @@
+{
+    config: {
+        general: {
+            programName: ogsample
+            version: [1 0 0]
+            numWorkers: 10
+        }
+
+        assetDb: {
+            dbPath: res/assets.ogdb
+            cacheDir: assetCache
+            cacheFile: assetsCache.ogdbcache
+            cacheMapWindowSize: 512
+        }
+
+        graphics: {
+            isConfigured: true
+            headless: false
+            fullscreen: false
+            width: 3840
+            height: 2160
+            vulkanValidationEnabled: true
+            vulkanValidationLayers: [debug, otherlayer]
+            vulkanValidationReports: [debug, otherlayer]
+            vulkanExtensions: [khr]
+            deviceExtensions: []
+            minGraphicsQueues: 1
+            desiredGraphicsQueues: 8
+            minComputeQueues: 0
+            desiredComputeQueues: 1
+            minTransferQueues: 1
+            desiredTransferQueues: 1
+            minDeviceFeatures: [anisotropy, multisampling]
+            desiredDeviceFeatures: []
+            swapchain: {
+                formatPriorities: [ 
+                    [r8g8b8_unorm, srgb_nonlinear]
+                    [r8_unorm, srgb_nonlinear]
+                ]
+                numViews: 1
+                imageUsages: [framebuffer]
+                imageSharing: false
+                pretransform: identity  // could be array
+                windowalpha: opaque // could be array
+                presentmodepriorities: [[mailbox 3] [fifo 2]]
+                clipped: true
+                imageView: {
+                    viewType: 2D
+                    components: [r g b a]
+                    aspectMask: [color] // can be array because flags
+                }
+            }
+        }
+    }
+}

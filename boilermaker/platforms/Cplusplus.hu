@@ -23,6 +23,7 @@
     }
     features: {
         defaultConstructable: false
+        memberwiseConstructible: false
         virtualDestructor: false
         copyable: true
         movable: true

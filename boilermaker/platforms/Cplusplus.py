@@ -136,7 +136,6 @@ class CplusplusDef(PlatformDef):
                 memberType = self.getRecursiveType(memberNode)
                 self.pods[podName][memberNode.key] = memberType
         
-
         for incFile in self.getIncludeFiles():
             self.enums = {*self.enums, *processHeader(os.path.join(os.path.dirname(self.defPath), incFile[0]))}
 
@@ -214,7 +213,7 @@ class CplusplusDef(PlatformDef):
                 src += f'{memberIndent}{podName}(){noexceptStr};\n'
 
             if self.getFeature('deserialize') == 'true':
-                src += f'{memberIndent}{podName}(hu::Node const & node){noexceptStr};\n'
+                src += f'{memberIndent}{podName}(hu::Node node){noexceptStr};\n'
 
             needSwap = False
 
@@ -346,15 +345,15 @@ class CplusplusDef(PlatformDef):
 }}
 '''
 
+        dq = '"'
         if self.getFeature('deserialize') == 'true':
             src += f'''
-{scope}{podName}::{podName}(hu::Node const & node){noexceptStr}
+{scope}{podName}::{podName}(hu::Node node){noexceptStr}
+: {', '.join([f"{v}(node / {dq}{v}{dq})" for v in pod.keys()])}
 {{
 {ind1}{self.cavePerson(f'{scope}{podName}::ctr from humon')}
-
 }}
 '''
-
 
         needSwap = False
 
