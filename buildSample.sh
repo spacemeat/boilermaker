@@ -1,1 +1,3 @@
-g++ -std=c++17 -Wall -Wextra sample/sample.cpp sample/gen-cpp/src/general.cpp -Isample -o build/bin/sample
+shopt -s nullglob
+srcFiles=(./sample/gen-cpp/src/*.cpp)
+g++ -std=c++17 -Wall -O0 -g -Wextra sample/sample.cpp ${srcFiles[@]} -Isample -o build/bin/sample -lhumon

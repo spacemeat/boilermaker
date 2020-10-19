@@ -1,13 +1,22 @@
 #include "sample.hpp"
 #include "gen-cpp/inc/og.hpp"
+#include <iostream>
 
 
 int main()
 {
-    og::general g0 {};
-    og::general g1 {
-        "Boma Test", {1, 0, 0}, 1
-    };
+    auto desRes = hu::Trove::fromFile("sample/ogdata.hu");
+    if (auto error = std::get_if<hu::ErrorCode>(& desRes))
+    {
+        std::cerr << "Error loading the token stream: " << to_string(* error) << "\n";
+        return 1;
+    }
 
-    return g1.get_numWorkers();
+    hu::Trove trove = std::move(std::get<hu::Trove>(desRes));
+    auto node = trove / "config";
+    og::config c = node % hu::val<og::config>{};
+
+    std::cout << c.get_graphics().get_height() << "\n";
+
+    return 0;
 }

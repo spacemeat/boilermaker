@@ -25,7 +25,7 @@ def processTrove_1_0(defEntry, trove, version, ppArgs):
                 defEntry['config'].platforms['c++'] = langNode.objectify()
                 cpp10.processCplusplus_1_0(defEntry['config'].platforms['c++'], langNode)
             else:
-                raise ValueError(f"Boilermaker: Unsupported language {langNode}")
+                raise ValueError(f'Boilermaker: Unsupported language {langNode.key}')
 
     # get types
     typesNode = trove.root['pods']
@@ -114,5 +114,4 @@ def main():
 
     if defFile:
         projectDef = loadProjectDef(os.path.realpath(defFile))
-        projectDef.preprocess()
         projectDef.generateCode()

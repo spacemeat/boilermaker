@@ -3,11 +3,12 @@ from humon import humon, enums as humonEnums
 from .loader import loadHumonFile
 
 class PlatformDef:
-    def __init__(self, node, defPath, backupDef=None):
+    def __init__(self, node, defPath, backupDef=None, podsNode=None):
         '''Make a PlatformDef. Generally should be a base class for a specific platform.'''
         self.node = node
         self.defPath = defPath
         self.backupDef = backupDef
+        self.podsNode = podsNode
     
 
     def getValue(self, nodeAddress):
@@ -49,6 +50,12 @@ class PlatformDef:
         return self.getValue(f'features/{key}')
 
 
+    def getModifiers(self, key):
+        allMods = self.getValue(f'modifiers/*') or {}
+        keyMods = self.getValue(f'modifiers/{key}') or {}
+        return {**allMods, **keyMods}
+
+
     def getIndent(self):
         indent = self.getSetting('indent')
         if not indent:
@@ -67,3 +74,6 @@ class PlatformDef:
         return self.getValue(f'pods')
 
 
+    def getPodNode(self, podName):
+        '''Return the platform-agnostic type tree.'''
+        return self.podsNode[podName]

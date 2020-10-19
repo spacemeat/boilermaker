@@ -8,7 +8,7 @@ from pygccxml import parser
 from humon import humon, enums as humonEnums
 from ..PlatformDef import PlatformDef
 
-
+from pprint import PrettyPrinter
 
 
 def reportEnums(enums):
@@ -16,42 +16,6 @@ def reportEnums(enums):
         print (f"Enum found: {name}")
         for value in values:
             print (value)
-
-
-def processHeader(filename):
-    # Find the location of the xml generator (castxml or gccxml)
-    generator_path, generator_name = utils.find_xml_generator()
-
-    # Configure the xml generator
-    xml_generator_config = parser.xml_generator_configuration_t(
-        xml_generator_path = generator_path,
-        xml_generator = generator_name)
-
-    # Parse the c++ file
-    decls = parser.parse([filename], xml_generator_config)
-
-    enums = {}
-
-    # Get access to the global namespace
-    global_namespace = declarations.get_global_namespace(decls)
-
-    # Get access to the namespace
-    ns = global_namespace.namespace("og")
-
-    for decl in ns.declarations:
-        if hasattr(decl, "elaborated_type_specifier"):
-            if decl.elaborated_type_specifier == "enum":
-                enumName = decl.partial_decl_string.replace('::', '.')[1:]
-                enums[enumName] = decl.values
-
-    for decl in ns.declarations:
-        if hasattr(decl, "decl_type"):
-            typedefName = decl.partial_decl_string.replace('::', '.')[1:]
-            declType = decl.decl_type.decl_string.replace('::', '.')[1:]
-            if declType in enums:
-                enums[typedefName] = enums[declType]
-
-    return enums
 
 
 def makeRelativePath(sourceDir, destinationPath):
@@ -63,11 +27,14 @@ def makeRelativePath(sourceDir, destinationPath):
     return os.path.join(relativePath, str(PurePath(destinationPath).relative_to(common)))
 
 
+def ind(indentChars, num):
+    return indentChars * num
+
+
 class CplusplusDef(PlatformDef):
-    def __init__(self, node, defPath, backupDef=None):
-        super().__init__(node, defPath, backupDef)
+    def __init__(self, node, defPath, backupDef=None, podsNode=None):
+        super().__init__(node, defPath, backupDef, podsNode)
         self.seenTypes = []
-        self.enums = {}
 
 
     def getIncludeFiles(self):
@@ -82,9 +49,9 @@ class CplusplusDef(PlatformDef):
 
 
     def fixupScope(self, typeName):
-        if typeName in ['vector', 'string', 'pair', 'array', 'optional', 'variant']:
+        if typeName in ['string', 'string_view', 'array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
             return 'std::' + typeName
-        elif typeName in self.pods:
+        elif typeName in self.podsNode:
             namespace = self.getSetting('namespace')
             return f'{namespace}::{typeName}' if namespace else typeName
         return typeName.replace('.', '::')
@@ -124,30 +91,49 @@ class CplusplusDef(PlatformDef):
                 self.recordUseOfType(ofNode.value)
             builtType = f"{builtType}>"
 
-        return builtType
+        return builtType        
+    
+
+    def getPodMemberPlatformType(self, memberNode):
+        '''Return the full, flattened typename for the platform.'''
+        return self.getRecursiveType(memberNode)
+
+    
+    def getPodMemberBaseType(self, memberNode):
+        '''Return the top-level type (BOMA context).'''
+        if memberNode.kind == humonEnums.NodeKind.VALUE:
+            return memberNode.value
+        elif memberNode.kind == humonEnums.NodeKind.DICT:
+            return memberNode['type'].value
 
 
-    def preprocess(self, podsNode):
-        self.pods = {}
-        for podNode in podsNode:
-            podName = podNode.key
-            self.pods[podName] = {}
-            for memberNode in podNode:
-                memberType = self.getRecursiveType(memberNode)
-                self.pods[podName][memberNode.key] = memberType
-        
-        for incFile in self.getIncludeFiles():
-            self.enums = {*self.enums, *processHeader(os.path.join(os.path.dirname(self.defPath), incFile[0]))}
+    def getPodMemberBasePlatformType(self, memberNode):
+        '''Return the top-level type (platform context).'''
+        return self.fixupScope(self.getPodMemberBaseType(memberNode))
+    
+
+    def getPodMemberTypeArgNodes(self, memberNode):
+        ''' Return the template type parameters of the base type.'''
+        if memberNode.kind == humonEnums.NodeKind.DICT:
+            typeArgsNode = memberNode['of']
+            if typeArgsNode.kind == humonEnums.NodeKind.VALUE:
+                return [typeArgsNode]
+            elif typeArgsNode.kind == humonEnums.NodeKind.LIST:
+                return [tan for tan in typeArgsNode]
+        return []
 
 
-    def genCtorSignature(self, podName, pod):
+    def genCtorSignature(self, podNode):
         namespace = self.getSetting('namespace')
         usingNamespace = namespace != ''
         scope = f'{namespace}::' if usingNamespace else ''
 
-        src = f'{podName}('
-        for memberName, memberType in pod.items():
-            src += f'{self.const(memberType)} & {memberName}{", " if memberName != list(pod.keys())[-1] else ""}'
+        src = f'{podNode.key}('
+        for memberNode in podNode:
+            memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+            if src[-1] != '(':
+                src += ', '
+            src += f'{self.const(memberType)} & {memberName}'
         src += ')'
         return src
 
@@ -161,23 +147,33 @@ class CplusplusDef(PlatformDef):
         clIndent = indentChars * 1
         memberIndent = indentChars * 2
 
+        ic = self.getIndent()
+
         eastConst = self.getSetting('const') == 'east'
         noexcept = self.getSetting('noexcept') == 'true'
         noexceptStr = ' noexcept' if noexcept else ''
         namespace = self.getSetting('namespace')
         usingNamespace = namespace != ''
 
-        src = ''
+        src = '#include <cstring>\n'
 
         for typeName in self.seenTypes:
-            if typeName == 'vector':
-                src += '#include <vector>\n'
-            elif typeName == 'string':
+            if typeName == 'string':
                 src += '#include <string>\n'
-            elif typeName == 'pair':
-                src += '#include <utility>\n'
+            if typeName == 'string_view':
+                src += '#include <string_view>\n'
             elif typeName == 'array':
                 src += '#include <array>\n'
+            elif typeName == 'pair':
+                src += '#include <utility>\n'
+            elif typeName == 'tuple':
+                src += '#include <tuple>\n'
+            elif typeName == 'vector':
+                src += '#include <vector>\n'
+            elif typeName == 'map':
+                src += '#include <map>\n'
+            elif typeName == 'unordered_map':
+                src += '#include <unordered_map>\n'
             elif typeName == 'optional':
                 src += '#include <optional>\n'
             elif typeName == 'variant':
@@ -198,16 +194,43 @@ class CplusplusDef(PlatformDef):
                     src += f'#include "{relativeIncPath}"\n'
         src += '\n'
 
+        # enum helpers
+        for enumName, enum in self.enums.getAllEnums().items():
+        #for enumName, enum in self.enums.items():
+            enumType = enumName.replace('.', '::')
+            src += f'''
+{ind(ic, indent + 0)}template <>
+{ind(ic, indent + 0)}struct hu::val<{enumType}>
+{ind(ic, indent + 0)}{{
+{ind(ic, indent + 1)}static inline {enumType} extract(hu::Node node){noexceptStr}
+{ind(ic, indent + 1)}{{'''
+            for enumValName, enumValVal in enum.values:
+                prefix = enumType
+                if enum.hasAttrib('cStyle'):
+                    prefix = prefix[:prefix.rfind('::')]
+
+                src += f'''
+{ind(ic, indent + 2)}if (std::strncmp(node.value().str().data(), "{enumValName}", {len(enumValName)}) == 0) {{ return {prefix}::{enumValName}; }}'''
+
+            # TODO: define and extract a default value
+            src += f'''
+{ind(ic, indent + 2)}return {{}};
+{ind(ic, indent + 1)}}}
+{ind(ic, indent + 0)}}};
+
+'''
+
         if usingNamespace:
-            src += f'{nsIndent}namespace {namespace}\n{nsIndent}{{\n'
+            src += f'\n{nsIndent}namespace {namespace}\n{nsIndent}{{\n'
             indent += 1
 
-        for podName, pod in self.pods.items():
-            src += f'''
-{clIndent}class {podName}
+        # class decl
+        for podNode in self.podsNode:
+            podName = podNode.key
+            src += f'''{clIndent}class {podName}
 {clIndent}{{
 {clIndent}public:
-{memberIndent}{self.genCtorSignature(podName, pod)}{noexceptStr};
+{memberIndent}{self.genCtorSignature(podNode)}{noexceptStr};
 '''
             if self.getFeature('defaultConstructible') == 'true':
                 src += f'{memberIndent}{podName}(){noexceptStr};\n'
@@ -244,19 +267,21 @@ class CplusplusDef(PlatformDef):
 {memberIndent}friend void swap({podName} & lhs, {podName} & rhs){noexceptStr}
 {memberIndent}{{
 {memberIndent}    using std::swap;
-{"".join([f"{memberIndent}    swap(lhs.{v}, rhs.{v});{endl}" for v in pod.keys()])}{memberIndent}}}
+{"".join([f"{memberIndent}    swap(lhs.{v.key}, rhs.{v.key});{endl}" for v in podNode])}{memberIndent}}}
 
 '''
 
             # member getters
-            for memberName, memberType in pod.items():
+            for memberNode in podNode:
+                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
                 if self.getFeature('getters') == 'true':
                     src += f'{memberIndent}{self.const(memberType)} & get_{memberName}() const{noexceptStr};\n'
                     src += f'{memberIndent}{memberType} &       get_{memberName}(){noexceptStr};\n'
             src += '\n'
 
             # member setters
-            for memberName, memberType in pod.items():
+            for memberNode in podNode:
+                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
                 if self.getFeature('setters') == 'true':
                     src += f'{memberIndent}void set_{memberName}({self.const(memberType)} & newVal) noexcept;\n'
             src += '\n'
@@ -267,7 +292,8 @@ class CplusplusDef(PlatformDef):
             if self.getFeature('privateMembers') == 'true':
                 src += f'{clIndent}private:\n'
 
-            for memberName, memberType in pod.items():
+            for memberNode in podNode:
+                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
                 src += f'{memberIndent}{memberType} {memberName};\n'
 
             # end of class def
@@ -278,8 +304,25 @@ class CplusplusDef(PlatformDef):
                 src += f'#include "inl/_{podName}.inl.hpp"\n'
 
         if usingNamespace:
-            src += f'{nsIndent}}}\n'
+            src += f'{nsIndent}}}\n\n'
             indent -= 1
+
+        if self.getFeature('deserialize') == 'true':
+            for podNode in self.podsNode:
+                podName = podNode.key
+                if usingNamespace:
+                    podName = f'{namespace}::{podName}'
+                src += f'''
+template<>
+struct hu::val<{podName}>
+{{
+    static inline {podName} extract(hu::Node const & node){noexceptStr}
+    {{
+        return {podName}(node);
+    }}
+}};
+
+'''
 
         return src
 
@@ -304,7 +347,111 @@ class CplusplusDef(PlatformDef):
             return ''
 
 
-    def generateSrc(self, podName, pod):
+    def makeInitializerDecl(self, src, memberNode):
+        memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+        memberBomaType = memberNode.value
+        if memberNode.kind == humonEnums.NodeKind.DICT:
+            memberBomaType = memberNode['type'].value
+        return f'{memberName}(node / "{memberName}" % hu::val<{memberType}>{{}})'
+
+
+    def generateCollectionMaker(self, memo, memberNode):
+        src = ''
+        mpt = self.getPodMemberPlatformType(memberNode)
+        # TODO: memoize to only make one for each unique platform type
+        if mpt in memo:
+            return ''
+        
+        memo.add(mpt)
+
+        mbt = self.getPodMemberBaseType(memberNode)
+        if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map']:
+            mbpt = self.getPodMemberBasePlatformType(memberNode)
+            mtas = self.getPodMemberTypeArgNodes(memberNode)
+
+            noexcept = self.getSetting('noexcept') == 'true'
+            noexceptStr = ' noexcept' if noexcept else ''
+
+            for argNode in mtas:
+                src += self.generateCollectionMaker(memo, argNode)
+
+            src += f'''
+template <>
+struct hu::val<{mpt}>
+{{
+    static inline {mpt} extract(hu::Node const & node){noexceptStr}
+    {{'''
+
+            if mbt == 'array':
+                elemPlatformType = self.getPodMemberPlatformType(mtas[0])
+                numElems = int(mtas[1].value)
+                endl = ',\n'
+                src += f'''
+        return {mpt} {{
+{endl.join([f'            std::move(hu::val<{elemPlatformType}>::extract(node / {i}))' for i in range(0, numElems)])}
+        }};'''
+
+            elif mbt == 'pair':
+                ept0 = self.getPodMemberPlatformType(mtas[0])
+                ept1 = self.getPodMemberPlatformType(mtas[1])
+                src += f'''
+        return {mpt} {{
+            std::move(hu::val<{ept0}>::extract(node / 0)),
+            std::move(hu::val<{ept1}>::extract(node / 1))
+        }};'''
+
+            elif mbt == 'tuple':
+                epts = [self.getPodMemberPlatformType(mta) for mta in mtas]
+                endl = ',\n'
+                src += f'''
+        return {mpt} {{
+{endl.join([f"            std::move(hu::val<{epts[i]}>::extract(node / {i}))" for i in range(0, len(epts))])}
+        }};'''
+
+            elif mbt == 'vector':
+                elemPlatformType = self.getPodMemberPlatformType(mtas[0])
+                src += f'''
+        {mpt} rv;
+        for (hu::size_t i = 0; i < node.numChildren(); ++i)
+        {{
+            rv.emplace_back(std::move(node / i % hu::val<{elemPlatformType}>{{}}));
+        }}
+        return rv;'''
+
+            elif mbt == 'map':
+                eptkey = self.getPodMemberPlatformType(mtas[0])
+                eptvalue = self.getPodMemberPlatformType(mtas[1])
+                src += f'''
+        {mpt} rv;
+        for (hu::size_t i = 0; i < node.numChildren(); ++i)
+        {{
+            hu::Node elemNode = node / i;
+            rv.emplace_back(std::move(hu::val<{eptkey}>::extract((elemNode).key),
+                            std::move(elemNode % hu::val<{eptvalue}>{{}}));
+        }}
+        return rv;'''
+
+            elif mbt == 'unordered_map':
+                eptkey = self.getPodMemberPlatformType(mtas[0])
+                eptvalue = self.getPodMemberPlatformType(mtas[1])
+                src += f'''
+        {mpt} rv;
+        for (hu::size_t i = 0; i < node.numChildren(); ++i)
+        {{
+            hu::Node elemNode = node / i;
+            rv.emplace_back(std::move(hu::val<{eptkey}>::extract((elemNode).key),
+                            std::move(elemNode % hu::val<{eptvalue}>{{}}));
+        }}
+        return rv;'''
+
+            src += f'''
+    }}
+}};
+'''
+        return src
+
+
+    def generateSrc(self, podName):
         headerOnly = self.getSetting('headerOnly') == 'true'
 
         indentChars = self.getIndent()
@@ -328,10 +475,19 @@ class CplusplusDef(PlatformDef):
             headerFile = os.path.basename(headerPath)
             src += f'#include "../inc/{headerFile}"\n'
 
+        podNode = self.getPodNode(podName)
+
+        # static builders for std collections
+        memo = set()
+        for memberNode in podNode:
+            src += self.generateCollectionMaker(memo, memberNode)
+        #breakpoint()
+
         # constructor
+        endl = '\n'
         src += f'''
-{scope}{podName}::{self.genCtorSignature(podName, pod)}{noexceptStr}
-: {', '.join([f"{v}({v})" for v in pod.keys()])}
+{scope}{podName}::{self.genCtorSignature(podNode)}{noexceptStr}
+: {f",{endl}  ".join([f"{v.key}({v.key})" for v in podNode])}
 {{
 {ind1}{self.cavePerson(f'{scope}{podName}::ctr')}
 }}
@@ -349,7 +505,18 @@ class CplusplusDef(PlatformDef):
         if self.getFeature('deserialize') == 'true':
             src += f'''
 {scope}{podName}::{podName}(hu::Node node){noexceptStr}
-: {', '.join([f"{v}(node / {dq}{v}{dq})" for v in pod.keys()])}
+'''
+            firstMember = True
+            for memberNode in podNode:             
+                decl = self.makeInitializerDecl(src, memberNode)
+                if decl and len(decl) > 0:
+                    if firstMember:
+                        src += ': '
+                    else:
+                        src += ', \n  '
+                    src += decl
+                    firstMember = False
+            src += f'''
 {{
 {ind1}{self.cavePerson(f'{scope}{podName}::ctr from humon')}
 }}
@@ -360,7 +527,7 @@ class CplusplusDef(PlatformDef):
         if self.getFeature('copyable') == 'true':
             src += f'''
 {scope}{podName}::{podName}({self.const(podName)} & rhs){noexceptStr}
-: {', '.join([f"{v}(rhs.{v})" for v in pod.keys()])}
+: {f",{endl}  ".join([f"{v.key}(rhs.{v.key})" for v in podNode])}
 {{
 {ind1}{self.cavePerson(f'{scope}{podName}::copy ctr')}
 }}
@@ -378,7 +545,7 @@ class CplusplusDef(PlatformDef):
         if self.getFeature('movable') == 'true':
             src += f'''
 {scope}{podName}::{podName}({scope}{podName} && rhs){noexceptStr}
-: {', '.join([f"{v}(std::move(rhs.{v}))" for v in pod.keys()])}
+: {f",{endl}  ".join([f"{v.key}(std::move(rhs.{v.key}))" for v in podNode])}
 {{
 {ind1}{self.cavePerson(f'{scope}{podName}::move ctr')}
 }}
@@ -402,7 +569,8 @@ class CplusplusDef(PlatformDef):
 '''
 
         # member getters
-        for memberName, memberType in pod.items():
+        for memberNode in podNode:
+            memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
             if self.getFeature('getters') == 'true':
                 src += f'''
 {self.const(memberType)} & {scope}{podName}::get_{memberName}() const{noexceptStr}
@@ -419,7 +587,8 @@ class CplusplusDef(PlatformDef):
         src += '\n'
 
         # member setters
-        for memberName, memberType in pod.items():
+        for memberNode in podNode:
+            memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
             if self.getFeature('setters') == 'true':
                 src += f'''
 void {scope}{podName}::set_{memberName}({self.const(memberType)} & newVal) noexcept
@@ -437,10 +606,9 @@ void {scope}{podName}::set_{memberName}({self.const(memberType)} & newVal) noexc
         if self.getSetting('headerOnly') == 'true':
             srcType = 'inline'
 
-        for podName, pod in self.pods.items():
-            src = self.generateSrc(podName, pod)
-
-            srcPath = self.getOutputPath(srcType, podName)
+        for podNode in self.podsNode:
+            src = self.generateSrc(podNode.key)
+            srcPath = self.getOutputPath(srcType, podNode.key)
             Path(os.path.dirname(srcPath)).mkdir(parents=True, exist_ok=True)
 
             print (f"Building source: {srcPath}")
@@ -449,6 +617,8 @@ void {scope}{podName}::set_{memberName}({self.const(memberType)} & newVal) noexc
             f.close()
 
 
-    def generateArtifacts(self):
+    def generateArtifacts(self, podsNode, enums):
+        self.podsNode = podsNode
+        self.enums = enums
         self.generateHeaderFile()
         self.generateSrcFiles()
