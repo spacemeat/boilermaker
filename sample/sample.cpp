@@ -16,7 +16,13 @@ int main()
     auto node = trove / "config";
     og::config c = node % hu::val<og::config>{};
 
+    std::cout << "\n";
+
     std::cout << c.get_graphics().get_height() << "\n";
+    std::cout << c.get_weird().get_mappy()["general1"].get_numWorkers() << "\n";
+    std::cout << c.get_weird().get_unmappy()["foo"].size() << "\n";
+
+    std::cout << "\n";
 
     return 0;
 }

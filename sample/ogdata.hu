@@ -51,5 +51,36 @@
                 }
             }
         }
+
+        weird: {
+            v_of_a: [[0 1 2 3][4 5 6 7][8 9 10 11][12 13 14 15]]
+            a_of_v: [[0 1 2 3][4 5 6 7][8 9 10 11][12 13 14 15]]
+            v_of_v: [[0 1 2 3][4 5 6 7][8 9 10 11][12 13 14 15]]
+            a_of_a: [[0 1 2 3][4 5 6 7][8 9 10 11][12 13 14 15]]
+            mappy: {
+                general0: {
+                    programName: general0prog
+                    version: [1 2 3]
+                    numWorkers: 100
+                }
+                general1: {
+                    programName: general1prog
+                    version: [3 2 1]
+                    numWorkers: 1000
+                }
+            }
+            unmappy: { 
+                foo: {
+                    foo10: 10
+                    foo20: 20
+                    foo30: 30
+                }
+                bar: {
+                    bar10: 10
+                    bar20: 20
+                    bar30: 30
+                }
+            }
+        }
     }
 }

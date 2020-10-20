@@ -70,14 +70,27 @@ class CplusplusDef(PlatformDef):
             self.seenTypes.append(typeName)
 
 
+    def seeUsedTypesRec(self, typeNode):
+        for memberNode in typeNode:
+            if memberNode.kind == humonEnums.NodeKind.VALUE:
+                self.recordUseOfType(memberNode.value)
+            elif memberNode.kind == humonEnums.NodeKind.DICT:
+                self.recordUseOfType(memberNode['type'].value)
+                for ofNode in memberNode['of']:
+                    self.seeUsedTypesRec(ofNode)
+
+
+    def seeUsedTypes(self):
+        for podNode in self.podsNode:
+            self.seeUsedTypesRec(podNode)
+
+
     def getRecursiveType(self, typeNode):
         if typeNode.kind == humonEnums.NodeKind.VALUE:
-            self.recordUseOfType(typeNode.value)
             return self.fixupScope(typeNode.value)
 
         typeTypeNode = typeNode['type']
         builtType = self.fixupScope(typeTypeNode.value)
-        self.recordUseOfType(typeTypeNode.value)
 
         ofNode = typeNode['of']
         if ofNode:
@@ -88,7 +101,6 @@ class CplusplusDef(PlatformDef):
                 builtType = f"{builtType}{self.getRecursiveType(ofNode)}"
             else:
                 builtType = f"{builtType}{self.fixupScope(ofNode.value)}"
-                self.recordUseOfType(ofNode.value)
             builtType = f"{builtType}>"
 
         return builtType        
@@ -123,7 +135,7 @@ class CplusplusDef(PlatformDef):
         return []
 
 
-    def genCtorSignature(self, podNode):
+    def genCtorSignature(self, podNode, indentStr):
         namespace = self.getSetting('namespace')
         usingNamespace = namespace != ''
         scope = f'{namespace}::' if usingNamespace else ''
@@ -132,8 +144,10 @@ class CplusplusDef(PlatformDef):
         for memberNode in podNode:
             memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
             if src[-1] != '(':
-                src += ', '
-            src += f'{self.const(memberType)} & {memberName}'
+                src += ',\n'
+            else:
+                src += '\n'
+            src += f'{indentStr}{self.const(memberType)} & {memberName}'
         src += ')'
         return src
 
@@ -156,6 +170,8 @@ class CplusplusDef(PlatformDef):
         usingNamespace = namespace != ''
 
         src = '#include <cstring>\n'
+
+        self.seeUsedTypes()
 
         for typeName in self.seenTypes:
             if typeName == 'string':
@@ -230,7 +246,7 @@ class CplusplusDef(PlatformDef):
             src += f'''{clIndent}class {podName}
 {clIndent}{{
 {clIndent}public:
-{memberIndent}{self.genCtorSignature(podNode)}{noexceptStr};
+{memberIndent}{self.genCtorSignature(podNode, ind(ic, indent + 2))}{noexceptStr};
 '''
             if self.getFeature('defaultConstructible') == 'true':
                 src += f'{memberIndent}{podName}(){noexceptStr};\n'
@@ -426,8 +442,8 @@ struct hu::val<{mpt}>
         for (hu::size_t i = 0; i < node.numChildren(); ++i)
         {{
             hu::Node elemNode = node / i;
-            rv.emplace_back(std::move(hu::val<{eptkey}>::extract((elemNode).key),
-                            std::move(elemNode % hu::val<{eptvalue}>{{}}));
+            rv.emplace(std::move(hu::val<{eptkey}>::extract(elemNode.key().str())),
+                       std::move(elemNode % hu::val<{eptvalue}>{{}}));
         }}
         return rv;'''
 
@@ -439,8 +455,8 @@ struct hu::val<{mpt}>
         for (hu::size_t i = 0; i < node.numChildren(); ++i)
         {{
             hu::Node elemNode = node / i;
-            rv.emplace_back(std::move(hu::val<{eptkey}>::extract((elemNode).key),
-                            std::move(elemNode % hu::val<{eptvalue}>{{}}));
+            rv.emplace(std::move(hu::val<{eptkey}>::extract(elemNode.key().str())),
+                       std::move(elemNode % hu::val<{eptvalue}>{{}}));
         }}
         return rv;'''
 
@@ -486,7 +502,7 @@ struct hu::val<{mpt}>
         # constructor
         endl = '\n'
         src += f'''
-{scope}{podName}::{self.genCtorSignature(podNode)}{noexceptStr}
+{scope}{podName}::{self.genCtorSignature(podNode, "   ")}{noexceptStr}
 : {f",{endl}  ".join([f"{v.key}({v.key})" for v in podNode])}
 {{
 {ind1}{self.cavePerson(f'{scope}{podName}::ctr')}
@@ -620,5 +636,6 @@ void {scope}{podName}::set_{memberName}({self.const(memberType)} & newVal) noexc
     def generateArtifacts(self, podsNode, enums):
         self.podsNode = podsNode
         self.enums = enums
+        self.seeUsedTypes()
         self.generateHeaderFile()
         self.generateSrcFiles()

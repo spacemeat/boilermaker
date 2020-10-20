@@ -45,17 +45,19 @@
     }
 
     pods: {
+        general: {
+            programName: string
+            version: { type: array, of: ["unsigned int", 3] }
+            numWorkers: "unsigned int"
+        }
+
         weird: {
             v_of_a: { type: vector of: [{type: array of: [int, 4]}]}
             a_of_v: { type: array of: [{type: vector of: [int]}, 4]}
             v_of_v: { type: vector of: [{type: vector of: [int]}]}
             a_of_a: { type: array of: [{type: array of: [int, 4]}, 4]}
-        }
-
-        general: {
-            programName: string
-            version: { type: array, of: ["unsigned int", 3] }
-            numWorkers: "unsigned int"
+            mappy: { type: map of: [string, general]}
+            unmappy: { type: unordered_map of: [string, {type: map of: [string, int]}]}
         }
 
         assetDb: {
@@ -124,7 +126,8 @@
         config: {
             general: general
             assetDb: assetDb
-            graphics: graphics            
+            graphics: graphics
+            weird: weird
         }
     }
 }
