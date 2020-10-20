@@ -56,8 +56,11 @@
             a_of_v: { type: array of: [{type: vector of: [int]}, 4]}
             v_of_v: { type: vector of: [{type: vector of: [int]}]}
             a_of_a: { type: array of: [{type: array of: [int, 4]}, 4]}
-            mappy: { type: map of: [string, general]}
-            unmappy: { type: unordered_map of: [string, {type: map of: [string, int]}]}
+            mappy: { type: map of: [string, general] }
+            unmappy: { type: unordered_map of: [string, {type: map of: [string, int] }] }
+            maybe: { type: optional of: [string] }
+            maybeKinda: { type: optional of: [{ type: vector of: [string]}] }
+            a_of_o: { type: array of: [{ type: optional of: [string]}, 4] }
         }
 
         assetDb: {

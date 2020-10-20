@@ -381,7 +381,7 @@ struct hu::val<{podName}>
         memo.add(mpt)
 
         mbt = self.getPodMemberBaseType(memberNode)
-        if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map']:
+        if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional']:
             mbpt = self.getPodMemberBasePlatformType(memberNode)
             mtas = self.getPodMemberTypeArgNodes(memberNode)
 
@@ -459,6 +459,13 @@ struct hu::val<{mpt}>
                        std::move(elemNode % hu::val<{eptvalue}>{{}}));
         }}
         return rv;'''
+
+            elif mbt == 'optional':
+                ept = self.getPodMemberPlatformType(mtas[0])
+                src += f'''
+        if (! node)
+            {{ return {{}}; }}
+        return node % hu::val<{ept}>{{}};'''
 
             src += f'''
     }}

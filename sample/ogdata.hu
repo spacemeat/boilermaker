@@ -81,6 +81,9 @@
                     bar30: 30
                 }
             }
+            maybe: yes
+            maybeKinda: [ maybe kinda yes ]
+            a_of_o: [andaone andatwo]
         }
     }
 }

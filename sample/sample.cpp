@@ -21,6 +21,17 @@ int main()
     std::cout << c.get_graphics().get_height() << "\n";
     std::cout << c.get_weird().get_mappy()["general1"].get_numWorkers() << "\n";
     std::cout << c.get_weird().get_unmappy()["foo"].size() << "\n";
+    if (c.get_weird().get_maybe().has_value())
+        { std::cout << c.get_weird().get_maybe().value() << "\n"; }
+    if (c.get_weird().get_maybeKinda().has_value())
+    {
+        for (auto & val : c.get_weird().get_maybeKinda().value())
+            { std::cout << val << "\n"; }
+    }
+    for (int i = 0; i < 4; ++i)
+    {
+        std::cout << c.get_weird().get_a_of_o()[i].has_value() << "\n";
+    }
 
     std::cout << "\n";
 
