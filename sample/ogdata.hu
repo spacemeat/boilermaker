@@ -69,7 +69,7 @@
                     numWorkers: 1000
                 }
             }
-            unmappy: { 
+            unmappy: {
                 foo: {
                     foo10: 10
                     foo20: 20
@@ -84,6 +84,20 @@
             maybe: yes
             maybeKinda: [ maybe kinda yes ]
             a_of_o: [andaone andatwo]
+            var: varString @type: string
+            varVect: [
+                foo @type: string
+                101 @type: int
+                90.3 @type: float
+                {   @type: general
+                    programName: generalVar
+                    version: [3 5 8]
+                    numWorkers: 2000
+                }
+                [   @type: vector//<string>
+                    foo bar baz
+                ]
+            ]
         }
     }
 }

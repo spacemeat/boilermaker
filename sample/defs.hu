@@ -61,6 +61,12 @@
             maybe: { type: optional of: [string] }
             maybeKinda: { type: optional of: [{ type: vector of: [string]}] }
             a_of_o: { type: array of: [{ type: optional of: [string]}, 4] }
+            var: { type: variant of: [string, int, float, general]}
+            varVect: { 
+                type: vector of: [{
+                    type: variant of: [
+                        string, int, float, general, {
+                            type: vector of: [string] /*alias: vector<string>*/}]}]}
         }
 
         assetDb: {

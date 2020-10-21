@@ -381,7 +381,7 @@ struct hu::val<{podName}>
         memo.add(mpt)
 
         mbt = self.getPodMemberBaseType(memberNode)
-        if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional']:
+        if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
             mbpt = self.getPodMemberBasePlatformType(memberNode)
             mtas = self.getPodMemberTypeArgNodes(memberNode)
 
@@ -466,6 +466,22 @@ struct hu::val<{mpt}>
         if (! node)
             {{ return {{}}; }}
         return node % hu::val<{ept}>{{}};'''
+
+            elif mbt == 'variant':
+                epts = [(self.getPodMemberPlatformType(mta), 
+                        mta['alias'].value if mta['alias'] else self.getPodMemberBaseType(mta)) for mta in mtas]
+                src += f'''
+        hu::Token tok = node.annotation("type");
+        if (! tok)
+            {{ return {{}}; }}
+        std::string_view tokStr;'''
+                for ept, alias in epts:
+                    src += f'''
+        tokStr = tok.str();
+        if (tokStr == "{alias}")
+            {{ return node % hu::val<{ept}>{{}}; }}'''
+                src += f'''
+        return {{}};'''
 
             src += f'''
     }}

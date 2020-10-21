@@ -32,6 +32,21 @@ int main()
     {
         std::cout << c.get_weird().get_a_of_o()[i].has_value() << "\n";
     }
+    if (std::holds_alternative<std::string>(c.get_weird().get_var()))
+        { std::cout << std::get<std::string>(c.get_weird().get_var()) << "\n"; }
+    for (std::size_t i = 0; i < c.get_weird().get_varVect().size(); ++i)
+    {
+        if (auto v = std::get_if<std::string>(& c.get_weird().get_varVect()[i]); v)
+            { std::cout << *v << "\n"; }
+        else if (auto v = std::get_if<int>(& c.get_weird().get_varVect()[i]); v)
+            { std::cout << *v << "\n"; }
+        else if (auto v = std::get_if<float>(& c.get_weird().get_varVect()[i]); v)
+            { std::cout << *v << "\n"; }
+        else if (auto v = std::get_if<og::general>(& c.get_weird().get_varVect()[i]); v)
+            { std::cout << v->get_programName() << "\n"; }
+        else if (auto v = std::get_if<std::vector<std::string>>(& c.get_weird().get_varVect()[i]); v)
+            { std::cout << v->at(2) << "\n"; }
+    }
 
     std::cout << "\n";
 
