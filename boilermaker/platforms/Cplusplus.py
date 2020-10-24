@@ -246,6 +246,9 @@ class CplusplusDef(PlatformDef):
             src += f'''{clIndent}class {podName}
 {clIndent}{{
 {clIndent}public:
+'''
+            if self.getFeature('memberwiseConstructible') == 'true':
+                src += f'''
 {memberIndent}{self.genCtorSignature(podNode, ind(ic, indent + 2))}{noexceptStr};
 '''
             if self.getFeature('defaultConstructible') == 'true':
@@ -288,19 +291,26 @@ class CplusplusDef(PlatformDef):
 '''
 
             # member getters
-            for memberNode in podNode:
-                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-                if self.getFeature('getters') == 'true':
+            if self.getFeature('getters') == 'true':
+                for memberNode in podNode:
+                    memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
                     src += f'{memberIndent}{self.const(memberType)} & get_{memberName}() const{noexceptStr};\n'
                     src += f'{memberIndent}{memberType} &       get_{memberName}(){noexceptStr};\n'
-            src += '\n'
+                src += '\n'
 
             # member setters
-            for memberNode in podNode:
-                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-                if self.getFeature('setters') == 'true':
+            if self.getFeature('setters') == 'true':
+                for memberNode in podNode:
+                    memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
                     src += f'{memberIndent}void set_{memberName}({self.const(memberType)} & newVal) noexcept;\n'
-            src += '\n'
+                src += '\n'
+
+            # member setByMovers
+            if self.getFeature('setByMovers') == 'true':
+                for memberNode in podNode:
+                    memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+                    src += f'{memberIndent}void set_{memberName}({memberType} && newVal) noexcept;\n'
+                src += '\n'
 
             # TODO: other features here
 
@@ -524,7 +534,8 @@ struct hu::val<{mpt}>
 
         # constructor
         endl = '\n'
-        src += f'''
+        if self.getFeature('memberwiseConstructible') == 'true':
+            src += f'''
 {scope}{podName}::{self.genCtorSignature(podNode, "   ")}{noexceptStr}
 : {f",{endl}  ".join([f"{v.key}({v.key})" for v in podNode])}
 {{
@@ -575,6 +586,7 @@ struct hu::val<{mpt}>
 {scope}{podName} & {scope}{podName}::operator =({scope}{podName} rhs){noexceptStr}
 {{
 {ind1}{self.cavePerson(f'{scope}{podName}::copy assign')}
+{ind1}using std::swap;    
 {ind1}swap(*this, rhs);
 {ind1}return *this;
 }}
@@ -593,6 +605,7 @@ struct hu::val<{mpt}>
 {scope}{podName} & {scope}{podName}::operator =({scope}{podName} && rhs){noexceptStr}
 {{
 {ind1}{self.cavePerson(f'{scope}{podName}::move assign')}
+{ind1}using std::swap;
 {ind1}swap(*this, rhs);
 {ind1}return *this;
 }}
@@ -608,9 +621,9 @@ struct hu::val<{mpt}>
 '''
 
         # member getters
-        for memberNode in podNode:
-            memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-            if self.getFeature('getters') == 'true':
+        if self.getFeature('getters') == 'true':
+            for memberNode in podNode:
+                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
                 src += f'''
 {self.const(memberType)} & {scope}{podName}::get_{memberName}() const{noexceptStr}
 {{
@@ -623,19 +636,32 @@ struct hu::val<{mpt}>
 {ind1}return {memberName};
 }}
 '''
-        src += '\n'
+            src += '\n'
 
         # member setters
-        for memberNode in podNode:
-            memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-            if self.getFeature('setters') == 'true':
+        if self.getFeature('setters') == 'true':
+            for memberNode in podNode:
+                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
                 src += f'''
 void {scope}{podName}::set_{memberName}({self.const(memberType)} & newVal) noexcept
 {{
 {ind1}{memberName} = newVal;
 }}
 '''
-        src += '\n'
+            src += '\n'
+
+        # member setByMovers
+        if self.getFeature('setByMovers') == 'true':
+            for memberNode in podNode:
+                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+                src += f'''
+void {scope}{podName}::set_{memberName}({memberType} && newVal) noexcept
+{{
+{ind1}using std::swap;
+{ind1}swap({memberName}, newVal);
+}}
+'''
+            src += '\n'
 
         return src
 

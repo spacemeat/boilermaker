@@ -86,15 +86,15 @@
             a_of_o: [andaone andatwo]
             var: varString @type: string
             varVect: [
-                foo @type: string
-                101 @type: int
-                90.3 @type: float
-                {   @type: general
+                foo     @type: string
+                101     @type: int
+                90.3    @type: float
+                {       @type: general
                     programName: generalVar
                     version: [3 5 8]
                     numWorkers: 2000
                 }
-                [   @type: vector//<string>
+                [       @type: vector//<string>
                     foo bar baz
                 ]
             ]

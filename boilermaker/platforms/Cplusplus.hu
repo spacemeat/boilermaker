@@ -28,9 +28,10 @@
         copyable: true
         movable: true
         getters: true
-        setters: true
+        setters: true       // requires copyable
+        setByMovers: true   // requires movable
         privateMembers: true
-        deserialize: true
+        deserialize: true   // requires movable
         serialize: true
         observable: true
         diffable: true

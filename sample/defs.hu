@@ -26,9 +26,13 @@
                 cavepersonCtrs: true
             }
             features: {
-                defaultConstructible: true
-                memberwiseConstructible: true
-                virtualDestructor: true
+                defaultConstructible: false
+                memberwiseConstructible: false
+                virtualDestructor: false
+                copyable: false
+                setters: false   
+                getters: true
+                privateMembers: true
             }
             modifiers: {    // these modify value strings before extracting their value
                 *: { case: toUpper }
