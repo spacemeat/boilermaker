@@ -20,7 +20,8 @@ class ProjectDef:
                     scanner.processHeader(platformSource, self.enums)
                 for enumNode in platformNode['attributes']:
                     for attribNode in enumNode:
-                        self.enums.getEnum(enumNode.key, platformName).setAttrib(attribNode.value)
+                        enum = self.enums.getEnum(enumNode.key, platformName)
+                        enum.setAttrib(attribNode.value)
 
         self.platformDefs = {}
         configNode = self.trove.root['platforms']

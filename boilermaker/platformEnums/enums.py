@@ -22,7 +22,7 @@ class Enums:
             if platform in self.enums and enumName in self.enums[platform]:
                 return self.enums[platform][enumName]
         else:
-            for enums in self.enums:
+            for platform, enums in self.enums.items():
                 if enumName in enums:
                     return enums[enumName]
         return None
@@ -35,6 +35,7 @@ class Enum:
         self._values = enumVals
         self._attribs = set()
     
+    @property
     def isTypedef(self):
         return bool(self.typedefOf)
     
@@ -50,10 +51,16 @@ class Enum:
     
     @property
     def attribs(self):
+        if self.isTypedef:
+            return self.typedefOf.attribs
         return self._attribs
 
     def hasAttrib(self, attrib):
+        if self.isTypedef:
+            return self.typedefOf.hasAttrib(attrib)
         return attrib in self._attribs
 
     def setAttrib(self, attrib):
+        if self.isTypedef:
+            return self.typedefOf.setAttrib(attrib)
         self._attribs.add(attrib)

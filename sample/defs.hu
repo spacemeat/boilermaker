@@ -5,6 +5,9 @@
             sources: [sample/sample.hpp]
             attributes: {
                 og.VkComponentSwizzle: [cStyle]
+                og.VkImageAspectFlagBits: [flags]
+                og.VkSurfaceTransformFlagBitsKHR: [flags]
+                og.VkCompositeAlphaFlagBitsKHR: [flags]
             }
         }
     }
@@ -30,7 +33,7 @@
                 memberwiseConstructible: false
                 virtualDestructor: false
                 copyable: false
-                setters: false   
+                setters: false
                 getters: true
                 privateMembers: true
             }
@@ -38,11 +41,11 @@
                 *: { case: toUpper }
                 og.VkImageViewType: { prefix: VK_IMAGE_VIEW_TYPE_ }
                 og.VkComponentSwizzle: { prefix: VK_COMPONENT_SWIZZLE_ }
-                og.VkImageAspectFlagBits: { prefix: VK_IMAGE_ASPECT_ flags: true }
+                og.VkImageAspectFlagBits: { prefix: VK_IMAGE_ASPECT_ }
                 og.VkFormat: { prefix: VK_FORMAT_ }
                 og.VkColorSpaceKHR: { prefix: VK_COLOR_SPACE_ postfix: _KHR }
-                og.VkSurfaceTransformFlagBitsKHR: { prefix: VK_SURFACE_TRANSFORM_ postfix: _BIT_KHR flags: true }
-                og.VkCompositeAlphaFlagBitsKHR: { prefix: VK_COMPOSITE_ALPHA_ postfix: _BIT_KHR flags: true }
+                og.VkSurfaceTransformFlagBitsKHR: { prefix: VK_SURFACE_TRANSFORM_ postfix: _BIT_KHR }
+                og.VkCompositeAlphaFlagBitsKHR: { prefix: VK_COMPOSITE_ALPHA_ postfix: _BIT_KHR }
                 og.VkPresentModeKHR: { prefix: VK_PRESENT_MODE_ }
             }
         }

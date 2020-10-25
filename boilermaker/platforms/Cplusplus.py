@@ -212,7 +212,8 @@ class CplusplusDef(PlatformDef):
 
         # enum helpers
         for enumName, enum in self.enums.getAllEnums().items():
-        #for enumName, enum in self.enums.items():
+            if enum.isTypedef:
+                continue
             enumType = enumName.replace('.', '::')
             src += f'''
 {ind(ic, indent + 0)}template <>
@@ -239,9 +240,42 @@ class CplusplusDef(PlatformDef):
         if usingNamespace:
             src += f'\n{nsIndent}namespace {namespace}\n{nsIndent}{{\n'
             indent += 1
+        
+        if self.getFeature('serialize'):
+            for enumName, enum in self.enums.getAllEnums().items():
+                if enum.isTypedef:
+                    continue
+                enumType = enumName.replace('.', '::')
+                src += f"""
+    inline std::ostream & operator <<(std::ostream & out, {enumType} obj)
+    {{
+        switch (obj)
+        {{"""
+                for enumValName, enumValVal in enum.values:
+                    prefix = enumType
+                    if enum.hasAttrib('cStyle'):
+                        prefix = prefix[:prefix.rfind('::')]
+                    src += f"""
+        case {prefix}::{enumValName}:
+            out << "{enumValName}";
+            break;"""
+                src += f"""
+        default:
+            out << (int) obj;
+            break;
+        }}
 
+        return out;
+    }}
+"""
         # class decl
+        memo = set()    # one memo to constrain them all
         for podNode in self.podsNode:
+            # static stream inserters for std collections
+            if self.getFeature('serialize') == 'true':
+                for memberNode in podNode:
+                    src += self.generateCollectionStreamInserter(memo, memberNode)
+
             podName = podNode.key
             src += f'''{clIndent}class {podName}
 {clIndent}{{
@@ -311,6 +345,29 @@ class CplusplusDef(PlatformDef):
                     memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
                     src += f'{memberIndent}void set_{memberName}({memberType} && newVal) noexcept;\n'
                 src += '\n'
+            
+            # stream inserters
+            if self.getFeature('serialize') == 'true':
+                src += f'''        friend std::ostream & operator <<(std::ostream & out, {podName} const & obj)
+        {{
+            out << '{{';'''
+                for memberNode in podNode:
+                    memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+                    mbt = self.getPodMemberBaseType(memberNode)
+
+                    if mbt == 'optional':
+                        src += f'''
+            if (obj.{memberName}.has_value()) {{ out << " {memberName}: " << obj.{memberName}; }}'''
+
+                    else:
+                        src += f'''
+            out << " {memberName}: " << obj.{memberName};'''
+                src += f'''
+            out << '}}';
+            return out;
+        }}
+
+'''
 
             # TODO: other features here
 
@@ -475,7 +532,10 @@ struct hu::val<{mpt}>
                 src += f'''
         if (! node)
             {{ return {{}}; }}
-        return node % hu::val<{ept}>{{}};'''
+        else if (node.kind() == hu::NodeKind::value && node.value().str() == "_")
+            {{ return {{}}; }}
+        else
+            {{ return node % hu::val<{ept}>{{}}; }}'''
 
             elif mbt == 'variant':
                 epts = [(self.getPodMemberPlatformType(mta), 
@@ -496,6 +556,144 @@ struct hu::val<{mpt}>
             src += f'''
     }}
 }};
+'''
+        return src
+
+
+    def generateCollectionStreamInserter(self, memo, memberNode):
+        src = ''
+        mpt = self.getPodMemberPlatformType(memberNode)
+        # TODO: memoize to only make one for each unique platform type
+        if mpt in memo:
+            return ''
+        
+        memo.add(mpt)
+
+        noexcept = self.getSetting('noexcept') == 'true'
+        noexceptStr = ' noexcept' if noexcept else ''
+        namespace = self.getSetting('namespace')
+        usingNamespace = namespace != ''
+        if usingNamespace:
+            scope = namespace + '::'
+
+        mbt = self.getPodMemberBaseType(memberNode)
+        if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
+            mbpt = self.getPodMemberBasePlatformType(memberNode)
+            mtas = self.getPodMemberTypeArgNodes(memberNode)
+
+            for argNode in mtas:
+                src += self.generateCollectionStreamInserter(memo, argNode)
+
+            src += f'''
+    inline std::ostream & operator <<(std::ostream & out, {mpt} const & obj){noexceptStr}
+    {{'''
+
+            if mbt == 'array':
+                elemPlatformType = self.getPodMemberPlatformType(mtas[0])
+                mbta0 = self.getPodMemberBaseType(mtas[0])
+                numElems = int(mtas[1].value)
+                src += f"""
+        out << '[';"""
+                for i in range(0, numElems):
+                    if i != 0:
+                        src += f"""
+        out << ' ';"""
+                    src += f"""
+        out << obj[{i}];"""
+                src += f"""
+        out << ']';"""
+
+            elif mbt == 'pair':
+                ept0 = self.getPodMemberPlatformType(mtas[0])
+                ept1 = self.getPodMemberPlatformType(mtas[1])
+                mbta0 = self.getPodMemberBaseType(mtas[0])
+                mbta1 = self.getPodMemberBaseType(mtas[1])
+                src += f"""
+        out << '[';
+        out << std::get<0>(obj);
+        out << ' ';
+        out << std::get<1>(obj);
+        out << ']';"""
+
+            elif mbt == 'tuple':
+                epts = [self.getPodMemberPlatformType(mta) for mta in mtas]
+                mbtas = [self.getPodMemberBaseType(mta) for mta in mtas]
+                src += f"""
+        out << '[';"""
+                first = True
+                for i in range(0, len(mbtas)):
+                    mbtan = mbtas[i]
+                    if not first:
+                        src += f"""
+        out << ' ';"""
+                    else:
+                        first = False
+                    src += f"""
+        out << std::get<{i}>().value();"""
+                src += f"""
+        out << ']';"""
+
+            elif mbt == 'vector':
+                elemPlatformType = self.getPodMemberPlatformType(mtas[0])
+                mbta0 = self.getPodMemberBaseType(mtas[0])
+                src += f"""
+        out << '[';
+        bool firstTime = true;
+        for (auto const & objmem : obj)
+        {{
+            if (firstTime)
+                {{ firstTime = false; }}
+            else
+                {{ out << ' '; }}
+            out << objmem;
+        }}
+        out << ']';"""
+
+            elif mbt == 'map' or mbt == 'unordered_map':
+                ept0 = self.getPodMemberPlatformType(mtas[0])
+                ept1 = self.getPodMemberPlatformType(mtas[1])
+                mbta0 = self.getPodMemberBaseType(mtas[0])
+                mbta1 = self.getPodMemberBaseType(mtas[1])
+                if mbta0 == 'optional':
+                    raise RuntimeError('a map or unordered_map key cannot be optional.')
+                src += f"""
+        out << '{{';
+        bool firstTime = true;
+        for (auto & elem : obj)
+        {{
+            if (firstTime)
+                {{ firstTime = false; }}
+            else
+                {{ out << ' '; }}
+            out << elem.second;
+        }}
+        out << '}}';"""
+
+            elif mbt == 'optional':
+                src += f"""
+        if (obj.has_value())
+            {{ out << * obj; }}
+        else
+            {{ out << '_'; }}"""
+
+            elif mbt == 'variant':
+                epts = [self.getPodMemberPlatformType(mta) for mta in mtas]
+                mbtas = [self.getPodMemberBaseType(mta) for mta in mtas]
+                firstTime = True
+                for ept in epts:
+                    if firstTime:
+                        firstTime = False
+                        src += f"""
+        """
+                    else:
+                        src += f"""
+        else """
+                    src += f"""if (auto p = std::get_if<{ept}>(& obj); p) {{ out << *p; }}"""
+
+            src += f'''
+        return out;
+    }}
+
 '''
         return src
 
@@ -530,7 +728,6 @@ struct hu::val<{mpt}>
         memo = set()
         for memberNode in podNode:
             src += self.generateCollectionMaker(memo, memberNode)
-        #breakpoint()
 
         # constructor
         endl = '\n'
@@ -662,7 +859,7 @@ void {scope}{podName}::set_{memberName}({memberType} && newVal) noexcept
 }}
 '''
             src += '\n'
-
+        
         return src
 
 

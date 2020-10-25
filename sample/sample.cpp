@@ -47,8 +47,8 @@ int main()
         else if (auto v = std::get_if<std::vector<std::string>>(& c.get_weird().get_varVect()[i]); v)
             { std::cout << v->at(2) << "\n"; }
     }
-   /*
 
+   /*
     std::cout << c.graphics.height << "\n";
     std::cout << c.weird.mappy.find("general1")->second.numWorkers << "\n";
     std::cout << c.weird.unmappy.find("foo")->second.size() << "\n";
@@ -81,6 +81,16 @@ int main()
     */
 
     std::cout << "\n";
+
+    std::cout << c;
+
+    std::ostringstream oss;
+    oss << c;
+    auto nt = hu::Trove::fromString(oss.str());
+    if (auto t = std::get_if<hu::Trove>(& nt); t)
+    {
+        std::cout << "\n" << std::get<std::string>(t->toPrettyString(4, false, hu::getAnsiColorTable()));
+    }
 
     return 0;
 }

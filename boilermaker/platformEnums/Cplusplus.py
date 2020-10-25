@@ -19,16 +19,22 @@ class CplusplusEnums:
         for decl in ns.declarations:
             if hasattr(decl, "elaborated_type_specifier"):
                 if decl.elaborated_type_specifier == "enum":
-                    enumType = decl.partial_decl_string.replace('::', '.')[1:]
+                    enumType = decl.partial_decl_string.replace('::', '.')
+                    if enumType[0] == '.':
+                        enumType = enumType[1:]
                     enums.addEnum('c++', Enum(enumType, decl.values, None))
 
         for decl in ns.declarations:
             if hasattr(decl, "decl_type"):
-                typedefName = decl.partial_decl_string.replace('::', '.')[1:]
-                declType = decl.decl_type.decl_string.replace('::', '.')[1:]
-                enum = enums.getEnum(typedefName)
+                typedefName = decl.partial_decl_string.replace('::', '.')
+                if typedefName[0] == '.':
+                    typedefName = typedefName[1:]
+                declType = decl.decl_type.decl_string.replace('::', '.')
+                if declType[0] == '.':
+                    declType = declType[1:]
+                enum = enums.getEnum(declType)
                 if enum:
-                    enums.addEnum('c++', Enum(declType, None, enum))
+                    enums.addEnum('c++', Enum(typedefName, None, enum))
         
         for decl in ns.namespaces(allow_empty=True):
             self.processNamespace(enums, decl)
