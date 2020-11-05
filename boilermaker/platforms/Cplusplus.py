@@ -230,7 +230,7 @@ class CplusplusDef(PlatformDef):
             if enum.hasAttrib('flags'):
                 src += f'''
 {ind(ic, indent + 2)}using enumIntType = std::underlying_type<{enumType}>::type;
-{ind(ic, indent + 2)}{enumType} e = static_cast<{enumType}>(0);
+{ind(ic, indent + 2)}enumIntType e = 0;
 {ind(ic, indent + 2)}bool fromList = node.kind() == hu::NodeKind::list;
 {ind(ic, indent + 2)}if (fromList)
 {ind(ic, indent + 3)}{{ node = node.firstChild(); }}
@@ -267,7 +267,7 @@ class CplusplusDef(PlatformDef):
 
                 if enum.hasAttrib('flags'):
                     src += f'''
-{ind(ic, indent + 3)}{doElse}if {spaces}(std::strncmp(node.value().str().data(), "{modName}", {len(modName)}) == 0) {{ e = static_cast<{enumType}>(static_cast<enumIntType>(e) | static_cast<enumIntType>({prefix}::{enumValName})); }}'''
+{ind(ic, indent + 3)}{doElse}if {spaces}(std::strncmp(node.value().str().data(), "{modName}", {len(modName)}) == 0) {{ e |= static_cast<enumIntType>({prefix}::{enumValName}); }}'''
                 else:
                     src += f'''
 {ind(ic, indent + 2)}if (std::strncmp(node.value().str().data(), "{modName}", {len(modName)}) == 0) {{ return {prefix}::{enumValName}; }}'''
@@ -279,7 +279,7 @@ class CplusplusDef(PlatformDef):
 {ind(ic, indent + 3)}else
 {ind(ic, indent + 4)}{{ break; }}
 {ind(ic, indent + 2)}}}
-{ind(ic, indent + 2)}return e;'''
+{ind(ic, indent + 2)}return static_cast<{enumType}>(e);'''
             else:
                 src += f'''
 {ind(ic, indent + 2)}return {{}};'''
