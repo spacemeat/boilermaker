@@ -13,12 +13,13 @@ int main()
     }
 
     hu::Trove trove = std::move(std::get<hu::Trove>(desRes));
-    auto node = trove / "config";
+    auto node = trove.root();
     og::config c = node % hu::val<og::config>{};
 
     std::cout << "\n";
 
     std::cout << c.get_graphics().get_height() << "\n";
+    std::cout << c.get_graphics().get_swapchain().get_presentModePriorities() << "\n";
     std::cout << c.get_weird().get_mappy().find("general1")->second.get_numWorkers() << "\n";
     std::cout << c.get_weird().get_unmappy().find("foo")->second.size() << "\n";
     if (c.get_weird().get_maybe().has_value())
@@ -82,7 +83,7 @@ int main()
 
     std::cout << "\n";
 
-    std::cout << c;
+    std::cout << c << "\n";
 
     std::ostringstream oss;
     oss << c;

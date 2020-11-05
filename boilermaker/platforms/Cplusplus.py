@@ -212,8 +212,12 @@ class CplusplusDef(PlatformDef):
 
         # enum helpers
         for enumName, enum in self.enums.getAllEnums().items():
-            if enum.isTypedef:
+            # Skip any enums that have a typedef referencing them.
+            if enum.isTypedefTarget:
                 continue
+            # Resolve typedefs to the tag.
+            if enum.isTypedef:
+                enum = enum.typedefOf
             enumType = enumName.replace('.', '::')
             src += f'''
 {ind(ic, indent + 0)}template <>
@@ -225,9 +229,23 @@ class CplusplusDef(PlatformDef):
                 prefix = enumType
                 if enum.hasAttrib('cStyle'):
                     prefix = prefix[:prefix.rfind('::')]
+                
+                modifiers = self.getModifiers(enumName)
+                modName = enumValName
+                modPrefix = modifiers.get('prefix')
+                if modPrefix and modName.startswith(modPrefix):
+                    modName = modName[len(modPrefix):]
+                postfix = modifiers.get('postfix')
+                if postfix and modName.endswith(postfix):
+                    modName = modName[:len(modName) - len(postfix)]
+                case = modifiers.get('case')
+                if case == 'toUpper':
+                    modName = modName.lower()
+                elif case == 'toLower':
+                    modName = modName.upper()
 
                 src += f'''
-{ind(ic, indent + 2)}if (std::strncmp(node.value().str().data(), "{enumValName}", {len(enumValName)}) == 0) {{ return {prefix}::{enumValName}; }}'''
+{ind(ic, indent + 2)}if (std::strncmp(node.value().str().data(), "{modName}", {len(modName)}) == 0) {{ return {prefix}::{enumValName}; }}'''
 
             # TODO: define and extract a default value
             src += f'''
@@ -243,8 +261,12 @@ class CplusplusDef(PlatformDef):
         
         if self.getFeature('serialize'):
             for enumName, enum in self.enums.getAllEnums().items():
-                if enum.isTypedef:
+                # Skip any enums that have a typedef referencing them.
+                if enum.isTypedefTarget:
                     continue
+                # Resolve typedefs to the tag.
+                if enum.isTypedef:
+                    enum = enum.typedefOf
                 enumType = enumName.replace('.', '::')
                 src += f"""
     inline std::ostream & operator <<(std::ostream & out, {enumType} obj)
@@ -255,9 +277,24 @@ class CplusplusDef(PlatformDef):
                     prefix = enumType
                     if enum.hasAttrib('cStyle'):
                         prefix = prefix[:prefix.rfind('::')]
+                    
+                    modifiers = self.getModifiers(enumName)
+                    modName = enumValName
+                    modPrefix = modifiers.get('prefix')
+                    if modPrefix and modName.startswith(modPrefix):
+                        modName = modName[len(modPrefix):]
+                    postfix = modifiers.get('postfix')
+                    if postfix and modName.endswith(postfix):
+                        modName = modName[:len(modName) - len(postfix)]
+                    case = modifiers.get('case')
+                    if case == 'toUpper':
+                        modName = modName.lower()
+                    elif case == 'toLower':
+                        modName = modName.upper()
+
                     src += f"""
         case {prefix}::{enumValName}:
-            out << "{enumValName}";
+            out << "{modName}";
             break;"""
                 src += f"""
         default:
@@ -665,7 +702,7 @@ struct hu::val<{mpt}>
                 {{ firstTime = false; }}
             else
                 {{ out << ' '; }}
-            out << elem.second;
+            out << elem.first << ": " << elem.second;
         }}
         out << '}}';"""
 
@@ -677,10 +714,14 @@ struct hu::val<{mpt}>
             {{ out << '_'; }}"""
 
             elif mbt == 'variant':
-                epts = [self.getPodMemberPlatformType(mta) for mta in mtas]
+                epts = [(self.getPodMemberPlatformType(mta), self.getPodMemberBaseType(mta), mta['alias']) for mta in mtas]
                 mbtas = [self.getPodMemberBaseType(mta) for mta in mtas]
                 firstTime = True
                 for ept in epts:
+                    platformType = ept[0]
+                    aliasType = ept[1]
+                    if ept[2]:
+                        aliasType = ept[2]
                     if firstTime:
                         firstTime = False
                         src += f"""
@@ -688,7 +729,7 @@ struct hu::val<{mpt}>
                     else:
                         src += f"""
         else """
-                    src += f"""if (auto p = std::get_if<{ept}>(& obj); p) {{ out << *p; }}"""
+                    src += f"""if (auto p = std::get_if<{platformType}>(& obj); p) {{ out << *p << " @type: {aliasType}"; }}"""
 
             src += f'''
         return out;

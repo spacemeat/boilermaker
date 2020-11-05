@@ -32,12 +32,19 @@ class Enum:
     def __init__(self, enumName, enumVals=None, typedefOf=None):
         self._name = enumName
         self.typedefOf = typedefOf
+        self.typedefTargetOf = None
+        if self.typedefOf:  # backref to typedef. There can be many; last one used is king
+            self.typedefOf.typedefTargetOf = self
         self._values = enumVals
         self._attribs = set()
     
     @property
     def isTypedef(self):
         return bool(self.typedefOf)
+
+    @property
+    def isTypedefTarget(self):
+        return bool(self.typedefTargetOf)
     
     @property
     def name(self):

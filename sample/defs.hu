@@ -46,7 +46,7 @@
                 og.VkColorSpaceKHR: { prefix: VK_COLOR_SPACE_ postfix: _KHR }
                 og.VkSurfaceTransformFlagBitsKHR: { prefix: VK_SURFACE_TRANSFORM_ postfix: _BIT_KHR }
                 og.VkCompositeAlphaFlagBitsKHR: { prefix: VK_COMPOSITE_ALPHA_ postfix: _BIT_KHR }
-                og.VkPresentModeKHR: { prefix: VK_PRESENT_MODE_ }
+                og.VkPresentModeKHR: { prefix: VK_PRESENT_MODE_ postfix: _KHR }
             }
         }
     }
@@ -73,7 +73,7 @@
                 type: vector of: [{
                     type: variant of: [
                         string, int, float, general, {
-                            type: vector of: [string] /*alias: vector<string>*/}]}]}
+                            type: vector of: [string] alias: vector<string>}]}]}
         }
 
         assetDb: {

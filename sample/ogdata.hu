@@ -1,103 +1,101 @@
 {
-    config: {
-        general: {
-            programName: ogsample
-            version: [1 0 0]
-            numWorkers: 10
-        }
+    general: {
+        programName: ogsample
+        version: [1 0 0]
+        numWorkers: 10
+    }
 
-        assetDb: {
-            dbPath: res/assets.ogdb
-            cacheDir: assetCache
-            cacheFile: assetsCache.ogdbcache
-            cacheMapWindowSize: 512
-        }
+    assetDb: {
+        dbPath: res/assets.ogdb
+        cacheDir: assetCache
+        cacheFile: assetsCache.ogdbcache
+        cacheMapWindowSize: 512
+    }
 
-        graphics: {
-            isConfigured: true
-            headless: false
-            fullscreen: false
-            width: 3840
-            height: 2160
-            vulkanValidationEnabled: true
-            vulkanValidationLayers: [debug, otherlayer]
-            vulkanValidationReports: [debug, otherlayer]
-            vulkanExtensions: [khr]
-            deviceExtensions: []
-            minGraphicsQueues: 1
-            desiredGraphicsQueues: 8
-            minComputeQueues: 0
-            desiredComputeQueues: 1
-            minTransferQueues: 1
-            desiredTransferQueues: 1
-            minDeviceFeatures: [anisotropy, multisampling]
-            desiredDeviceFeatures: []
-            swapchain: {
-                formatPriorities: [ 
-                    [r8g8b8_unorm, srgb_nonlinear]
-                    [r8_unorm, srgb_nonlinear]
-                ]
-                numViews: 1
-                imageUsages: [framebuffer]
-                imageSharing: false
-                pretransform: identity  // could be array
-                windowalpha: opaque // could be array
-                presentmodepriorities: [[mailbox 3] [fifo 2]]
-                clipped: true
-                imageView: {
-                    viewType: 2D
-                    components: [r g b a]
-                    aspectMask: [color] // can be array because flags
-                }
-            }
-        }
-
-        weird: {
-            v_of_a: [[0 1 2 3][4 5 6 7][8 9 10 11][12 13 14 15]]
-            a_of_v: [[0 1 2 3][4 5 6 7][8 9 10 11][12 13 14 15]]
-            v_of_v: [[0 1 2 3][4 5 6 7][8 9 10 11][12 13 14 15]]
-            a_of_a: [[0 1 2 3][4 5 6 7][8 9 10 11][12 13 14 15]]
-            mappy: {
-                general0: {
-                    programName: general0prog
-                    version: [1 2 3]
-                    numWorkers: 100
-                }
-                general1: {
-                    programName: general1prog
-                    version: [3 2 1]
-                    numWorkers: 1000
-                }
-            }
-            unmappy: {
-                foo: {
-                    foo10: 10
-                    foo20: 20
-                    foo30: 30
-                }
-                bar: {
-                    bar10: 10
-                    bar20: 20
-                    bar30: 30
-                }
-            }
-            maybe: yes
-            maybeKinda: [ maybe kinda yes ]
-            a_of_o: [andaone andatwo]
-            var: varString @type: string
-            varVect: [
-                foo     @type: string
-                101     @type: int
-                90.3    @type: float
-                {       @type: general
-                    programName: generalVar
-                    version: [3 5 8]
-                    numWorkers: 2000
-                }
-                [       @type: vector//<string>
-                    foo bar baz
-                ]
+    graphics: {
+        isConfigured: true
+        headless: false
+        fullscreen: false
+        width: 3840
+        height: 2160
+        vulkanValidationEnabled: true
+        vulkanValidationLayers: [debug, otherlayer]
+        vulkanValidationReports: [debug, otherlayer]
+        vulkanExtensions: [khr]
+        deviceExtensions: []
+        minGraphicsQueues: 1
+        desiredGraphicsQueues: 8
+        minComputeQueues: 0
+        desiredComputeQueues: 1
+        minTransferQueues: 1
+        desiredTransferQueues: 1
+        minDeviceFeatures: [anisotropy, multisampling]
+        desiredDeviceFeatures: []
+        swapchain: {
+            formatPriorities: [ 
+                [r8g8b8_unorm, srgb_nonlinear]
+                [r8_unorm, srgb_nonlinear]
             ]
+            numViews: 1
+            imageUsages: [framebuffer]
+            imageSharing: false
+            pretransform: identity  // could be array
+            windowAlpha: opaque // could be array
+            presentModePriorities: [[mailbox 3] [fifo 2]]
+            clipped: true
+            imageView: {
+                viewType: 2D
+                components: [r g b a]
+                aspectMask: [color] // can be array because flags
+            }
         }
+    }
+
+    weird: {
+        v_of_a: [[0 1 2 3][4 5 6 7][8 9 10 11][12 13 14 15]]
+        a_of_v: [[0 1 2 3][4 5 6 7][8 9 10 11][12 13 14 15]]
+        v_of_v: [[0 1 2 3][4 5 6 7][8 9 10 11][12 13 14 15]]
+        a_of_a: [[0 1 2 3][4 5 6 7][8 9 10 11][12 13 14 15]]
+        mappy: {
+            general0: {
+                programName: general0prog
+                version: [1 2 3]
+                numWorkers: 100
+            }
+            general1: {
+                programName: general1prog
+                version: [3 2 1]
+                numWorkers: 1000
+            }
+        }
+        unmappy: {
+            foo: {
+                foo10: 10
+                foo20: 20
+                foo30: 30
+            }
+            bar: {
+                bar10: 10
+                bar20: 20
+                bar30: 30
+            }
+        }
+        maybe: yes
+        maybeKinda: [ maybe kinda yes ]
+        a_of_o: [andaone andatwo]
+        var: varString @type: string
+        varVect: [
+            foo     @type: string
+            101     @type: int
+            90.3    @type: float
+            {       @type: general
+                programName: generalVar
+                version: [3 5 8]
+                numWorkers: 2000
+            }
+            [       @type: vector<string>
+                foo bar baz
+            ]
+        ]
     }
 }
