@@ -31,7 +31,7 @@ namespace og
     } VkPresentModeKHR;
 
 
-    typedef ENUM class VkFormat_tag : int
+    typedef ENUM class VkFormat_tag : unsigned char
     {
         VK_FORMAT_UNDEFINED,
         VK_FORMAT_R8_UNORM,
@@ -45,29 +45,29 @@ namespace og
         VK_COLOR_SPACE_DISPLAY_P3_LINEAR_EXT
     } VkColorSpaceKHR;
 
-    typedef ENUM class VkSurfaceTransformFlagBitsKHR_tag
+    typedef ENUM class VkSurfaceTransformFlagBitsKHR_tag : unsigned char
     {
-        VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
-        VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR,
-        VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR,
-        VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR
+        VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR = 1 << 0,
+        VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR = 1 << 1,
+        VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR = 1 << 2,
+        VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR = 1 << 3
     } VkSurfaceTransformFlagBitsKHR;
     
     typedef ENUM class VkCompositeAlphaFlagBitsKHR_tag
     {
-        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-        VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
-        VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,
-        VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR
+        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR = 1 << 0,
+        VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR = 1 << 1,
+        VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR = 1 << 2,
+        VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR = 1 << 3
     } VkCompositeAlphaFlagBitsKHR;
     
 
     typedef ENUM class VkImageViewType_tag
     {
-        VK_IMAGE_VIEW_TYPE_1D,
-        VK_IMAGE_VIEW_TYPE_2D,
-        VK_IMAGE_VIEW_TYPE_3D,
-        VK_IMAGE_VIEW_TYPE_CUBE
+        VK_IMAGE_VIEW_TYPE_1D = 1 << 0,
+        VK_IMAGE_VIEW_TYPE_2D = 1 << 1,
+        VK_IMAGE_VIEW_TYPE_3D = 1 << 2,
+        VK_IMAGE_VIEW_TYPE_CUBE = 1 << 3
     } VkImageViewType;
     
 }

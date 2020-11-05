@@ -46,7 +46,7 @@
             imageView: {
                 viewType: 2D
                 components: [r g b a]
-                aspectMask: [color] // can be array because flags
+                aspectMask: [color stencil] // can be array because flags
             }
         }
     }

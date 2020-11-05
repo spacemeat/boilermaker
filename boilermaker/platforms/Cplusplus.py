@@ -169,7 +169,9 @@ class CplusplusDef(PlatformDef):
         namespace = self.getSetting('namespace')
         usingNamespace = namespace != ''
 
-        src = '#include <cstring>\n'
+        src = f'''#include <cstring>
+#include <type_traits>
+'''
 
         self.seeUsedTypes()
 
@@ -225,6 +227,17 @@ class CplusplusDef(PlatformDef):
 {ind(ic, indent + 0)}{{
 {ind(ic, indent + 1)}static inline {enumType} extract(hu::Node node){noexceptStr}
 {ind(ic, indent + 1)}{{'''
+            if enum.hasAttrib('flags'):
+                src += f'''
+{ind(ic, indent + 2)}using enumIntType = std::underlying_type<{enumType}>::type;
+{ind(ic, indent + 2)}{enumType} e = static_cast<{enumType}>(0);
+{ind(ic, indent + 2)}bool fromList = node.kind() == hu::NodeKind::list;
+{ind(ic, indent + 2)}if (fromList)
+{ind(ic, indent + 3)}{{ node = node.firstChild(); }}
+{ind(ic, indent + 2)}while(node)
+{ind(ic, indent + 2)}{{'''
+
+            firstTime = True
             for enumValName, enumValVal in enum.values:
                 prefix = enumType
                 if enum.hasAttrib('cStyle'):
@@ -243,13 +256,36 @@ class CplusplusDef(PlatformDef):
                     modName = modName.lower()
                 elif case == 'toLower':
                     modName = modName.upper()
+                
+                if firstTime:
+                    doElse = ''
+                    spaces = '     '
+                    firstTime = False
+                else:
+                    doElse = 'else '
+                    spaces = ''
 
-                src += f'''
+                if enum.hasAttrib('flags'):
+                    src += f'''
+{ind(ic, indent + 3)}{doElse}if {spaces}(std::strncmp(node.value().str().data(), "{modName}", {len(modName)}) == 0) {{ e = static_cast<{enumType}>(static_cast<enumIntType>(e) | static_cast<enumIntType>({prefix}::{enumValName})); }}'''
+                else:
+                    src += f'''
 {ind(ic, indent + 2)}if (std::strncmp(node.value().str().data(), "{modName}", {len(modName)}) == 0) {{ return {prefix}::{enumValName}; }}'''
+
+            if enum.hasAttrib('flags'):
+                src += f'''
+{ind(ic, indent + 3)}if (fromList)
+{ind(ic, indent + 4)}{{ node = node.nextSibling(); }}
+{ind(ic, indent + 3)}else
+{ind(ic, indent + 4)}{{ break; }}
+{ind(ic, indent + 2)}}}
+{ind(ic, indent + 2)}return e;'''
+            else:
+                src += f'''
+{ind(ic, indent + 2)}return {{}};'''
 
             # TODO: define and extract a default value
             src += f'''
-{ind(ic, indent + 2)}return {{}};
 {ind(ic, indent + 1)}}}
 {ind(ic, indent + 0)}}};
 
@@ -267,13 +303,26 @@ class CplusplusDef(PlatformDef):
                 # Resolve typedefs to the tag.
                 if enum.isTypedef:
                     enum = enum.typedefOf
+
                 enumType = enumName.replace('.', '::')
-                src += f"""
+                src += f'''
     inline std::ostream & operator <<(std::ostream & out, {enumType} obj)
-    {{
+    {{'''
+                if enum.hasAttrib('flags'):
+                    src += f'''
+        using enumIntType = std::underlying_type<{enumType}>::type;
+        enumIntType bits = static_cast<enumIntType>(obj);
+        out << "[";'''
+
+                else:
+                    src += f'''
         switch (obj)
-        {{"""
-                for enumValName, enumValVal in enum.values:
+        {{'''
+                enumValues = enum.values
+                if enum.hasAttrib('flags'):
+                    enumValues = reversed(enumValues)
+
+                for enumValName, enumValVal in enumValues:
                     prefix = enumType
                     if enum.hasAttrib('cStyle'):
                         prefix = prefix[:prefix.rfind('::')]
@@ -292,19 +341,37 @@ class CplusplusDef(PlatformDef):
                     elif case == 'toLower':
                         modName = modName.upper()
 
-                    src += f"""
+                    if enum.hasAttrib('flags'):
+                        src += f'''
+        if (bits & static_cast<enumIntType>({prefix}::{enumValName}))
+        {{
+            out << " {modName}";
+            bits &= ~static_cast<enumIntType>({prefix}::{enumValName});
+            if (! bits)
+                {{ goto done; }}
+        }}
+'''
+                    else:
+                        src += f'''
         case {prefix}::{enumValName}:
             out << "{modName}";
-            break;"""
-                src += f"""
+            break;'''
+        
+                if enum.hasAttrib('flags'):
+                    src += f'''
+    done:
+        out << " ]";'''
+                else:
+                    src += f'''
         default:
             out << (int) obj;
             break;
         }}
-
+'''
+                src += f'''
         return out;
     }}
-"""
+'''
         # class decl
         memo = set()    # one memo to constrain them all
         for podNode in self.podsNode:

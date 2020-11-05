@@ -41,7 +41,7 @@
                 *: { case: toUpper }
                 og.VkImageViewType: { prefix: VK_IMAGE_VIEW_TYPE_ }
                 og.VkComponentSwizzle: { prefix: VK_COMPONENT_SWIZZLE_ }
-                og.VkImageAspectFlagBits: { prefix: VK_IMAGE_ASPECT_ }
+                og.VkImageAspectFlagBits: { prefix: VK_IMAGE_ASPECT_ postfix: _BIT }
                 og.VkFormat: { prefix: VK_FORMAT_ }
                 og.VkColorSpaceKHR: { prefix: VK_COLOR_SPACE_ postfix: _KHR }
                 og.VkSurfaceTransformFlagBitsKHR: { prefix: VK_SURFACE_TRANSFORM_ postfix: _BIT_KHR }
