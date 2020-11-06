@@ -31,9 +31,10 @@
         setters: true       // requires copyable
         setByMovers: true   // requires movable
         privateMembers: true
+        collectionAccessors: true
         deserialize: true   // requires movable
         serialize: true
-        observable: true
+        observable: true    // requires collectionAccessors, setters, privateMembers
         diffable: true
         observeChildDiffs: true
     }

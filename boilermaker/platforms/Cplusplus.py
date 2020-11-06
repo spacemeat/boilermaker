@@ -11,6 +11,8 @@ from ..PlatformDef import PlatformDef
 from pprint import PrettyPrinter
 
 
+endl = '\n'
+
 def reportEnums(enums):
     for name, values in enums.items():
         print (f"Enum found: {name}")
@@ -135,20 +137,104 @@ class CplusplusDef(PlatformDef):
         return []
 
 
-    def genCtorSignature(self, podNode, indentStr):
+    def ind(self, numTabs):
+        return self.getIndent() * numTabs
+
+
+    def getNamespaceScope(self):
         namespace = self.getSetting('namespace')
         usingNamespace = namespace != ''
-        scope = f'{namespace}::' if usingNamespace else ''
+        return f'{namespace}::' if usingNamespace else ''
+    
 
-        src = f'{podNode.key}('
+    def getNoexceptStr(self):
+        noexcept = self.getSetting('noexcept') == 'true'
+        return ' noexcept' if noexcept else ''
+    
+
+    def genDefaultConstructor(self, podNode, classScope, ind):
+        src = ''
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}{podNode.key}(){self.getNoexceptStr()};'''
+        else:
+            src += f'''
+{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}(){self.getNoexceptStr()}
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)    }{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::ctr()')}
+{self.ind(ind + 0)}}}
+
+'''
+        return src
+
+
+    def genMemberwiseConstructor(self, podNode, classScope, ind):
+        src = ''
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}{podNode.key}('''
+        else:
+            src += f'''
+{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}('''
+
+        firstTime = True
         for memberNode in podNode:
             memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-            if src[-1] != '(':
-                src += ',\n'
+            if firstTime:
+                firstTime = False
             else:
-                src += '\n'
-            src += f'{indentStr}{self.const(memberType)} & {memberName}'
-        src += ')'
+                src += ','
+
+            if classScope:
+                src += f'''
+{self.ind(ind + 1)}{self.const(memberType)} & {memberName}'''
+            else:
+                src += f'''
+{self.ind(ind + 1)}{self.const(memberType)} & {memberName}'''
+
+        if classScope:
+            src += f'''){self.getNoexceptStr()};'''
+        else:
+            src += f'''){self.getNoexceptStr()}
+{self.ind(ind + 0)}: {f",{endl}{self.ind(ind + 0)}  ".join([f"{v.key}({v.key})" for v in podNode])}
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::ctr(memberwise)')}
+{self.ind(ind + 0)}}}
+
+'''
+        return src
+
+
+    def genHumonConstructor(self, podNode, classScope, ind):
+        src = ''
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}{podNode.key}(hu::Node node){self.getNoexceptStr()};'''
+        else:
+            src += f'''
+{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}(hu::Node node){self.getNoexceptStr()}
+'''
+            firstMember = True
+            for memberNode in podNode:             
+                decl = self.makeInitializerDecl(src, memberNode)
+                if decl and len(decl) > 0:
+                    if firstMember:
+                        firstMember = False
+                        src += ': '
+                    else:
+                        src += f', \n{self.ind(ind + 0)}  '
+                    src += decl
+            src += f'''
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::ctr from humon')}
+{self.ind(ind + 0)}}}
+'''
+        return src
+    
+
+    def genCopyConstructor(self, podNode, classScope, ind):
+        src = ''
+
         return src
 
 
@@ -395,17 +481,13 @@ class CplusplusDef(PlatformDef):
             podName = podNode.key
             src += f'''{clIndent}class {podName}
 {clIndent}{{
-{clIndent}public:
-'''
-            if self.getFeature('memberwiseConstructible') == 'true':
-                src += f'''
-{memberIndent}{self.genCtorSignature(podNode, ind(ic, indent + 2))}{noexceptStr};
-'''
+{clIndent}public:'''
             if self.getFeature('defaultConstructible') == 'true':
-                src += f'{memberIndent}{podName}(){noexceptStr};\n'
-
+                src += self.genDefaultConstructor(podNode, True, indent + 1)
+            if self.getFeature('memberwiseConstructible') == 'true':
+                src += self.genMemberwiseConstructor(podNode, True, indent + 1)
             if self.getFeature('deserialize') == 'true':
-                src += f'{memberIndent}{podName}(hu::Node node){noexceptStr};\n'
+                src += self.genHumonConstructor(podNode, True, indent + 1)
 
             needSwap = False
 
@@ -541,7 +623,7 @@ struct hu::val<{podName}>
 
     def cavePerson(self, msg):
         if self.getSetting('cavepersonCtrs') == 'true':
-            return f'std::cout << "{msg}\\n";\n'
+            return f'std::cout << "{msg}\\n";'
         else:
             return ''
 
@@ -851,43 +933,14 @@ struct hu::val<{mpt}>
 
         # constructor
         endl = '\n'
-        if self.getFeature('memberwiseConstructible') == 'true':
-            src += f'''
-{scope}{podName}::{self.genCtorSignature(podNode, "   ")}{noexceptStr}
-: {f",{endl}  ".join([f"{v.key}({v.key})" for v in podNode])}
-{{
-{ind1}{self.cavePerson(f'{scope}{podName}::ctr')}
-}}
-'''
-
         if self.getFeature('defaultConstructible') == 'true':
-            src += f'''
-{scope}{podName}::{podName}(){noexceptStr}
-{{
-{ind1}{self.cavePerson(f'{scope}{podName}::default ctr')}
-}}
-'''
+            src += self.genDefaultConstructor(podNode, False, 0)
 
-        dq = '"'
+        if self.getFeature('memberwiseConstructible') == 'true':
+            src += self.genMemberwiseConstructor(podNode, False, 0)
+
         if self.getFeature('deserialize') == 'true':
-            src += f'''
-{scope}{podName}::{podName}(hu::Node node){noexceptStr}
-'''
-            firstMember = True
-            for memberNode in podNode:             
-                decl = self.makeInitializerDecl(src, memberNode)
-                if decl and len(decl) > 0:
-                    if firstMember:
-                        src += ': '
-                    else:
-                        src += ', \n  '
-                    src += decl
-                    firstMember = False
-            src += f'''
-{{
-{ind1}{self.cavePerson(f'{scope}{podName}::ctr from humon')}
-}}
-'''
+            src += self.genHumonConstructor(podNode, False, 0)
 
         needSwap = False
 
