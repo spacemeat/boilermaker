@@ -296,6 +296,18 @@ class CplusplusDef(PlatformDef):
             indent += 1
         
         if self.getFeature('serialize'):
+            src += f'''
+    class bomaStream
+    {{
+    public:
+        friend std::ostream & operator <<(std::ostream & out, bomaStream)
+        {{
+            out << std::boolalpha;
+            return out;
+        }}
+    }};
+    '''
+
             for enumName, enum in self.enums.getAllEnums().items():
                 # Skip any enums that have a typedef referencing them.
                 if enum.isTypedefTarget:

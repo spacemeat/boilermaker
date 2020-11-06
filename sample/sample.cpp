@@ -86,7 +86,7 @@ int main()
     std::cout << c << "\n";
 
     std::ostringstream oss;
-    oss << c;
+    oss << og::bomaStream {} << c;
     auto nt = hu::Trove::fromString(oss.str());
     if (auto t = std::get_if<hu::Trove>(& nt); t)
     {
