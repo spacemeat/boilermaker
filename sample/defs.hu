@@ -39,7 +39,7 @@
             }
             modifiers: {    // these modify value strings before extracting their value
                 *: { case: toUpper }
-                og.VkImageViewType: { prefix: VK_IMAGE_VIEW_TYPE_ }
+                og.VkImageViewType: { case: leaveIt prefix: VK_IMAGE_VIEW_TYPE_ }
                 og.VkComponentSwizzle: { prefix: VK_COMPONENT_SWIZZLE_ }
                 og.VkImageAspectFlagBits: { prefix: VK_IMAGE_ASPECT_ postfix: _BIT }
                 og.VkFormat: { prefix: VK_FORMAT_ }

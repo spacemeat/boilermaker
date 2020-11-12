@@ -152,8 +152,324 @@ class CplusplusDef(PlatformDef):
         return ' noexcept' if noexcept else ''
     
 
+    def genBomaStreamClass(self, ind):
+        src = ''
+        if self.getFeature('serialize'):
+            src += f'''
+{self.ind(ind + 0)}class bomaStream
+{self.ind(ind + 0)}{{
+{self.ind(ind + 0)}public:
+{self.ind(ind + 1)}friend std::ostream & operator <<(std::ostream & out, bomaStream)
+{self.ind(ind + 1)}{{
+{self.ind(ind + 2)}out << std::boolalpha;
+{self.ind(ind + 2)}return out;
+{self.ind(ind + 1)}}}
+{self.ind(ind + 0)}}};
+'''
+        return src
+
+
+    def genEnumDeserializer(self, enumName, enum, ind):
+        src = ''
+        enumType = enumName.replace('.', '::')
+        src += f'''
+{self.ind(ind + 0)}template <>
+{self.ind(ind + 0)}struct hu::val<{enumType}>
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}static inline {enumType} extract(hu::Node node){self.getNoexceptStr()}
+{self.ind(ind + 1)}{{'''
+        if enum.hasAttrib('flags'):
+            src += f'''
+{self.ind(ind + 2)}using enumIntType = std::underlying_type<{enumType}>::type;
+{self.ind(ind + 2)}enumIntType e = 0;
+{self.ind(ind + 2)}bool fromList = node.kind() == hu::NodeKind::list;
+{self.ind(ind + 2)}if (fromList)
+{self.ind(ind + 3)}{{ node = node.firstChild(); }}
+{self.ind(ind + 2)}while(node)
+{self.ind(ind + 2)}{{'''
+
+        firstTime = True
+        for enumValName, enumValVal in enum.values:
+            prefix = enumType
+            if enum.hasAttrib('cStyle'):
+                prefix = prefix[:prefix.rfind('::')]
+            
+            modifiers = self.getModifiers(enumName)
+            modName = enumValName
+            modPrefix = modifiers.get('prefix')
+            if modPrefix and modName.startswith(modPrefix):
+                modName = modName[len(modPrefix):]
+            postfix = modifiers.get('postfix')
+            if postfix and modName.endswith(postfix):
+                modName = modName[:len(modName) - len(postfix)]
+            case = modifiers.get('case')
+            #breakpoint()
+            if case == 'toUpper':
+                modName = modName.lower()
+            elif case == 'toLower':
+                modName = modName.upper()
+            
+            if firstTime:
+                doElse = ''
+                spaces = '     '
+                firstTime = False
+            else:
+                doElse = 'else '
+                spaces = ''
+
+            if enum.hasAttrib('flags'):
+                src += f'''
+{self.ind(ind + 3)}{doElse}if {spaces}(std::strncmp(node.value().str().data(), "{modName}", {len(modName)}) == 0) {{ e |= static_cast<enumIntType>({prefix}::{enumValName}); }}'''
+            else:
+                src += f'''
+{self.ind(ind + 2)}if (std::strncmp(node.value().str().data(), "{modName}", {len(modName)}) == 0) {{ return {prefix}::{enumValName}; }}'''
+
+        if enum.hasAttrib('flags'):
+            src += f'''
+{self.ind(ind + 3)}if (fromList)
+{self.ind(ind + 4)}{{ node = node.nextSibling(); }}
+{self.ind(ind + 3)}else
+{self.ind(ind + 4)}{{ break; }}
+{self.ind(ind + 2)}}}
+{self.ind(ind + 2)}return static_cast<{enumType}>(e);'''
+        else:
+            src += f'''
+{self.ind(ind + 2)}return {{}};'''
+
+        # TODO: define and extract a default value
+        src += f'''
+{self.ind(ind + 1)}}}
+{self.ind(ind + 0)}}};
+
+'''
+        return src
+
+
+    def genEnumStreamInserter(self, enumName, enum, ind):
+        src = ''
+        if not self.getFeature('serialize'):
+            return src
+
+        enumType = enumName.replace('.', '::')
+        src += f'''
+{self.ind(ind + 0)}inline std::ostream & operator <<(std::ostream & out, {enumType} obj)
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}using enumIntType = std::underlying_type<{enumType}>::type;'''
+        if enum.hasAttrib('flags'):
+            src += f'''
+{self.ind(ind + 1)}enumIntType bits = static_cast<enumIntType>(obj);
+{self.ind(ind + 1)}out << "[";'''
+        else:
+            src += f'''
+{self.ind(ind + 1)}switch (obj)
+{self.ind(ind + 1)}{{'''
+        enumValues = enum.values
+        if enum.hasAttrib('flags'):
+            enumValues = reversed(enumValues)
+
+        for enumValName, enumValVal in enumValues:
+            prefix = enumType
+            if enum.hasAttrib('cStyle'):
+                prefix = prefix[:prefix.rfind('::')]
+            
+            modifiers = self.getModifiers(enumName)
+            modName = enumValName
+            modPrefix = modifiers.get('prefix')
+            if modPrefix and modName.startswith(modPrefix):
+                modName = modName[len(modPrefix):]
+            postfix = modifiers.get('postfix')
+            if postfix and modName.endswith(postfix):
+                modName = modName[:len(modName) - len(postfix)]
+            case = modifiers.get('case')
+            if case == 'toUpper':
+                modName = modName.lower()
+            elif case == 'toLower':
+                modName = modName.upper()
+
+            if enum.hasAttrib('flags'):
+                src += f'''
+{self.ind(ind + 1)}if (bits & static_cast<enumIntType>({prefix}::{enumValName}))
+{self.ind(ind + 1)}{{
+{self.ind(ind + 2)}out << " {modName}";
+{self.ind(ind + 2)}bits &= ~static_cast<enumIntType>({prefix}::{enumValName});
+{self.ind(ind + 2)}if (! bits)
+{self.ind(ind + 3)}{{ goto done; }}
+{self.ind(ind + 1)}}}
+'''
+            else:
+                src += f'''
+{self.ind(ind + 1)}case {prefix}::{enumValName}:
+{self.ind(ind + 2)}out << "{modName}";
+{self.ind(ind + 2)}break;'''
+        
+        if enum.hasAttrib('flags'):
+            src += f'''
+{self.ind(ind + 0)}done:
+{self.ind(ind + 1)}out << " ]";
+'''
+        else:
+            src += f'''
+{self.ind(ind + 1)}default:
+{self.ind(ind + 2)}out << static_cast<enumIntType>(obj);
+{self.ind(ind + 2)}break;
+{self.ind(ind + 1)}}}
+'''
+        src += f'''
+{self.ind(ind + 1)}return out;
+{self.ind(ind + 0)}}}
+'''
+        return src
+
+
+    def generateCollectionStreamInserter(self, memo, memberNode, ind):
+        src = ''
+        if not self.getFeature('serialize') == 'true':
+            return src
+
+        mpt = self.getPodMemberPlatformType(memberNode)
+        # TODO: memoize to only make one for each unique platform type
+        if mpt in memo:
+            return ''
+        
+        memo.add(mpt)
+
+        noexcept = self.getSetting('noexcept') == 'true'
+        noexceptStr = ' noexcept' if noexcept else ''
+        namespace = self.getSetting('namespace')
+        usingNamespace = namespace != ''
+        if usingNamespace:
+            scope = namespace + '::'
+
+        mbt = self.getPodMemberBaseType(memberNode)
+        if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
+            mbpt = self.getPodMemberBasePlatformType(memberNode)
+            mtas = self.getPodMemberTypeArgNodes(memberNode)
+
+            for argNode in mtas:
+                src += self.generateCollectionStreamInserter(memo, argNode, ind)
+
+            src += f'''
+{self.ind(ind + 0)}inline std::ostream & operator <<(std::ostream & out, {mpt} const & obj){noexceptStr}
+{self.ind(ind + 0)}{{'''
+
+            if mbt == 'array':
+                elemPlatformType = self.getPodMemberPlatformType(mtas[0])
+                mbta0 = self.getPodMemberBaseType(mtas[0])
+                numElems = int(mtas[1].value)
+                src += f"""
+{self.ind(ind + 1)}out << '[';"""
+                for i in range(0, numElems):
+                    if i != 0:
+                        src += f"""
+{self.ind(ind + 1)}out << ' ';"""
+                    src += f"""
+{self.ind(ind + 1)}out << obj[{i}];"""
+                src += f"""
+{self.ind(ind + 1)}out << ']';"""
+
+            elif mbt == 'pair':
+                ept0 = self.getPodMemberPlatformType(mtas[0])
+                ept1 = self.getPodMemberPlatformType(mtas[1])
+                mbta0 = self.getPodMemberBaseType(mtas[0])
+                mbta1 = self.getPodMemberBaseType(mtas[1])
+                src += f"""
+{self.ind(ind + 1)}out << '[';
+{self.ind(ind + 1)}out << std::get<0>(obj);
+{self.ind(ind + 1)}out << ' ';
+{self.ind(ind + 1)}out << std::get<1>(obj);
+{self.ind(ind + 1)}out << ']';"""
+
+            elif mbt == 'tuple':
+                epts = [self.getPodMemberPlatformType(mta) for mta in mtas]
+                mbtas = [self.getPodMemberBaseType(mta) for mta in mtas]
+                src += f"""
+{self.ind(ind + 1)}out << '[';"""
+                first = True
+                for i in range(0, len(mbtas)):
+                    mbtan = mbtas[i]
+                    if not first:
+                        src += f"""
+{self.ind(ind + 1)}out << ' ';"""
+                    else:
+                        first = False
+                    src += f"""
+{self.ind(ind + 1)}out << std::get<{i}>().value();"""
+                src += f"""
+{self.ind(ind + 1)}out << ']';"""
+
+            elif mbt == 'vector':
+                elemPlatformType = self.getPodMemberPlatformType(mtas[0])
+                mbta0 = self.getPodMemberBaseType(mtas[0])
+                src += f"""
+{self.ind(ind + 1)}out << '[';
+{self.ind(ind + 1)}bool firstTime = true;
+{self.ind(ind + 1)}for (auto const & objmem : obj)
+{self.ind(ind + 1)}{{
+{self.ind(ind + 2)}if (firstTime)
+{self.ind(ind + 3)}{{ firstTime = false; }}
+{self.ind(ind + 2)}else
+{self.ind(ind + 3)}{{ out << ' '; }}
+{self.ind(ind + 2)}out << objmem;
+{self.ind(ind + 1)}}}
+{self.ind(ind + 1)}out << ']';"""
+
+            elif mbt == 'map' or mbt == 'unordered_map':
+                ept0 = self.getPodMemberPlatformType(mtas[0])
+                ept1 = self.getPodMemberPlatformType(mtas[1])
+                mbta0 = self.getPodMemberBaseType(mtas[0])
+                mbta1 = self.getPodMemberBaseType(mtas[1])
+                if mbta0 == 'optional':
+                    raise RuntimeError('a map or unordered_map key cannot be optional.')
+                src += f"""
+{self.ind(ind + 1)}out << '{{';
+{self.ind(ind + 1)}bool firstTime = true;
+{self.ind(ind + 1)}for (auto & elem : obj)
+{self.ind(ind + 1)}{{
+{self.ind(ind + 2)}if (firstTime)
+{self.ind(ind + 3)}{{ firstTime = false; }}
+{self.ind(ind + 2)}else
+{self.ind(ind + 3)}{{ out << ' '; }}
+{self.ind(ind + 2)}out << elem.first << ": " << elem.second;
+{self.ind(ind + 1)}}}
+{self.ind(ind + 1)}out << '}}';"""
+
+            elif mbt == 'optional':
+                src += f"""
+{self.ind(ind + 1)}if (obj.has_value())
+{self.ind(ind + 2)}{{ out << * obj; }}
+{self.ind(ind + 1)}else
+{self.ind(ind + 2)}{{ out << '_'; }}"""
+
+            elif mbt == 'variant':
+                epts = [(self.getPodMemberPlatformType(mta), self.getPodMemberBaseType(mta), mta['alias']) for mta in mtas]
+                mbtas = [self.getPodMemberBaseType(mta) for mta in mtas]
+                firstTime = True
+                for ept in epts:
+                    platformType = ept[0]
+                    aliasType = ept[1]
+                    if ept[2]:
+                        aliasType = ept[2]
+                    if firstTime:
+                        firstTime = False
+                        src += f"""
+{self.ind(ind + 1)}"""
+                    else:
+                        src += f"""
+{self.ind(ind + 1)}else """
+                    src += f"""if (auto p = std::get_if<{platformType}>(& obj); p) {{ out << *p << " @type: {aliasType}"; }}"""
+
+            src += f'''
+{self.ind(ind + 1)}return out;
+{self.ind(ind + 0)}}}
+'''
+        return src
+
+
     def genDefaultConstructor(self, podNode, classScope, ind):
         src = ''
+        if not self.getFeature('defaultConstructible') == 'true':
+            return src
+
         if classScope:
             src += f'''
 {self.ind(ind + 0)}{podNode.key}(){self.getNoexceptStr()};'''
@@ -170,6 +486,9 @@ class CplusplusDef(PlatformDef):
 
     def genMemberwiseConstructor(self, podNode, classScope, ind):
         src = ''
+        if not self.getFeature('memberwiseConstructible') == 'true':
+            return src
+
         if classScope:
             src += f'''
 {self.ind(ind + 0)}{podNode.key}('''
@@ -207,6 +526,9 @@ class CplusplusDef(PlatformDef):
 
     def genHumonConstructor(self, podNode, classScope, ind):
         src = ''
+        if not self.getFeature('deserialize') == 'true':
+            return src
+
         if classScope:
             src += f'''
 {self.ind(ind + 0)}{podNode.key}(hu::Node node){self.getNoexceptStr()};'''
@@ -215,15 +537,15 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}(hu::Node node){self.getNoexceptStr()}
 '''
             firstMember = True
-            for memberNode in podNode:             
-                decl = self.makeInitializerDecl(src, memberNode)
-                if decl and len(decl) > 0:
-                    if firstMember:
-                        firstMember = False
-                        src += ': '
-                    else:
-                        src += f', \n{self.ind(ind + 0)}  '
-                    src += decl
+            for memberNode in podNode:
+                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+                decl = f'{memberName}(node / "{memberName}" % hu::val<{memberType}>{{}})'
+                if firstMember:
+                    firstMember = False
+                    src += f'{self.ind(ind + 0)}: '
+                else:
+                    src += f', \n{self.ind(ind + 0)}  '
+                src += decl
             src += f'''
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::ctr from humon')}
@@ -234,6 +556,174 @@ class CplusplusDef(PlatformDef):
 
     def genCopyConstructor(self, podNode, classScope, ind):
         src = ''
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}{podNode.key}({podNode.key} const & rhs){self.getNoexceptStr() if self.getFeature('copyable') else ' = delete'};'''
+        elif self.getFeature('copyable'):
+            src += f'''
+{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}({self.getNamespaceScope()}{podNode.key} const & rhs){self.getNoexceptStr()}
+'''
+            firstMember = True
+            for memberNode in podNode:             
+                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+                decl = f'{memberName}(rhs.{memberName})'
+                if decl and len(decl) > 0:
+                    if firstMember:
+                        firstMember = False
+                        src += f'{self.ind(ind + 0)}: '
+                    else:
+                        src += f', \n{self.ind(ind + 0)}  '
+                    src += decl
+            src += f'''
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::copy ctr')}
+{self.ind(ind + 0)}}}
+'''
+        return src
+
+
+    def genCopyAssignment(self, podNode, classScope, ind):
+        src = ''
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}{podNode.key} & operator =({self.getNamespaceScope()}{podNode.key} rhs){self.getNoexceptStr() if self.getFeature('copyable') else ' = delete'};'''
+        elif self.getFeature('copyable'):
+            src += f'''
+{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key} & {self.getNamespaceScope()}{podNode.key}::operator =({self.getNamespaceScope()}{podNode.key} const & rhs){self.getNoexceptStr()}
+{{
+{self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::copy assign')}
+{self.ind(ind + 1)}using std::swap;
+{self.ind(ind + 1)}swap(*this, rhs);
+{self.ind(ind + 1)}return *this;
+}}'''
+        return src
+
+
+    def genMoveConstructor(self, podNode, classScope, ind):
+        src = ''
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}{podNode.key}({podNode.key} && rhs){self.getNoexceptStr() if self.getFeature('movable') else ' = delete'};'''
+        elif self.getFeature('movable'):
+            src += f'''
+{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}({self.getNamespaceScope()}{podNode.key} const & rhs){self.getNoexceptStr()}
+'''
+            firstMember = True
+            for memberNode in podNode:
+                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+                decl = f'{memberName}(std::move(rhs.{memberName}))'
+                if decl and len(decl) > 0:
+                    if firstMember:
+                        firstMember = False
+                        src += f'{self.ind(ind + 0)}: '
+                    else:
+                        src += f', \n{self.ind(ind + 0)}  '
+                    src += decl
+            src += f'''
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::move ctr')}
+{self.ind(ind + 0)}}}
+'''
+        return src
+
+
+    def genMoveAssignment(self, podNode, classScope, ind):
+        src = ''
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key} & operator =({self.getNamespaceScope()}{podNode.key} && rhs){self.getNoexceptStr() if self.getFeature('movable') else ' = delete'};'''
+        elif self.getFeature('movable'):
+            src += f'''
+{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key} & {self.getNamespaceScope()}{podNode.key}::operator =({self.getNamespaceScope()}{podNode.key} const & rhs){self.getNoexceptStr()}
+{{
+{self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::move assign')}
+{self.ind(ind + 1)}using std::swap;
+{self.ind(ind + 1)}swap(*this, rhs);
+{self.ind(ind + 1)}return *this;
+}}'''
+        return src
+
+
+    def genDestructor(self, podNode, classScope, ind):
+        src = ''
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}{'virtual ' if self.getFeature('virtualDestructor') else ''}~{podNode.key}();'''
+        else:
+            src += f'''
+{self.ind(ind + 0)}{'virtual ' if self.getFeature('virtualDestructor') else ''}{self.getNamespaceScope()}::{podNode.key}::~{podNode.key}()
+{{
+{self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::dtr')}
+}}'''
+        return src
+
+
+    def genSwap(self, podNode, classScope, ind):
+        src = ''
+        if not self.getFeature('copyable') == 'true' and not self.getFeature('movable') == 'true':
+            return src
+        
+        if classScope:
+            endl = '\n'
+            src += f'''
+{self.ind(ind + 0)}friend void swap({podNode.key} & lhs, {podNode.key} & rhs){self.getNoexceptStr()}
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}using std::swap;
+{"".join([f"{self.ind(ind + 1)}swap(lhs.{v.key}, rhs.{v.key});{endl}" for v in podNode])}{self.ind(ind + 0)}}}
+'''
+        return src
+
+
+    def genGet(self, podNode, memberNode, classScope, ind):
+        src = ''
+        if not self.getFeature('getters') == 'true':
+            return src
+
+        memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+
+        src += f'''
+{self.ind(ind + 0)}{self.const(memberType)} & {self.getNamespaceScope()}{podNode.key}::get_{memberName}() const{self.getNoexceptStr()}
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}return {memberName};
+{self.ind(ind + 0)}}}
+'''
+        src += f'''
+{self.ind(ind + 0)}{memberType} & {self.getNamespaceScope()}{podNode.key}::get_{memberName}(){self.getNoexceptStr()}
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}return {memberName};
+{self.ind(ind + 0)}}}
+'''
+        src += '\n'
+
+        return src
+
+
+    def genSet(self, podNode, memberNode, classScope, ind):
+        src = ''
+        if not self.getFeature('setters') == 'true':
+            return src
+
+        memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+
+        return src
+
+
+    def genSetByMove(self, podNode, memberNode, classScope, ind):
+        src = ''
+        if not self.getFeature('setByMovers') == 'true':
+            return src
+
+        memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+
+        return src
+
+
+    def genStreamInserter(podNode, memberNode, classScope, ind):
+        src = ''
+        if not self.getFeature('serialize') == 'true':
+            return src
+
+        memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
 
         return src
 
@@ -306,221 +796,54 @@ class CplusplusDef(PlatformDef):
             # Resolve typedefs to the tag.
             if enum.isTypedef:
                 enum = enum.typedefOf
-            enumType = enumName.replace('.', '::')
-            src += f'''
-{ind(ic, indent + 0)}template <>
-{ind(ic, indent + 0)}struct hu::val<{enumType}>
-{ind(ic, indent + 0)}{{
-{ind(ic, indent + 1)}static inline {enumType} extract(hu::Node node){noexceptStr}
-{ind(ic, indent + 1)}{{'''
-            if enum.hasAttrib('flags'):
-                src += f'''
-{ind(ic, indent + 2)}using enumIntType = std::underlying_type<{enumType}>::type;
-{ind(ic, indent + 2)}enumIntType e = 0;
-{ind(ic, indent + 2)}bool fromList = node.kind() == hu::NodeKind::list;
-{ind(ic, indent + 2)}if (fromList)
-{ind(ic, indent + 3)}{{ node = node.firstChild(); }}
-{ind(ic, indent + 2)}while(node)
-{ind(ic, indent + 2)}{{'''
 
-            firstTime = True
-            for enumValName, enumValVal in enum.values:
-                prefix = enumType
-                if enum.hasAttrib('cStyle'):
-                    prefix = prefix[:prefix.rfind('::')]
-                
-                modifiers = self.getModifiers(enumName)
-                modName = enumValName
-                modPrefix = modifiers.get('prefix')
-                if modPrefix and modName.startswith(modPrefix):
-                    modName = modName[len(modPrefix):]
-                postfix = modifiers.get('postfix')
-                if postfix and modName.endswith(postfix):
-                    modName = modName[:len(modName) - len(postfix)]
-                case = modifiers.get('case')
-                if case == 'toUpper':
-                    modName = modName.lower()
-                elif case == 'toLower':
-                    modName = modName.upper()
-                
-                if firstTime:
-                    doElse = ''
-                    spaces = '     '
-                    firstTime = False
-                else:
-                    doElse = 'else '
-                    spaces = ''
-
-                if enum.hasAttrib('flags'):
-                    src += f'''
-{ind(ic, indent + 3)}{doElse}if {spaces}(std::strncmp(node.value().str().data(), "{modName}", {len(modName)}) == 0) {{ e |= static_cast<enumIntType>({prefix}::{enumValName}); }}'''
-                else:
-                    src += f'''
-{ind(ic, indent + 2)}if (std::strncmp(node.value().str().data(), "{modName}", {len(modName)}) == 0) {{ return {prefix}::{enumValName}; }}'''
-
-            if enum.hasAttrib('flags'):
-                src += f'''
-{ind(ic, indent + 3)}if (fromList)
-{ind(ic, indent + 4)}{{ node = node.nextSibling(); }}
-{ind(ic, indent + 3)}else
-{ind(ic, indent + 4)}{{ break; }}
-{ind(ic, indent + 2)}}}
-{ind(ic, indent + 2)}return static_cast<{enumType}>(e);'''
-            else:
-                src += f'''
-{ind(ic, indent + 2)}return {{}};'''
-
-            # TODO: define and extract a default value
-            src += f'''
-{ind(ic, indent + 1)}}}
-{ind(ic, indent + 0)}}};
-
-'''
+            src += self.genEnumDeserializer(enumName, enum, indent)
 
         if usingNamespace:
             src += f'\n{nsIndent}namespace {namespace}\n{nsIndent}{{\n'
             indent += 1
         
-        if self.getFeature('serialize'):
-            src += f'''
-    class bomaStream
-    {{
-    public:
-        friend std::ostream & operator <<(std::ostream & out, bomaStream)
-        {{
-            out << std::boolalpha;
-            return out;
-        }}
-    }};
-    '''
+        src += self.genBomaStreamClass(indent)
 
-            for enumName, enum in self.enums.getAllEnums().items():
-                # Skip any enums that have a typedef referencing them.
-                if enum.isTypedefTarget:
-                    continue
-                # Resolve typedefs to the tag.
-                if enum.isTypedef:
-                    enum = enum.typedefOf
+        for enumName, enum in self.enums.getAllEnums().items():
+            # Skip any enums that have a typedef referencing them.
+            if enum.isTypedefTarget:
+                continue
+            # Resolve typedefs to the tag.
+            if enum.isTypedef:
+                enum = enum.typedefOf
+            
+            src += self.genEnumStreamInserter(enumName, enum, indent)
 
-                enumType = enumName.replace('.', '::')
-                src += f'''
-    inline std::ostream & operator <<(std::ostream & out, {enumType} obj)
-    {{'''
-                if enum.hasAttrib('flags'):
-                    src += f'''
-        using enumIntType = std::underlying_type<{enumType}>::type;
-        enumIntType bits = static_cast<enumIntType>(obj);
-        out << "[";'''
-
-                else:
-                    src += f'''
-        switch (obj)
-        {{'''
-                enumValues = enum.values
-                if enum.hasAttrib('flags'):
-                    enumValues = reversed(enumValues)
-
-                for enumValName, enumValVal in enumValues:
-                    prefix = enumType
-                    if enum.hasAttrib('cStyle'):
-                        prefix = prefix[:prefix.rfind('::')]
-                    
-                    modifiers = self.getModifiers(enumName)
-                    modName = enumValName
-                    modPrefix = modifiers.get('prefix')
-                    if modPrefix and modName.startswith(modPrefix):
-                        modName = modName[len(modPrefix):]
-                    postfix = modifiers.get('postfix')
-                    if postfix and modName.endswith(postfix):
-                        modName = modName[:len(modName) - len(postfix)]
-                    case = modifiers.get('case')
-                    if case == 'toUpper':
-                        modName = modName.lower()
-                    elif case == 'toLower':
-                        modName = modName.upper()
-
-                    if enum.hasAttrib('flags'):
-                        src += f'''
-        if (bits & static_cast<enumIntType>({prefix}::{enumValName}))
-        {{
-            out << " {modName}";
-            bits &= ~static_cast<enumIntType>({prefix}::{enumValName});
-            if (! bits)
-                {{ goto done; }}
-        }}
-'''
-                    else:
-                        src += f'''
-        case {prefix}::{enumValName}:
-            out << "{modName}";
-            break;'''
-        
-                if enum.hasAttrib('flags'):
-                    src += f'''
-    done:
-        out << " ]";'''
-                else:
-                    src += f'''
-        default:
-            out << (int) obj;
-            break;
-        }}
-'''
-                src += f'''
-        return out;
-    }}
-'''
         # class decl
         memo = set()    # one memo to constrain them all
         for podNode in self.podsNode:
             # static stream inserters for std collections
-            if self.getFeature('serialize') == 'true':
-                for memberNode in podNode:
-                    src += self.generateCollectionStreamInserter(memo, memberNode)
+            for memberNode in podNode:
+                src += self.generateCollectionStreamInserter(memo, memberNode, indent)
 
             podName = podNode.key
             src += f'''{clIndent}class {podName}
 {clIndent}{{
 {clIndent}public:'''
-            if self.getFeature('defaultConstructible') == 'true':
-                src += self.genDefaultConstructor(podNode, True, indent + 1)
-            if self.getFeature('memberwiseConstructible') == 'true':
-                src += self.genMemberwiseConstructor(podNode, True, indent + 1)
-            if self.getFeature('deserialize') == 'true':
-                src += self.genHumonConstructor(podNode, True, indent + 1)
+            src += self.genDefaultConstructor(podNode, True, indent + 1)
+            src += self.genMemberwiseConstructor(podNode, True, indent + 1)
+            src += self.genHumonConstructor(podNode, True, indent + 1)
+            src += self.genCopyConstructor(podNode, True, indent + 1)
+            src += self.genCopyAssignment(podNode, True, indent + 1)
+            src += self.genMoveConstructor(podNode, True, indent + 1)
+            src += self.genMoveAssignment(podNode, True, indent + 1)
+            src += self.genDestructor(podNode, True, indent + 1)
+            src += self.genSwap(podNode, True, indent + 1)
 
-            needSwap = False
-
-            # copy ctr, copy assignment
-            if not self.getFeature('copyable') == 'true':
-                src += f'{memberIndent}{podName}({self.const(podName)} & rhs) = delete;\n'
-                src += f'{memberIndent}{podName} & operator =({self.const(podName)} & rhs) = delete;\n'
-            else:
-                src += f'{memberIndent}{podName}({self.const(podName)} & rhs){noexceptStr};\n'
-                src += f'{memberIndent}{podName} & operator =({podName} rhs){noexceptStr};\n'
-                needSwap = True
-
-            # move ctr, move assignment
-            if not self.getFeature('movable') == 'true':
-                src += f'{memberIndent}{podName}({podName} && rhs) = delete;\n'
-                src += f'{memberIndent}{podName} & operator =({podName} && rhs) = delete;\n'
-            else:
-                src += f'{memberIndent}{podName}({podName} && rhs){noexceptStr};\n'
-                src += f'{memberIndent}{podName} & operator =({podName} && rhs){noexceptStr};\n'
-                needSwap = True
-
-            # dtr
-            src += f'{memberIndent}{"virtual " if self.getFeature("virtualDestructor") == "true" else ""}~{podName}();\n'
-
-            if needSwap:
-                endl = '\n'
-                src += f'''
-{memberIndent}friend void swap({podName} & lhs, {podName} & rhs){noexceptStr}
-{memberIndent}{{
-{memberIndent}    using std::swap;
-{"".join([f"{memberIndent}    swap(lhs.{v.key}, rhs.{v.key});{endl}" for v in podNode])}{memberIndent}}}
-
-'''
+            #for memberNode in podNode:
+            #    src += self.genGet(podNode, memberNode, True, indent + 1)
+            #for memberNode in podNode:
+            #    src += self.genSet(podNode, memberNode, True, indent + 1)
+            #for memberNode in podNode:
+            #    src += self.genSetByMove(podNode, memberNode, True, indent + 1)
+            #for memberNode in podNode:
+            #    src += self.genStreamInserter(podNode, memberNode, True, indent + 1)
 
             # member getters
             if self.getFeature('getters') == 'true':
@@ -626,14 +949,6 @@ struct hu::val<{podName}>
             return f'std::cout << "{msg}\\n";'
         else:
             return ''
-
-
-    def makeInitializerDecl(self, src, memberNode):
-        memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-        memberBomaType = memberNode.value
-        if memberNode.kind == humonEnums.NodeKind.DICT:
-            memberBomaType = memberNode['type'].value
-        return f'{memberName}(node / "{memberName}" % hu::val<{memberType}>{{}})'
 
 
     def generateCollectionMaker(self, memo, memberNode):
@@ -754,148 +1069,6 @@ struct hu::val<{mpt}>
             src += f'''
     }}
 }};
-'''
-        return src
-
-
-    def generateCollectionStreamInserter(self, memo, memberNode):
-        src = ''
-        mpt = self.getPodMemberPlatformType(memberNode)
-        # TODO: memoize to only make one for each unique platform type
-        if mpt in memo:
-            return ''
-        
-        memo.add(mpt)
-
-        noexcept = self.getSetting('noexcept') == 'true'
-        noexceptStr = ' noexcept' if noexcept else ''
-        namespace = self.getSetting('namespace')
-        usingNamespace = namespace != ''
-        if usingNamespace:
-            scope = namespace + '::'
-
-        mbt = self.getPodMemberBaseType(memberNode)
-        if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
-            mbpt = self.getPodMemberBasePlatformType(memberNode)
-            mtas = self.getPodMemberTypeArgNodes(memberNode)
-
-            for argNode in mtas:
-                src += self.generateCollectionStreamInserter(memo, argNode)
-
-            src += f'''
-    inline std::ostream & operator <<(std::ostream & out, {mpt} const & obj){noexceptStr}
-    {{'''
-
-            if mbt == 'array':
-                elemPlatformType = self.getPodMemberPlatformType(mtas[0])
-                mbta0 = self.getPodMemberBaseType(mtas[0])
-                numElems = int(mtas[1].value)
-                src += f"""
-        out << '[';"""
-                for i in range(0, numElems):
-                    if i != 0:
-                        src += f"""
-        out << ' ';"""
-                    src += f"""
-        out << obj[{i}];"""
-                src += f"""
-        out << ']';"""
-
-            elif mbt == 'pair':
-                ept0 = self.getPodMemberPlatformType(mtas[0])
-                ept1 = self.getPodMemberPlatformType(mtas[1])
-                mbta0 = self.getPodMemberBaseType(mtas[0])
-                mbta1 = self.getPodMemberBaseType(mtas[1])
-                src += f"""
-        out << '[';
-        out << std::get<0>(obj);
-        out << ' ';
-        out << std::get<1>(obj);
-        out << ']';"""
-
-            elif mbt == 'tuple':
-                epts = [self.getPodMemberPlatformType(mta) for mta in mtas]
-                mbtas = [self.getPodMemberBaseType(mta) for mta in mtas]
-                src += f"""
-        out << '[';"""
-                first = True
-                for i in range(0, len(mbtas)):
-                    mbtan = mbtas[i]
-                    if not first:
-                        src += f"""
-        out << ' ';"""
-                    else:
-                        first = False
-                    src += f"""
-        out << std::get<{i}>().value();"""
-                src += f"""
-        out << ']';"""
-
-            elif mbt == 'vector':
-                elemPlatformType = self.getPodMemberPlatformType(mtas[0])
-                mbta0 = self.getPodMemberBaseType(mtas[0])
-                src += f"""
-        out << '[';
-        bool firstTime = true;
-        for (auto const & objmem : obj)
-        {{
-            if (firstTime)
-                {{ firstTime = false; }}
-            else
-                {{ out << ' '; }}
-            out << objmem;
-        }}
-        out << ']';"""
-
-            elif mbt == 'map' or mbt == 'unordered_map':
-                ept0 = self.getPodMemberPlatformType(mtas[0])
-                ept1 = self.getPodMemberPlatformType(mtas[1])
-                mbta0 = self.getPodMemberBaseType(mtas[0])
-                mbta1 = self.getPodMemberBaseType(mtas[1])
-                if mbta0 == 'optional':
-                    raise RuntimeError('a map or unordered_map key cannot be optional.')
-                src += f"""
-        out << '{{';
-        bool firstTime = true;
-        for (auto & elem : obj)
-        {{
-            if (firstTime)
-                {{ firstTime = false; }}
-            else
-                {{ out << ' '; }}
-            out << elem.first << ": " << elem.second;
-        }}
-        out << '}}';"""
-
-            elif mbt == 'optional':
-                src += f"""
-        if (obj.has_value())
-            {{ out << * obj; }}
-        else
-            {{ out << '_'; }}"""
-
-            elif mbt == 'variant':
-                epts = [(self.getPodMemberPlatformType(mta), self.getPodMemberBaseType(mta), mta['alias']) for mta in mtas]
-                mbtas = [self.getPodMemberBaseType(mta) for mta in mtas]
-                firstTime = True
-                for ept in epts:
-                    platformType = ept[0]
-                    aliasType = ept[1]
-                    if ept[2]:
-                        aliasType = ept[2]
-                    if firstTime:
-                        firstTime = False
-                        src += f"""
-        """
-                    else:
-                        src += f"""
-        else """
-                    src += f"""if (auto p = std::get_if<{platformType}>(& obj); p) {{ out << *p << " @type: {aliasType}"; }}"""
-
-            src += f'''
-        return out;
-    }}
-
 '''
         return src
 
