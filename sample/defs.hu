@@ -33,7 +33,7 @@
                 memberwiseConstructible: true
                 virtualDestructor: false
                 copyable: true
-                setters: false
+                setters: true
                 getters: true
                 privateMembers: true
             }

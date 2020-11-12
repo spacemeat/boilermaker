@@ -203,7 +203,6 @@ class CplusplusDef(PlatformDef):
             if postfix and modName.endswith(postfix):
                 modName = modName[:len(modName) - len(postfix)]
             case = modifiers.get('case')
-            #breakpoint()
             if case == 'toUpper':
                 modName = modName.lower()
             elif case == 'toLower':
@@ -465,6 +464,128 @@ class CplusplusDef(PlatformDef):
         return src
 
 
+    def generateCollectionMaker(self, memo, memberNode, ind):
+        src = ''
+        mpt = self.getPodMemberPlatformType(memberNode)
+        # TODO: memoize to only make one for each unique platform type
+        if mpt in memo:
+            return ''
+        
+        memo.add(mpt)
+
+        mbt = self.getPodMemberBaseType(memberNode)
+        if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
+            mbpt = self.getPodMemberBasePlatformType(memberNode)
+            mtas = self.getPodMemberTypeArgNodes(memberNode)
+
+            noexcept = self.getSetting('noexcept') == 'true'
+            noexceptStr = ' noexcept' if noexcept else ''
+
+            for argNode in mtas:
+                src += self.generateCollectionMaker(memo, argNode, ind)
+
+            src += f'''
+{self.ind(ind + 0)}template <>
+{self.ind(ind + 0)}struct hu::val<{mpt}>
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}static inline {mpt} extract(hu::Node const & node){noexceptStr}
+{self.ind(ind + 1)}{{'''
+
+            if mbt == 'array':
+                elemPlatformType = self.getPodMemberPlatformType(mtas[0])
+                numElems = int(mtas[1].value)
+                endl = ',\n'
+                src += f'''
+{self.ind(ind + 2)}return {mpt} {{
+{endl.join([f'{self.ind(ind + 3)}std::move(hu::val<{elemPlatformType}>::extract(node / {i}))' for i in range(0, numElems)])}
+{self.ind(ind + 2)}}};'''
+
+            elif mbt == 'pair':
+                ept0 = self.getPodMemberPlatformType(mtas[0])
+                ept1 = self.getPodMemberPlatformType(mtas[1])
+                src += f'''
+{self.ind(ind + 2)}return {mpt} {{
+{self.ind(ind + 3)}std::move(hu::val<{ept0}>::extract(node / 0)),
+{self.ind(ind + 3)}std::move(hu::val<{ept1}>::extract(node / 1))
+{self.ind(ind + 2)}}};'''
+
+            elif mbt == 'tuple':
+                epts = [self.getPodMemberPlatformType(mta) for mta in mtas]
+                endl = ',\n'
+                src += f'''
+{self.ind(ind + 2)}return {mpt} {{
+{endl.join([f"{self.ind(ind + 3)}std::move(hu::val<{epts[i]}>::extract(node / {i}))" for i in range(0, len(epts))])}
+{self.ind(ind + 2)}}};'''
+
+            elif mbt == 'vector':
+                elemPlatformType = self.getPodMemberPlatformType(mtas[0])
+                src += f'''
+{self.ind(ind + 2)}{mpt} rv;
+{self.ind(ind + 2)}for (hu::size_t i = 0; i < node.numChildren(); ++i)
+{self.ind(ind + 2)}{{
+{self.ind(ind + 3)}rv.emplace_back(std::move(node / i % hu::val<{elemPlatformType}>{{}}));
+{self.ind(ind + 2)}}}
+{self.ind(ind + 2)}return rv;'''
+
+            elif mbt == 'map':
+                eptkey = self.getPodMemberPlatformType(mtas[0])
+                eptvalue = self.getPodMemberPlatformType(mtas[1])
+                src += f'''
+{self.ind(ind + 2)}{mpt} rv;
+{self.ind(ind + 2)}for (hu::size_t i = 0; i < node.numChildren(); ++i)
+{self.ind(ind + 2)}{{
+{self.ind(ind + 3)}hu::Node elemNode = node / i;
+{self.ind(ind + 3)}rv.emplace(std::move(hu::val<{eptkey}>::extract(elemNode.key().str())),
+{self.ind(ind + 3)}           std::move(elemNode % hu::val<{eptvalue}>{{}}));
+{self.ind(ind + 2)}}}
+{self.ind(ind + 2)}return rv;'''
+
+            elif mbt == 'unordered_map':
+                eptkey = self.getPodMemberPlatformType(mtas[0])
+                eptvalue = self.getPodMemberPlatformType(mtas[1])
+                src += f'''
+{self.ind(ind + 2)}{mpt} rv;
+{self.ind(ind + 2)}for (hu::size_t i = 0; i < node.numChildren(); ++i)
+{self.ind(ind + 2)}{{
+{self.ind(ind + 3)}hu::Node elemNode = node / i;
+{self.ind(ind + 3)}rv.emplace(std::move(hu::val<{eptkey}>::extract(elemNode.key().str())),
+{self.ind(ind + 3)}           std::move(elemNode % hu::val<{eptvalue}>{{}}));
+{self.ind(ind + 2)}}}
+{self.ind(ind + 2)}return rv;'''
+
+            elif mbt == 'optional':
+                ept = self.getPodMemberPlatformType(mtas[0])
+                src += f'''
+{self.ind(ind + 2)}if (! node)
+{self.ind(ind + 3)}{{ return {{}}; }}
+{self.ind(ind + 2)}else if (node.kind() == hu::NodeKind::value && node.value().str() == "_")
+{self.ind(ind + 3)}{{ return {{}}; }}
+{self.ind(ind + 2)}else
+{self.ind(ind + 3)}{{ return node % hu::val<{ept}>{{}}; }}'''
+
+            elif mbt == 'variant':
+                epts = [(self.getPodMemberPlatformType(mta), 
+                        mta['alias'].value if mta['alias'] else self.getPodMemberBaseType(mta)) for mta in mtas]
+                src += f'''
+{self.ind(ind + 2)}hu::Token tok = node.annotation("type");
+{self.ind(ind + 2)}if (! tok)
+{self.ind(ind + 3)}{{ return {{}}; }}
+{self.ind(ind + 2)}std::string_view tokStr;'''
+                for ept, alias in epts:
+                    src += f'''
+{self.ind(ind + 2)}tokStr = tok.str();
+{self.ind(ind + 2)}if (tokStr == "{alias}")
+{self.ind(ind + 3)}{{ return node % hu::val<{ept}>{{}}; }}'''
+                src += f'''
+{self.ind(ind + 2)}return {{}};'''
+
+            src += f'''
+{self.ind(ind + 1)}}}
+{self.ind(ind + 0)}}};
+'''
+        return src
+
+
     def genDefaultConstructor(self, podNode, classScope, ind):
         src = ''
         if not self.getFeature('defaultConstructible') == 'true':
@@ -479,7 +600,6 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)    }{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::ctr()')}
 {self.ind(ind + 0)}}}
-
 '''
         return src
 
@@ -519,7 +639,6 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::ctr(memberwise)')}
 {self.ind(ind + 0)}}}
-
 '''
         return src
 
@@ -589,13 +708,14 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{podNode.key} & operator =({self.getNamespaceScope()}{podNode.key} rhs){self.getNoexceptStr() if self.getFeature('copyable') else ' = delete'};'''
         elif self.getFeature('copyable'):
             src += f'''
-{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key} & {self.getNamespaceScope()}{podNode.key}::operator =({self.getNamespaceScope()}{podNode.key} const & rhs){self.getNoexceptStr()}
+{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key} & {self.getNamespaceScope()}{podNode.key}::operator =({self.getNamespaceScope()}{podNode.key} rhs){self.getNoexceptStr()}
 {{
 {self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::copy assign')}
 {self.ind(ind + 1)}using std::swap;
 {self.ind(ind + 1)}swap(*this, rhs);
 {self.ind(ind + 1)}return *this;
-}}'''
+}}
+'''
         return src
 
 
@@ -606,7 +726,7 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{podNode.key}({podNode.key} && rhs){self.getNoexceptStr() if self.getFeature('movable') else ' = delete'};'''
         elif self.getFeature('movable'):
             src += f'''
-{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}({self.getNamespaceScope()}{podNode.key} const & rhs){self.getNoexceptStr()}
+{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}({self.getNamespaceScope()}{podNode.key} && rhs){self.getNoexceptStr()}
 '''
             firstMember = True
             for memberNode in podNode:
@@ -634,13 +754,14 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key} & operator =({self.getNamespaceScope()}{podNode.key} && rhs){self.getNoexceptStr() if self.getFeature('movable') else ' = delete'};'''
         elif self.getFeature('movable'):
             src += f'''
-{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key} & {self.getNamespaceScope()}{podNode.key}::operator =({self.getNamespaceScope()}{podNode.key} const & rhs){self.getNoexceptStr()}
-{{
+{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key} & {self.getNamespaceScope()}{podNode.key}::operator =({self.getNamespaceScope()}{podNode.key} && rhs){self.getNoexceptStr()}
+{self.ind(ind + 0)}{{
 {self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::move assign')}
 {self.ind(ind + 1)}using std::swap;
 {self.ind(ind + 1)}swap(*this, rhs);
 {self.ind(ind + 1)}return *this;
-}}'''
+{self.ind(ind + 0)}}}
+'''
         return src
 
 
@@ -651,10 +772,11 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{'virtual ' if self.getFeature('virtualDestructor') else ''}~{podNode.key}();'''
         else:
             src += f'''
-{self.ind(ind + 0)}{'virtual ' if self.getFeature('virtualDestructor') else ''}{self.getNamespaceScope()}::{podNode.key}::~{podNode.key}()
+{self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::~{podNode.key}()
 {{
 {self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::dtr')}
-}}'''
+}}
+'''
         return src
 
 
@@ -681,20 +803,29 @@ class CplusplusDef(PlatformDef):
 
         memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
 
-        src += f'''
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}{self.const(memberType)} & get_{memberName}() const{self.getNoexceptStr()};'''
+        else:
+            src += f'''
 {self.ind(ind + 0)}{self.const(memberType)} & {self.getNamespaceScope()}{podNode.key}::get_{memberName}() const{self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}return {memberName};
 {self.ind(ind + 0)}}}
 '''
-        src += f'''
+        if not self.getFeature('nonConstGetters') == 'true':
+            return src
+
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}{memberType} &       get_{memberName}(){self.getNoexceptStr()};'''
+        else:
+            src += f'''
 {self.ind(ind + 0)}{memberType} & {self.getNamespaceScope()}{podNode.key}::get_{memberName}(){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}return {memberName};
 {self.ind(ind + 0)}}}
 '''
-        src += '\n'
-
         return src
 
 
@@ -705,6 +836,16 @@ class CplusplusDef(PlatformDef):
 
         memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
 
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}void set_{memberName}({self.const(memberType)} & newVal){self.getNoexceptStr()};'''
+        else:
+            src += f'''
+{self.ind(ind + 0)}void {self.getNamespaceScope()}{podNode.key}::set_{memberName}({self.const(memberType)} & newVal){self.getNoexceptStr()}
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}{memberName} = newVal;
+{self.ind(ind + 0)}}}
+'''
         return src
 
 
@@ -715,16 +856,44 @@ class CplusplusDef(PlatformDef):
 
         memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
 
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}void set_{memberName}({memberType} && newVal){self.getNoexceptStr()};'''
+        else:
+            src += f'''
+{self.ind(ind + 0)}void {self.getNamespaceScope()}{podNode.key}::set_{memberName}({memberType} && newVal){self.getNoexceptStr()}
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}using std::swap;
+{self.ind(ind + 1)}swap({memberName}, newVal);
+{self.ind(ind + 0)}}}
+'''
         return src
 
 
-    def genStreamInserter(podNode, memberNode, classScope, ind):
+    def genStreamInserter(self, podNode, classScope, ind):
         src = ''
-        if not self.getFeature('serialize') == 'true':
+        if not self.getFeature('serialize') == 'true' or not classScope:
             return src
 
-        memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+        src += f'''
+{self.ind(ind + 0)}friend std::ostream & operator <<(std::ostream & out, {podNode.key} const & obj){self.getNoexceptStr()}
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}out << '{{';'''
+        for memberNode in podNode:
+            memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+            mbt = self.getPodMemberBaseType(memberNode)
 
+            if mbt == 'optional':
+                src += f'''
+{self.ind(ind + 1)}if (obj.{memberName}.has_value()) {{ out << " {memberName}: " << obj.{memberName}; }}'''
+            else:
+                src += f'''
+{self.ind(ind + 1)}out << " {memberName}: " << obj.{memberName};'''
+        src += f'''
+{self.ind(ind + 1)}out << '}}';
+{self.ind(ind + 1)}return out;
+{self.ind(ind + 0)}}}
+'''
         return src
 
 
@@ -732,7 +901,7 @@ class CplusplusDef(PlatformDef):
         headerOnly = self.getSetting('headerOnly') == 'true'
 
         indentChars = self.getIndent()
-        indent = 0
+        ind = 0
         nsIndent = ''
         clIndent = indentChars * 1
         memberIndent = indentChars * 2
@@ -797,13 +966,16 @@ class CplusplusDef(PlatformDef):
             if enum.isTypedef:
                 enum = enum.typedefOf
 
-            src += self.genEnumDeserializer(enumName, enum, indent)
+            src += self.genEnumDeserializer(enumName, enum, ind)
 
         if usingNamespace:
-            src += f'\n{nsIndent}namespace {namespace}\n{nsIndent}{{\n'
-            indent += 1
+            src += f'''
+{self.ind(ind + 0)}namespace {namespace}
+{self.ind(ind + 0)}{{
+'''
+            ind += 1
         
-        src += self.genBomaStreamClass(indent)
+        src += self.genBomaStreamClass(ind)
 
         for enumName, enum in self.enums.getAllEnums().items():
             # Skip any enums that have a typedef referencing them.
@@ -813,103 +985,69 @@ class CplusplusDef(PlatformDef):
             if enum.isTypedef:
                 enum = enum.typedefOf
             
-            src += self.genEnumStreamInserter(enumName, enum, indent)
+            src += self.genEnumStreamInserter(enumName, enum, ind)
 
         # class decl
         memo = set()    # one memo to constrain them all
         for podNode in self.podsNode:
             # static stream inserters for std collections
             for memberNode in podNode:
-                src += self.generateCollectionStreamInserter(memo, memberNode, indent)
+                src += self.generateCollectionStreamInserter(memo, memberNode, ind)
 
             podName = podNode.key
-            src += f'''{clIndent}class {podName}
-{clIndent}{{
-{clIndent}public:'''
-            src += self.genDefaultConstructor(podNode, True, indent + 1)
-            src += self.genMemberwiseConstructor(podNode, True, indent + 1)
-            src += self.genHumonConstructor(podNode, True, indent + 1)
-            src += self.genCopyConstructor(podNode, True, indent + 1)
-            src += self.genCopyAssignment(podNode, True, indent + 1)
-            src += self.genMoveConstructor(podNode, True, indent + 1)
-            src += self.genMoveAssignment(podNode, True, indent + 1)
-            src += self.genDestructor(podNode, True, indent + 1)
-            src += self.genSwap(podNode, True, indent + 1)
+            src += f'''
+{self.ind(ind + 0)}class {podName}
+{self.ind(ind + 0)}{{
+{self.ind(ind + 0)}public:'''
+            src += self.genDefaultConstructor(podNode, True, ind)
+            src += self.genMemberwiseConstructor(podNode, True, ind)
+            src += self.genHumonConstructor(podNode, True, ind)
+            src += self.genCopyConstructor(podNode, True, ind)
+            src += self.genCopyAssignment(podNode, True, ind)
+            src += self.genMoveConstructor(podNode, True, ind)
+            src += self.genMoveAssignment(podNode, True, ind)
+            src += self.genDestructor(podNode, True, ind)
+            src += self.genSwap(podNode, True, ind)
 
-            #for memberNode in podNode:
-            #    src += self.genGet(podNode, memberNode, True, indent + 1)
-            #for memberNode in podNode:
-            #    src += self.genSet(podNode, memberNode, True, indent + 1)
-            #for memberNode in podNode:
-            #    src += self.genSetByMove(podNode, memberNode, True, indent + 1)
-            #for memberNode in podNode:
-            #    src += self.genStreamInserter(podNode, memberNode, True, indent + 1)
+            for memberNode in podNode:
+                src += self.genGet(podNode, memberNode, True, ind)
+            for memberNode in podNode:
+                src += self.genSet(podNode, memberNode, True, ind)
+            for memberNode in podNode:
+                src += self.genSetByMove(podNode, memberNode, True, ind)
 
-            # member getters
-            if self.getFeature('getters') == 'true':
-                for memberNode in podNode:
-                    memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-                    src += f'{memberIndent}{self.const(memberType)} & get_{memberName}() const{noexceptStr};\n'
-                    src += f'{memberIndent}{memberType} &       get_{memberName}(){noexceptStr};\n'
-                src += '\n'
-
-            # member setters
-            if self.getFeature('setters') == 'true':
-                for memberNode in podNode:
-                    memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-                    src += f'{memberIndent}void set_{memberName}({self.const(memberType)} & newVal) noexcept;\n'
-                src += '\n'
-
-            # member setByMovers
-            if self.getFeature('setByMovers') == 'true':
-                for memberNode in podNode:
-                    memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-                    src += f'{memberIndent}void set_{memberName}({memberType} && newVal) noexcept;\n'
-                src += '\n'
-            
-            # stream inserters
-            if self.getFeature('serialize') == 'true':
-                src += f'''        friend std::ostream & operator <<(std::ostream & out, {podName} const & obj)
-        {{
-            out << '{{';'''
-                for memberNode in podNode:
-                    memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-                    mbt = self.getPodMemberBaseType(memberNode)
-
-                    if mbt == 'optional':
-                        src += f'''
-            if (obj.{memberName}.has_value()) {{ out << " {memberName}: " << obj.{memberName}; }}'''
-
-                    else:
-                        src += f'''
-            out << " {memberName}: " << obj.{memberName};'''
-                src += f'''
-            out << '}}';
-            return out;
-        }}
-
-'''
+            src += self.genStreamInserter(podNode, True, ind)
 
             # TODO: other features here
 
             # members
             if self.getFeature('privateMembers') == 'true':
-                src += f'{clIndent}private:\n'
+                src += f'''
+{self.ind(ind + 0)}private:'''
 
             for memberNode in podNode:
                 memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-                src += f'{memberIndent}{memberType} {memberName};\n'
+                src += f'''
+{self.ind(ind + 1)}{memberType} {memberName};'''
 
             # end of class def
-            src += f'{clIndent}}};\n\n'
+            src += f'''
+{self.ind(ind + 0)}}};
+
+'''
             
             # TODO: Use computed path from defs file
             if headerOnly:
-                src += f'#include "inl/_{podName}.inl.hpp"\n'
+                src += f'''
+#include "inl/_{podName}.inl.hpp"
+'''
 
         if usingNamespace:
-            src += f'{nsIndent}}}\n\n'
-            indent -= 1
+            src += f'''
+{self.ind(ind + 0)}}}
+
+'''
+            ind -= 1
 
         if self.getFeature('deserialize') == 'true':
             for podNode in self.podsNode:
@@ -951,128 +1089,6 @@ struct hu::val<{podName}>
             return ''
 
 
-    def generateCollectionMaker(self, memo, memberNode):
-        src = ''
-        mpt = self.getPodMemberPlatformType(memberNode)
-        # TODO: memoize to only make one for each unique platform type
-        if mpt in memo:
-            return ''
-        
-        memo.add(mpt)
-
-        mbt = self.getPodMemberBaseType(memberNode)
-        if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
-            mbpt = self.getPodMemberBasePlatformType(memberNode)
-            mtas = self.getPodMemberTypeArgNodes(memberNode)
-
-            noexcept = self.getSetting('noexcept') == 'true'
-            noexceptStr = ' noexcept' if noexcept else ''
-
-            for argNode in mtas:
-                src += self.generateCollectionMaker(memo, argNode)
-
-            src += f'''
-template <>
-struct hu::val<{mpt}>
-{{
-    static inline {mpt} extract(hu::Node const & node){noexceptStr}
-    {{'''
-
-            if mbt == 'array':
-                elemPlatformType = self.getPodMemberPlatformType(mtas[0])
-                numElems = int(mtas[1].value)
-                endl = ',\n'
-                src += f'''
-        return {mpt} {{
-{endl.join([f'            std::move(hu::val<{elemPlatformType}>::extract(node / {i}))' for i in range(0, numElems)])}
-        }};'''
-
-            elif mbt == 'pair':
-                ept0 = self.getPodMemberPlatformType(mtas[0])
-                ept1 = self.getPodMemberPlatformType(mtas[1])
-                src += f'''
-        return {mpt} {{
-            std::move(hu::val<{ept0}>::extract(node / 0)),
-            std::move(hu::val<{ept1}>::extract(node / 1))
-        }};'''
-
-            elif mbt == 'tuple':
-                epts = [self.getPodMemberPlatformType(mta) for mta in mtas]
-                endl = ',\n'
-                src += f'''
-        return {mpt} {{
-{endl.join([f"            std::move(hu::val<{epts[i]}>::extract(node / {i}))" for i in range(0, len(epts))])}
-        }};'''
-
-            elif mbt == 'vector':
-                elemPlatformType = self.getPodMemberPlatformType(mtas[0])
-                src += f'''
-        {mpt} rv;
-        for (hu::size_t i = 0; i < node.numChildren(); ++i)
-        {{
-            rv.emplace_back(std::move(node / i % hu::val<{elemPlatformType}>{{}}));
-        }}
-        return rv;'''
-
-            elif mbt == 'map':
-                eptkey = self.getPodMemberPlatformType(mtas[0])
-                eptvalue = self.getPodMemberPlatformType(mtas[1])
-                src += f'''
-        {mpt} rv;
-        for (hu::size_t i = 0; i < node.numChildren(); ++i)
-        {{
-            hu::Node elemNode = node / i;
-            rv.emplace(std::move(hu::val<{eptkey}>::extract(elemNode.key().str())),
-                       std::move(elemNode % hu::val<{eptvalue}>{{}}));
-        }}
-        return rv;'''
-
-            elif mbt == 'unordered_map':
-                eptkey = self.getPodMemberPlatformType(mtas[0])
-                eptvalue = self.getPodMemberPlatformType(mtas[1])
-                src += f'''
-        {mpt} rv;
-        for (hu::size_t i = 0; i < node.numChildren(); ++i)
-        {{
-            hu::Node elemNode = node / i;
-            rv.emplace(std::move(hu::val<{eptkey}>::extract(elemNode.key().str())),
-                       std::move(elemNode % hu::val<{eptvalue}>{{}}));
-        }}
-        return rv;'''
-
-            elif mbt == 'optional':
-                ept = self.getPodMemberPlatformType(mtas[0])
-                src += f'''
-        if (! node)
-            {{ return {{}}; }}
-        else if (node.kind() == hu::NodeKind::value && node.value().str() == "_")
-            {{ return {{}}; }}
-        else
-            {{ return node % hu::val<{ept}>{{}}; }}'''
-
-            elif mbt == 'variant':
-                epts = [(self.getPodMemberPlatformType(mta), 
-                        mta['alias'].value if mta['alias'] else self.getPodMemberBaseType(mta)) for mta in mtas]
-                src += f'''
-        hu::Token tok = node.annotation("type");
-        if (! tok)
-            {{ return {{}}; }}
-        std::string_view tokStr;'''
-                for ept, alias in epts:
-                    src += f'''
-        tokStr = tok.str();
-        if (tokStr == "{alias}")
-            {{ return node % hu::val<{ept}>{{}}; }}'''
-                src += f'''
-        return {{}};'''
-
-            src += f'''
-    }}
-}};
-'''
-        return src
-
-
     def generateSrc(self, podName):
         headerOnly = self.getSetting('headerOnly') == 'true'
 
@@ -1102,110 +1118,27 @@ struct hu::val<{mpt}>
         # static builders for std collections
         memo = set()
         for memberNode in podNode:
-            src += self.generateCollectionMaker(memo, memberNode)
+            src += self.generateCollectionMaker(memo, memberNode, 0)
 
-        # constructor
-        endl = '\n'
-        if self.getFeature('defaultConstructible') == 'true':
-            src += self.genDefaultConstructor(podNode, False, 0)
+        src += self.genDefaultConstructor(podNode, False, 0)
+        src += self.genMemberwiseConstructor(podNode, False, 0)
+        src += self.genHumonConstructor(podNode, False, 0)
+        src += self.genCopyConstructor(podNode, False, 0)
+        src += self.genCopyAssignment(podNode, False, 0)
+        src += self.genMoveConstructor(podNode, False, 0)
+        src += self.genMoveAssignment(podNode, False, 0)
+        src += self.genDestructor(podNode, False, 0)
+        src += self.genSwap(podNode, False, 0)
 
-        if self.getFeature('memberwiseConstructible') == 'true':
-            src += self.genMemberwiseConstructor(podNode, False, 0)
+        for memberNode in podNode:
+            src += self.genGet(podNode, memberNode, False, 0)
+        for memberNode in podNode:
+            src += self.genSet(podNode, memberNode, False, 0)
+        for memberNode in podNode:
+            src += self.genSetByMove(podNode, memberNode, False, 0)
 
-        if self.getFeature('deserialize') == 'true':
-            src += self.genHumonConstructor(podNode, False, 0)
+        src += self.genStreamInserter(podNode, False, 0)
 
-        needSwap = False
-
-        if self.getFeature('copyable') == 'true':
-            src += f'''
-{scope}{podName}::{podName}({self.const(podName)} & rhs){noexceptStr}
-: {f",{endl}  ".join([f"{v.key}(rhs.{v.key})" for v in podNode])}
-{{
-{ind1}{self.cavePerson(f'{scope}{podName}::copy ctr')}
-}}
-'''
-            src += f'''
-{scope}{podName} & {scope}{podName}::operator =({scope}{podName} rhs){noexceptStr}
-{{
-{ind1}{self.cavePerson(f'{scope}{podName}::copy assign')}
-{ind1}using std::swap;    
-{ind1}swap(*this, rhs);
-{ind1}return *this;
-}}
-'''
-            needSwap = True
-
-        if self.getFeature('movable') == 'true':
-            src += f'''
-{scope}{podName}::{podName}({scope}{podName} && rhs){noexceptStr}
-: {f",{endl}  ".join([f"{v.key}(std::move(rhs.{v.key}))" for v in podNode])}
-{{
-{ind1}{self.cavePerson(f'{scope}{podName}::move ctr')}
-}}
-'''
-            src += f'''
-{scope}{podName} & {scope}{podName}::operator =({scope}{podName} && rhs){noexceptStr}
-{{
-{ind1}{self.cavePerson(f'{scope}{podName}::move assign')}
-{ind1}using std::swap;
-{ind1}swap(*this, rhs);
-{ind1}return *this;
-}}
-'''
-            needSwap = True
-
-        # dtr
-        src += f'''
-{"virtual " if self.getFeature("virtualDestructor" == "true") else ""}{scope}{podName}::~{podName}()
-{{
-{ind1}{self.cavePerson(f'{scope}{podName}::dtr')}
-}}
-'''
-
-        # member getters
-        if self.getFeature('getters') == 'true':
-            for memberNode in podNode:
-                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-                src += f'''
-{self.const(memberType)} & {scope}{podName}::get_{memberName}() const{noexceptStr}
-{{
-{ind1}return {memberName};
-}}
-'''
-                src += f'''
-{memberType} & {scope}{podName}::get_{memberName}(){noexceptStr}
-{{
-{ind1}return {memberName};
-}}
-'''
-            src += '\n'
-
-        # member setters
-        if self.getFeature('setters') == 'true':
-            for memberNode in podNode:
-                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-                src += f'''
-void {scope}{podName}::set_{memberName}({self.const(memberType)} & newVal) noexcept
-{{
-{ind1}{memberName} = newVal;
-}}
-'''
-            src += '\n'
-
-        # member setByMovers
-        if self.getFeature('setByMovers') == 'true':
-            for memberNode in podNode:
-                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-                src += f'''
-void {scope}{podName}::set_{memberName}({memberType} && newVal) noexcept
-{{
-{ind1}using std::swap;
-{ind1}swap({memberName}, newVal);
-}}
-'''
-            src += '\n'
-        
         return src
 
 
