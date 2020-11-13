@@ -172,8 +172,7 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 2)}out << std::boolalpha;
 {self.ind(ind + 2)}return out;
 {self.ind(ind + 1)}}}
-{self.ind(ind + 0)}}};
-'''
+{self.ind(ind + 0)}}};'''
         return src
 
 
@@ -181,6 +180,8 @@ class CplusplusDef(PlatformDef):
         src = ''
         enumType = enumName.replace('.', '::')
         src += f'''
+
+
 {self.ind(ind + 0)}template <>
 {self.ind(ind + 0)}struct hu::val<{enumType}>
 {self.ind(ind + 0)}{{
@@ -246,9 +247,7 @@ class CplusplusDef(PlatformDef):
         # TODO: define and extract a default value
         src += f'''
 {self.ind(ind + 1)}}}
-{self.ind(ind + 0)}}};
-
-'''
+{self.ind(ind + 0)}}};'''
         return src
 
 
@@ -259,6 +258,8 @@ class CplusplusDef(PlatformDef):
 
         enumType = enumName.replace('.', '::')
         src += f'''
+
+
 {self.ind(ind + 0)}inline std::ostream & operator <<(std::ostream & out, {enumType} obj)
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}using enumIntType = std::underlying_type<{enumType}>::type;'''
@@ -323,8 +324,7 @@ class CplusplusDef(PlatformDef):
 '''
         src += f'''
 {self.ind(ind + 1)}return out;
-{self.ind(ind + 0)}}}
-'''
+{self.ind(ind + 0)}}}'''
         return src
 
 
@@ -356,6 +356,8 @@ class CplusplusDef(PlatformDef):
                 src += self.generateCollectionStreamInserter(memo, argNode, ind)
 
             src += f'''
+
+
 {self.ind(ind + 0)}inline std::ostream & operator <<(std::ostream & out, {mpt} const & obj){noexceptStr}
 {self.ind(ind + 0)}{{'''
 
@@ -467,8 +469,7 @@ class CplusplusDef(PlatformDef):
 
             src += f'''
 {self.ind(ind + 1)}return out;
-{self.ind(ind + 0)}}}
-'''
+{self.ind(ind + 0)}}}'''
         return src
 
 
@@ -493,6 +494,8 @@ class CplusplusDef(PlatformDef):
                 src += self.generateCollectionMaker(memo, argNode, ind)
 
             src += f'''
+
+
 {self.ind(ind + 0)}template <>
 {self.ind(ind + 0)}struct hu::val<{mpt}>
 {self.ind(ind + 0)}{{
@@ -589,8 +592,7 @@ class CplusplusDef(PlatformDef):
 
             src += f'''
 {self.ind(ind + 1)}}}
-{self.ind(ind + 0)}}};
-'''
+{self.ind(ind + 0)}}};'''
         return src
 
 
@@ -601,6 +603,8 @@ class CplusplusDef(PlatformDef):
         makingInserter = self.getFeature('serialize') == 'true'
         if makingSwap or makingInserter:
             src += f'''
+
+
 {self.ind(ind + 0)}class {podNode.key};'''
             if makingSwap:
                 src += f'''
@@ -622,11 +626,12 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{podNode.key}(){self.getNoexceptStr()};'''
         else:
             src += f'''
+
+
 {self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}(){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)    }{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::ctr()')}
-{self.ind(ind + 0)}}}
-'''
+{self.ind(ind + 0)}}}'''
         return src
 
 
@@ -640,6 +645,8 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{podNode.key}('''
         else:
             src += f'''
+
+            
 {self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}('''
 
         firstTime = True
@@ -664,8 +671,7 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}: {f",{endl}{self.ind(ind + 0)}  ".join([f"{v.key}({v.key})" for v in podNode])}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::ctr(memberwise)')}
-{self.ind(ind + 0)}}}
-'''
+{self.ind(ind + 0)}}}'''
         return src
 
 
@@ -679,6 +685,8 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{podNode.key}(hu::Node node){self.getNoexceptStr()};'''
         else:
             src += f'''
+
+
 {self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}(hu::Node node){self.getNoexceptStr()}
 '''
             firstMember = True
@@ -694,8 +702,7 @@ class CplusplusDef(PlatformDef):
             src += f'''
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::ctr from humon')}
-{self.ind(ind + 0)}}}
-'''
+{self.ind(ind + 0)}}}'''
         return src
     
 
@@ -706,6 +713,8 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{podNode.key}({podNode.key} const & rhs){self.getNoexceptStr() if self.getFeature('copyable') else ' = delete'};'''
         elif self.getFeature('copyable'):
             src += f'''
+
+
 {self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}({self.getNamespaceScope()}{podNode.key} const & rhs){self.getNoexceptStr()}
 '''
             firstMember = True
@@ -722,8 +731,7 @@ class CplusplusDef(PlatformDef):
             src += f'''
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::copy ctr')}
-{self.ind(ind + 0)}}}
-'''
+{self.ind(ind + 0)}}}'''
         return src
 
 
@@ -734,14 +742,15 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{podNode.key} & operator =({self.getNamespaceScope()}{podNode.key} rhs){self.getNoexceptStr() if self.getFeature('copyable') else ' = delete'};'''
         elif self.getFeature('copyable'):
             src += f'''
+
+
 {self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key} & {self.getNamespaceScope()}{podNode.key}::operator =({self.getNamespaceScope()}{podNode.key} rhs){self.getNoexceptStr()}
 {{
 {self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::copy assign')}
 {self.ind(ind + 1)}using std::swap;
 {self.ind(ind + 1)}swap(*this, rhs);
 {self.ind(ind + 1)}return *this;
-}}
-'''
+}}'''
         return src
 
 
@@ -752,6 +761,8 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{podNode.key}({podNode.key} && rhs){self.getNoexceptStr() if self.getFeature('movable') else ' = delete'};'''
         elif self.getFeature('movable'):
             src += f'''
+
+
 {self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}({self.getNamespaceScope()}{podNode.key} && rhs){self.getNoexceptStr()}
 '''
             firstMember = True
@@ -768,8 +779,7 @@ class CplusplusDef(PlatformDef):
             src += f'''
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::move ctr')}
-{self.ind(ind + 0)}}}
-'''
+{self.ind(ind + 0)}}}'''
         return src
 
 
@@ -780,14 +790,15 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key} & operator =({self.getNamespaceScope()}{podNode.key} && rhs){self.getNoexceptStr() if self.getFeature('movable') else ' = delete'};'''
         elif self.getFeature('movable'):
             src += f'''
+
+
 {self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key} & {self.getNamespaceScope()}{podNode.key}::operator =({self.getNamespaceScope()}{podNode.key} && rhs){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::move assign')}
 {self.ind(ind + 1)}using std::swap;
 {self.ind(ind + 1)}swap(*this, rhs);
 {self.ind(ind + 1)}return *this;
-{self.ind(ind + 0)}}}
-'''
+{self.ind(ind + 0)}}}'''
         return src
 
 
@@ -798,11 +809,12 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{'virtual ' if self.getFeature('virtualDestructor') else ''}~{podNode.key}();'''
         else:
             src += f'''
+
+
 {self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::~{podNode.key}()
 {{
 {self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::dtr')}
-}}
-'''
+}}'''
         return src
 
 
@@ -817,11 +829,12 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}friend void {self.getNamespaceScope()}swap({self.getNamespaceScope()}{podNode.key} & lhs, {self.getNamespaceScope()}{podNode.key} & rhs){self.getNoexceptStr()};'''
         else:
             src += f'''
+
+
 {self.ind(ind + 0)}void {self.getNamespaceScope()}swap({self.getNamespaceScope()}{podNode.key} & lhs, {self.getNamespaceScope()}{podNode.key} & rhs){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}using std::swap;
-{"".join([f"{self.ind(ind + 1)}swap(lhs.{v.key}, rhs.{v.key});{endl}" for v in podNode])}{self.ind(ind + 0)}}}
-'''
+{"".join([f"{self.ind(ind + 1)}swap(lhs.{v.key}, rhs.{v.key});{endl}" for v in podNode])}{self.ind(ind + 0)}}}'''
         return src
 
 
@@ -837,11 +850,12 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{self.const(memberType)} & get_{memberName}() const{self.getNoexceptStr()};'''
         else:
             src += f'''
+
+
 {self.ind(ind + 0)}{self.const(memberType)} & {self.getNamespaceScope()}{podNode.key}::get_{memberName}() const{self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}return {memberName};
-{self.ind(ind + 0)}}}
-'''
+{self.ind(ind + 0)}}}'''
         if not self.getFeature('nonConstGetters') == 'true':
             return src
 
@@ -850,11 +864,12 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}{memberType} &       get_{memberName}(){self.getNoexceptStr()};'''
         else:
             src += f'''
+
+
 {self.ind(ind + 0)}{memberType} & {self.getNamespaceScope()}{podNode.key}::get_{memberName}(){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}return {memberName};
-{self.ind(ind + 0)}}}
-'''
+{self.ind(ind + 0)}}}'''
         return src
 
 
@@ -870,11 +885,12 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}void set_{memberName}({self.const(memberType)} & newVal){self.getNoexceptStr()};'''
         else:
             src += f'''
+
+
 {self.ind(ind + 0)}void {self.getNamespaceScope()}{podNode.key}::set_{memberName}({self.const(memberType)} & newVal){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}{memberName} = newVal;
-{self.ind(ind + 0)}}}
-'''
+{self.ind(ind + 0)}}}'''
         return src
 
 
@@ -890,12 +906,13 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}void set_{memberName}({memberType} && newVal){self.getNoexceptStr()};'''
         else:
             src += f'''
+
+
 {self.ind(ind + 0)}void {self.getNamespaceScope()}{podNode.key}::set_{memberName}({memberType} && newVal){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}using std::swap;
 {self.ind(ind + 1)}swap({memberName}, newVal);
-{self.ind(ind + 0)}}}
-'''
+{self.ind(ind + 0)}}}'''
         return src
 
 
@@ -909,6 +926,8 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}friend std::ostream & operator <<(std::ostream & out, {podNode.key} const & obj){self.getNoexceptStr()};'''
         else:
             src += f'''
+
+
 {self.ind(ind + 0)}std::ostream & {self.getNamespaceScope()}operator <<(std::ostream & out, {podNode.key} const & obj){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}out << '{{';'''
@@ -925,8 +944,7 @@ class CplusplusDef(PlatformDef):
             src += f'''
 {self.ind(ind + 1)}out << '}}';
 {self.ind(ind + 1)}return out;
-{self.ind(ind + 0)}}}
-'''
+{self.ind(ind + 0)}}}'''
         return src
 
 
@@ -952,47 +970,58 @@ class CplusplusDef(PlatformDef):
 // your changes.
 
 #include <cstring>
-#include <type_traits>
-'''
+#include <type_traits>'''
 
         self.seeUsedTypes()
 
         for typeName in self.seenTypes:
             if typeName == 'string':
-                src += '#include <string>\n'
+                src += '''
+#include <string>'''
             if typeName == 'string_view':
-                src += '#include <string_view>\n'
+                src += '''
+#include <string_view>'''
             elif typeName == 'array':
-                src += '#include <array>\n'
+                src += '''
+#include <array>'''
             elif typeName == 'pair':
-                src += '#include <utility>\n'
+                src += '''
+#include <utility>'''
             elif typeName == 'tuple':
-                src += '#include <tuple>\n'
+                src += '''
+#include <tuple>'''
             elif typeName == 'vector':
-                src += '#include <vector>\n'
+                src += '''
+#include <vector>'''
             elif typeName == 'map':
-                src += '#include <map>\n'
+                src += '''
+#include <map>'''
             elif typeName == 'unordered_map':
-                src += '#include <unordered_map>\n'
+                src += '''
+#include <unordered_map>'''
             elif typeName == 'optional':
-                src += '#include <optional>\n'
+                src += '''
+#include <optional>'''
             elif typeName == 'variant':
-                src += '#include <variant>\n'
+                src += '''
+#include <variant>'''
 
         if self.getFeature('deserialize') == 'true':
-                src += '#include <humon/humon.hpp>\n'
+                src += '''
+#include <humon/humon.hpp>'''
 
         incFiles = self.getIncludeFiles()
         if incFiles:
             for incFile, isSystemInclude in incFiles:
                 if isSystemInclude:
-                    src += f'#include <{incFile}>\n'
+                    src += f'''
+#include <{incFile}>'''
                 else:
                     headerDir = os.path.dirname(self.getOutputPath('header'))
                     includePath = os.path.join(os.path.dirname(self.defPath), incFile)
                     relativeIncPath = makeRelativePath(headerDir, includePath)
-                    src += f'#include "{relativeIncPath}"\n'
-        src += '\n'
+                    src += f'''
+#include "{relativeIncPath}"'''
 
         # enum helpers
         for enumName, enum in self.enums.getAllEnums().items():
@@ -1007,9 +1036,10 @@ class CplusplusDef(PlatformDef):
 
         if usingNamespace:
             src += f'''
+
+
 {self.ind(ind + 0)}namespace {namespace}
-{self.ind(ind + 0)}{{
-'''
+{self.ind(ind + 0)}{{'''
             ind += 1
         
         src += self.genBomaStreamClass(ind)
@@ -1073,16 +1103,12 @@ class CplusplusDef(PlatformDef):
             # end of class def
             ind -= 1
             src += f'''
-{self.ind(ind + 0)}}};
-
-'''
+{self.ind(ind + 0)}}};'''
             
         if usingNamespace:
             ind -= 1
             src += f'''
-{self.ind(ind + 0)}}}
-
-'''
+{self.ind(ind + 0)}}}'''
             ind -= 1
 
         if self.getFeature('deserialize') == 'true':
@@ -1092,6 +1118,7 @@ class CplusplusDef(PlatformDef):
                     podName = f'{namespace}::{podName}'
                 src += f'''
 
+
 template<>
 struct hu::val<{podName}>
 {{
@@ -1099,12 +1126,14 @@ struct hu::val<{podName}>
     {{
         return {podName}(node);
     }}
-}};
-'''
+}};'''
 
-        for podNode in self.podsNode:
-            # TODO: Use computed path from defs file
-            if headerOnly:
+        if headerOnly:
+            src += f'''
+
+'''
+            for podNode in self.podsNode:
+                # TODO: Use computed path from defs file
                 src += f'''
 #include "inl/_{podNode.key}.inl.hpp"'''
 
@@ -1139,14 +1168,19 @@ struct hu::val<{podName}>
         if usingNamespace:
             scope = namespace + '::'
 
-        src = ''
+        src = '''// THIS IS A GENERATED FILE. It is a Boilermaker artifact.
+// Do not bother modifying this file, as your build process will overwrite
+// your changes.'''
+
         if self.getSetting('cavepersonCtrs') == 'true':
-            src += '#include <iostream>\n'
+            src += '''
+#include <iostream>'''
 
         if not headerOnly:
             headerPath = self.getOutputPath('header')
             headerFile = os.path.basename(headerPath)
-            src += f'''#include "../inc/{headerFile}"\n'''
+            src += f'''
+#include "../inc/{headerFile}"'''
 
         podNode = self.getPodNode(podName)
 
