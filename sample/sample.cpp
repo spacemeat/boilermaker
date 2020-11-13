@@ -1,6 +1,6 @@
+#include <iostream>
 #include "sample.hpp"
 #include "gen-cpp/inc/og.hpp"
-#include <iostream>
 
 
 int main()

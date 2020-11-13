@@ -37,6 +37,7 @@ class CplusplusDef(PlatformDef):
     def __init__(self, node, defPath, backupDef=None, podsNode=None):
         super().__init__(node, defPath, backupDef, podsNode)
         self.seenTypes = []
+        self.collectionMakerMemo = set()
 
 
     def getIncludeFiles(self):
@@ -139,6 +140,13 @@ class CplusplusDef(PlatformDef):
 
     def ind(self, numTabs):
         return self.getIndent() * numTabs
+
+
+    def cavePerson(self, msg):
+        if self.getSetting('cavepersonCtrs') == 'true':
+            return f'std::cout << "{msg}\\n";'
+        else:
+            return ''
 
 
     def getNamespaceScope(self):
@@ -586,6 +594,24 @@ class CplusplusDef(PlatformDef):
         return src
 
 
+    def genFriendDecls(self, podNode, ind):
+        src = ''
+
+        makingSwap = self.getFeature('copyable') == 'true' or self.getFeature('movable') == 'true'
+        makingInserter = self.getFeature('serialize') == 'true'
+        if makingSwap or makingInserter:
+            src += f'''
+{self.ind(ind + 0)}class {podNode.key};'''
+            if makingSwap:
+                src += f'''
+{self.ind(ind + 0)}void swap({podNode.key} & lhs, {podNode.key} & rhs){self.getNoexceptStr()};'''
+            if makingInserter:
+                src += f'''
+{self.ind(ind + 0)}std::ostream & operator <<(std::ostream & out, {podNode.key} const & obj){self.getNoexceptStr()};'''
+        return src + f'''
+'''
+
+
     def genDefaultConstructor(self, podNode, classScope, ind):
         src = ''
         if not self.getFeature('defaultConstructible') == 'true':
@@ -785,10 +811,13 @@ class CplusplusDef(PlatformDef):
         if not self.getFeature('copyable') == 'true' and not self.getFeature('movable') == 'true':
             return src
         
+        endl = '\n'
         if classScope:
-            endl = '\n'
             src += f'''
-{self.ind(ind + 0)}friend void swap({podNode.key} & lhs, {podNode.key} & rhs){self.getNoexceptStr()}
+{self.ind(ind + 0)}friend void {self.getNamespaceScope()}swap({self.getNamespaceScope()}{podNode.key} & lhs, {self.getNamespaceScope()}{podNode.key} & rhs){self.getNoexceptStr()};'''
+        else:
+            src += f'''
+{self.ind(ind + 0)}void {self.getNamespaceScope()}swap({self.getNamespaceScope()}{podNode.key} & lhs, {self.getNamespaceScope()}{podNode.key} & rhs){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}using std::swap;
 {"".join([f"{self.ind(ind + 1)}swap(lhs.{v.key}, rhs.{v.key});{endl}" for v in podNode])}{self.ind(ind + 0)}}}
@@ -872,24 +901,28 @@ class CplusplusDef(PlatformDef):
 
     def genStreamInserter(self, podNode, classScope, ind):
         src = ''
-        if not self.getFeature('serialize') == 'true' or not classScope:
+        if not self.getFeature('serialize') == 'true':
             return src
 
-        src += f'''
-{self.ind(ind + 0)}friend std::ostream & operator <<(std::ostream & out, {podNode.key} const & obj){self.getNoexceptStr()}
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}friend std::ostream & operator <<(std::ostream & out, {podNode.key} const & obj){self.getNoexceptStr()};'''
+        else:
+            src += f'''
+{self.ind(ind + 0)}std::ostream & {self.getNamespaceScope()}operator <<(std::ostream & out, {podNode.key} const & obj){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}out << '{{';'''
-        for memberNode in podNode:
-            memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-            mbt = self.getPodMemberBaseType(memberNode)
+            for memberNode in podNode:
+                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+                mbt = self.getPodMemberBaseType(memberNode)
 
-            if mbt == 'optional':
-                src += f'''
+                if mbt == 'optional':
+                    src += f'''
 {self.ind(ind + 1)}if (obj.{memberName}.has_value()) {{ out << " {memberName}: " << obj.{memberName}; }}'''
-            else:
-                src += f'''
+                else:
+                    src += f'''
 {self.ind(ind + 1)}out << " {memberName}: " << obj.{memberName};'''
-        src += f'''
+            src += f'''
 {self.ind(ind + 1)}out << '}}';
 {self.ind(ind + 1)}return out;
 {self.ind(ind + 0)}}}
@@ -914,7 +947,11 @@ class CplusplusDef(PlatformDef):
         namespace = self.getSetting('namespace')
         usingNamespace = namespace != ''
 
-        src = f'''#include <cstring>
+        src = f'''// THIS IS A GENERATED FILE. It is a Boilermaker artifact.
+// Do not bother modifying this file, as your build process will overwrite
+// your changes.
+
+#include <cstring>
 #include <type_traits>
 '''
 
@@ -994,11 +1031,14 @@ class CplusplusDef(PlatformDef):
             for memberNode in podNode:
                 src += self.generateCollectionStreamInserter(memo, memberNode, ind)
 
+            src += self.genFriendDecls(podNode, ind)
+
             podName = podNode.key
             src += f'''
 {self.ind(ind + 0)}class {podName}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 0)}public:'''
+            ind += 1
             src += self.genDefaultConstructor(podNode, True, ind)
             src += self.genMemberwiseConstructor(podNode, True, ind)
             src += self.genHumonConstructor(podNode, True, ind)
@@ -1031,18 +1071,14 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 1)}{memberType} {memberName};'''
 
             # end of class def
+            ind -= 1
             src += f'''
 {self.ind(ind + 0)}}};
 
 '''
             
-            # TODO: Use computed path from defs file
-            if headerOnly:
-                src += f'''
-#include "inl/_{podName}.inl.hpp"
-'''
-
         if usingNamespace:
+            ind -= 1
             src += f'''
 {self.ind(ind + 0)}}}
 
@@ -1055,6 +1091,7 @@ class CplusplusDef(PlatformDef):
                 if usingNamespace:
                     podName = f'{namespace}::{podName}'
                 src += f'''
+
 template<>
 struct hu::val<{podName}>
 {{
@@ -1063,8 +1100,13 @@ struct hu::val<{podName}>
         return {podName}(node);
     }}
 }};
-
 '''
+
+        for podNode in self.podsNode:
+            # TODO: Use computed path from defs file
+            if headerOnly:
+                src += f'''
+#include "inl/_{podNode.key}.inl.hpp"'''
 
         return src
 
@@ -1080,13 +1122,6 @@ struct hu::val<{podName}>
         f = open(f"{headerPath}", 'wt')
         print(src, file = f)
         f.close()
-
-
-    def cavePerson(self, msg):
-        if self.getSetting('cavepersonCtrs') == 'true':
-            return f'std::cout << "{msg}\\n";'
-        else:
-            return ''
 
 
     def generateSrc(self, podName):
@@ -1111,14 +1146,15 @@ struct hu::val<{podName}>
         if not headerOnly:
             headerPath = self.getOutputPath('header')
             headerFile = os.path.basename(headerPath)
-            src += f'#include "../inc/{headerFile}"\n'
+            src += f'''#include "../inc/{headerFile}"\n'''
 
         podNode = self.getPodNode(podName)
 
         # static builders for std collections
-        memo = set()
+        if not self.getSetting('headerOnly') == 'true':
+            self.collectionMakerMemo = set()
         for memberNode in podNode:
-            src += self.generateCollectionMaker(memo, memberNode, 0)
+            src += self.generateCollectionMaker(self.collectionMakerMemo, memberNode, 0)
 
         src += self.genDefaultConstructor(podNode, False, 0)
         src += self.genMemberwiseConstructor(podNode, False, 0)

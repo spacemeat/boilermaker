@@ -25,7 +25,7 @@
                 namespace: og
                 const: east
                 noexcept: true
-                headerOnly: false
+                headerOnly: true
                 cavepersonCtrs: true
             }
             features: {
