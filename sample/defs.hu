@@ -29,11 +29,9 @@
                 cavepersonCtrs: true
             }
             features: {
-                defaultConstructible: true
-                memberwiseConstructible: true
-                virtualDestructor: false
-                copyable: true
-                setters: true
+                copyable: false
+                setters: false
+                setByMovers: false
                 getters: true
                 privateMembers: true
             }

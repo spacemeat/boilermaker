@@ -4,4 +4,4 @@ if [ -d ./humon ]; then
     rm -r ./humon
 fi
 
-cp -r ../humon/python/humon ./humon
+cp -r ../humon-py/humon ./humon

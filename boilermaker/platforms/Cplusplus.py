@@ -29,10 +29,6 @@ def makeRelativePath(sourceDir, destinationPath):
     return os.path.join(relativePath, str(PurePath(destinationPath).relative_to(common)))
 
 
-def ind(indentChars, num):
-    return indentChars * num
-
-
 class CplusplusDef(PlatformDef):
     def __init__(self, node, defPath, backupDef=None, podsNode=None):
         super().__init__(node, defPath, backupDef, podsNode)
@@ -505,10 +501,9 @@ class CplusplusDef(PlatformDef):
             if mbt == 'array':
                 elemPlatformType = self.getPodMemberPlatformType(mtas[0])
                 numElems = int(mtas[1].value)
-                endl = ',\n'
                 src += f'''
 {self.ind(ind + 2)}return {mpt} {{
-{endl.join([f'{self.ind(ind + 3)}std::move(hu::val<{elemPlatformType}>::extract(node / {i}))' for i in range(0, numElems)])}
+{f",{endl}".join([f'{self.ind(ind + 3)}std::move(hu::val<{elemPlatformType}>::extract(node / {i}))' for i in range(0, numElems)])}
 {self.ind(ind + 2)}}};'''
 
             elif mbt == 'pair':
@@ -522,7 +517,6 @@ class CplusplusDef(PlatformDef):
 
             elif mbt == 'tuple':
                 epts = [self.getPodMemberPlatformType(mta) for mta in mtas]
-                endl = ',\n'
                 src += f'''
 {self.ind(ind + 2)}return {mpt} {{
 {endl.join([f"{self.ind(ind + 3)}std::move(hu::val<{epts[i]}>::extract(node / {i}))" for i in range(0, len(epts))])}
@@ -630,7 +624,7 @@ class CplusplusDef(PlatformDef):
 
 {self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}(){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
-{self.ind(ind + 1)    }{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::ctr()')}
+{self.ind(ind + 1)}{self.cavePerson(f'{self.getNamespaceScope()}{podNode.key}::ctr()')}
 {self.ind(ind + 0)}}}'''
         return src
 
@@ -646,7 +640,7 @@ class CplusplusDef(PlatformDef):
         else:
             src += f'''
 
-            
+
 {self.ind(ind + 0)}{self.getNamespaceScope()}{podNode.key}::{podNode.key}('''
 
         firstTime = True
@@ -823,7 +817,6 @@ class CplusplusDef(PlatformDef):
         if not self.getFeature('copyable') == 'true' and not self.getFeature('movable') == 'true':
             return src
         
-        endl = '\n'
         if classScope:
             src += f'''
 {self.ind(ind + 0)}friend void {self.getNamespaceScope()}swap({self.getNamespaceScope()}{podNode.key} & lhs, {self.getNamespaceScope()}{podNode.key} & rhs){self.getNoexceptStr()};'''
@@ -879,7 +872,6 @@ class CplusplusDef(PlatformDef):
             return src
 
         memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-
         if classScope:
             src += f'''
 {self.ind(ind + 0)}void set_{memberName}({self.const(memberType)} & newVal){self.getNoexceptStr()};'''
@@ -928,7 +920,7 @@ class CplusplusDef(PlatformDef):
             src += f'''
 
 
-{self.ind(ind + 0)}std::ostream & {self.getNamespaceScope()}operator <<(std::ostream & out, {podNode.key} const & obj){self.getNoexceptStr()}
+{self.ind(ind + 0)}std::ostream & {self.getNamespaceScope()}operator <<(std::ostream & out, {self.getNamespaceScope()}{podNode.key} const & obj){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}out << '{{';'''
             for memberNode in podNode:
@@ -950,22 +942,16 @@ class CplusplusDef(PlatformDef):
 
     def generateHeader(self):
         headerOnly = self.getSetting('headerOnly') == 'true'
-
-        indentChars = self.getIndent()
-        ind = 0
-        nsIndent = ''
-        clIndent = indentChars * 1
-        memberIndent = indentChars * 2
-
-        ic = self.getIndent()
-
         eastConst = self.getSetting('const') == 'east'
         noexcept = self.getSetting('noexcept') == 'true'
         noexceptStr = ' noexcept' if noexcept else ''
         namespace = self.getSetting('namespace')
         usingNamespace = namespace != ''
+        ind = 0
 
-        src = f'''// THIS IS A GENERATED FILE. It is a Boilermaker artifact.
+        src = f'''#pragma once
+
+// THIS IS A GENERATED FILE. It is a Boilermaker artifact.
 // Do not bother modifying this file, as your build process will overwrite
 // your changes.
 
@@ -1091,6 +1077,7 @@ class CplusplusDef(PlatformDef):
             # TODO: other features here
 
             # members
+            ind -= 1
             if self.getFeature('privateMembers') == 'true':
                 src += f'''
 {self.ind(ind + 0)}private:'''
@@ -1101,7 +1088,6 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 1)}{memberType} {memberName};'''
 
             # end of class def
-            ind -= 1
             src += f'''
 {self.ind(ind + 0)}}};'''
             
@@ -1156,10 +1142,6 @@ struct hu::val<{podName}>
     def generateSrc(self, podName):
         headerOnly = self.getSetting('headerOnly') == 'true'
 
-        indentChars = self.getIndent()
-        ind1 =     indentChars * 1
-        ind____2 = indentChars * 2
-
         eastConst = self.getSetting('const') == 'east'
         noexcept = self.getSetting('noexcept') == 'true'
         noexceptStr = ' noexcept' if noexcept else ''
@@ -1174,6 +1156,7 @@ struct hu::val<{podName}>
 
         if self.getSetting('cavepersonCtrs') == 'true':
             src += '''
+
 #include <iostream>'''
 
         if not headerOnly:
