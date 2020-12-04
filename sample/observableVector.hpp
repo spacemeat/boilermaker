@@ -9,7 +9,7 @@
 namespace og
 {
     template<typename T, typename Allocator = std::allocator<T>>
-    class ObservableVector : public Observable
+    class ObservableVector : public Observable<ObservableVector<T, Allocator>>
     {
     public:
         enum class ChangeType
@@ -21,6 +21,7 @@ namespace og
         };
 
         using vec_t                     = std::vector<T, Allocator>;
+        using obvec_t                   = ObservableVector<T, Allocator>;
         using value_type 	            = typename vec_t::value_type;
         using allocator_type 	        = typename vec_t::allocator_type;
         using size_type 	            = typename vec_t::size_type;
@@ -34,51 +35,52 @@ namespace og
         using reverse_iterator 	        = typename vec_t::reverse_iterator;
         using const_reverse_iterator 	= typename vec_t::const_reverse_iterator;
 
-        using NotifyFn                  = Observable::NotifyFn;
+        using NotifyFn                  = typename Observable<obvec_t>::NotifyFn;
         using ChangeLogEntry            = std::tuple<ChangeType, size_type, size_type>;
 
         // TODO: Add the NotifyFn to each constructor
         // TODO: Add constructor for Humon pass-through
-        ObservableVector<T, Allocator>() noexcept(noexcept(Allocator()))
+        ObservableVector() noexcept(noexcept(Allocator()))
         : vect() { }
 
-        explicit ObservableVector<T, Allocator>(Allocator const & alloc) noexcept
+        explicit ObservableVector(Allocator const & alloc) noexcept
         : vect(alloc) { }
 
-        ObservableVector<T, Allocator>(size_type count, T const & value, Allocator const & alloc = Allocator())
+        ObservableVector(size_type count, T const & value, Allocator const & alloc = Allocator())
         : vect(count, value, alloc) { }
 
-        explicit ObservableVector<T, Allocator>(size_type count, Allocator const & alloc = Allocator())
+        explicit ObservableVector(size_type count, Allocator const & alloc = Allocator())
         : vect(count, alloc) { }
 
         template <class InputIt>
-        ObservableVector<T, Allocator>(InputIt first, InputIt last, Allocator const & alloc = Allocator())
+        ObservableVector(InputIt first, InputIt last, Allocator const & alloc = Allocator())
         : vect(std::forward<InputIt>(first), std::forward<InputIt>(last), alloc) { }
-        ObservableVector<T, Allocator>(ObservableVector<T, Allocator> const & other)
-        : vect(other.vect) { }
 
-        ObservableVector<T, Allocator>(ObservableVector<T, Allocator> const & other, Allocator const & alloc)
-        : vect(other.vect, alloc) { }
+        ObservableVector(obvec_t const & other)
+        : Observable<obvec_t>(other), vect(other.vect) { }
 
-        ObservableVector<T, Allocator>(ObservableVector<T, Allocator> && other) noexcept
-        : vect(other.vect) { }  // TODO: std::move(other.vect) ?
+        ObservableVector(obvec_t const & other, Allocator const & alloc)
+        : Observable<obvec_t>(other), vect(other.vect, alloc) { }
 
-        ObservableVector<T, Allocator>(ObservableVector<T, Allocator> && other, Allocator const & alloc)
-        : vect(other.vect, alloc) { } // TODO: std::move(other.vect) ?
+        ObservableVector(obvec_t && other) noexcept
+        : Observable<obvec_t>(other), vect(std::move(other.vect)) { }
 
-        ObservableVector<T, Allocator>(std::initializer_list<T> init, Allocator const & alloc = Allocator())
+        ObservableVector(obvec_t && other, Allocator const & alloc)
+        : Observable<obvec_t>(other), vect(std::move(other.vect), alloc) { }
+
+        ObservableVector(std::initializer_list<T> init, Allocator const & alloc = Allocator())
         : vect(init, alloc) { }
 
-        ObservableVector<T, Allocator>(std::vector<T, Allocator> const & other)
+        ObservableVector(vec_t const & other)
         : vect(other) { }
 
-        ObservableVector<T, Allocator>(std::vector<T, Allocator> const & other, Allocator const & alloc)
+        ObservableVector(vec_t const & other, Allocator const & alloc)
         : vect(other, alloc) { }
 
-        ObservableVector<T, Allocator>(std::vector<T, Allocator> && other) noexcept
+        ObservableVector(vec_t && other) noexcept
         : vect(other) { }   // TODO: std::move(other) ?
 
-        ObservableVector<T, Allocator>(std::vector<T, Allocator> && other, Allocator const & alloc)
+        ObservableVector(vec_t && other, Allocator const & alloc)
         : vect(other, alloc) { } // TODO: std::move(other) ?
 
     private:
@@ -89,12 +91,13 @@ namespace og
 
             // essentially reindex the change notifier for new or moved elements
             // TODO: This is for observeChildDiffs only
-            if constexpr (std::is_base_of_v<Observable, T>)
+            if constexpr (std::is_base_of_v<Observable<T>, T>)
             {
                 switch(changeType)
                 {
                 case ChangeType::ElementChanged:
-                    vect[index].setNotifyFn([this, index]{ this->onChange(ChangeType::ElementChanged, index, 1); });
+                    std::cout << "! Element changed: " << index << "\n";
+                    vect[index].setNotifyFn([this, index](T& ){ this->onChange(ChangeType::ElementChanged, index, 1); });
                     break;
                 case ChangeType::ElementAdded:
                     observeElements(index);
@@ -109,20 +112,20 @@ namespace og
             }
 
             // let any observers of this vector know that the vector has changes
-            Observable::notifyChange();
+            Observable<obvec_t>::notifyChange(*this);
         }
 
         // TODO: This is for observeChildDiffs only
         void observeElements(size_type startingAt)
         {
-            if constexpr (std::is_base_of_v<Observable, T>)
+            if constexpr (std::is_base_of_v<Observable<T>, T>)
             {
-                T * observableElement = vect.data() + startingAt;
+                T * observableElement = vect.data();
                 for (size_type i = startingAt; i < vect.size(); ++i)
                 {
-                    observableElement->setNotifyFn([this, i]{ this->onChange(ChangeType::ElementChanged, i); });
+                    std::cout << "observeElements staringAt: " << startingAt << "; index: " << i << "\n";
+                    (observableElement + i)->setNotifyFn([this, i](T &){ this->onChange(ChangeType::ElementChanged, i); });
                 }
-                observableElement += 1;
             }
         }
 
@@ -142,7 +145,7 @@ namespace og
             changeLog.clear();
 
             // TODO: only for observeChildDiffs ?
-            if constexpr (std::is_base_of_v<Observable, T>)
+            if constexpr (std::is_base_of_v<Observable<T>, T>)
             {
                 for (auto & elem : vect)
                 {
@@ -151,7 +154,7 @@ namespace og
             }
         }
 
-        ObservableVector<T, Allocator> & operator =(ObservableVector<T, Allocator> const & other)
+        obvec_t & operator =(obvec_t const & other)
         {
             auto num = vect.size();
             vect = other.vect;
@@ -159,7 +162,7 @@ namespace og
             return * this;
         }
 
-        ObservableVector<T, Allocator> & operator =(vec_t const & other)
+        obvec_t & operator =(vec_t const & other)
         {
             auto num = vect.size();
             vect = other;
@@ -167,7 +170,7 @@ namespace og
             return * this;
         }
         
-        ObservableVector<T, Allocator> & operator =(ObservableVector<T, Allocator> && other) noexcept(
+        obvec_t & operator =(obvec_t && other) noexcept(
                std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value
             || std::allocator_traits<allocator_type>::is_always_equal::value)
         {
@@ -177,7 +180,7 @@ namespace og
             return * this;
         }
         
-        ObservableVector<T, Allocator> & operator =(vec_t && other) noexcept(
+        obvec_t & operator =(vec_t && other) noexcept(
                std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value
             || std::allocator_traits<allocator_type>::is_always_equal::value)
         {
@@ -187,7 +190,7 @@ namespace og
             return * this;
         }
         
-        ObservableVector<T, Allocator> & operator =(std::initializer_list<T> ilist)
+        obvec_t & operator =(std::initializer_list<T> ilist)
         {
             auto num = vect.size();
             vect = ilist;
@@ -360,7 +363,7 @@ namespace og
         void clear() noexcept
         {
             vect.clear();
-            Observable::notifyChange();
+            Observable<obvec_t>::notifyChange();
         }
 
         const_iterator insert(const_iterator pos, T const & value)
@@ -493,7 +496,7 @@ namespace og
             onChange(ChangeType::ElementsReplaced, other.size());
         }
 
-        void swap(ObservableVector<T, Allocator> & other) noexcept(
+        void swap(obvec_t & other) noexcept(
                std::allocator_traits<allocator_type>::propagate_on_container_swap::value
             || std::allocator_traits<allocator_type>::is_always_equal::value)
         {

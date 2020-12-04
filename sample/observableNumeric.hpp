@@ -10,7 +10,7 @@ namespace og
 {
     template<typename T, typename std::enable_if<
         std::is_arithmetic_v<T>, T>::type * = nullptr>
-    class ObservableNumeric : public Observable
+    class ObservableNumeric : public Observable<ObservableNumeric<T>>
     {
     public:
         ObservableNumeric() noexcept
@@ -20,6 +20,12 @@ namespace og
             std::is_convertible_v<U, T>, U> * = nullptr>
         ObservableNumeric(U newValue) noexcept
         : value(newValue) { }
+
+        ObservableNumeric(ObservableNumeric<T> const & other)
+        : Observable<ObservableNumeric<T>>(other), value(other.value) { }
+
+        ObservableNumeric(ObservableNumeric<T> && other)
+        : Observable<ObservableNumeric<T>>(other), value(other.value) { }
 
         template<typename U, typename std::enable_if_t<
             std::is_arithmetic_v<U>, U> * = nullptr>
@@ -39,12 +45,14 @@ namespace og
             return * this;
         }
 
+    private:
         void onChange()
         {
             changed = true;
-            Observable::notifyChange();
+            Observable<ObservableNumeric<T>>::notifyChange(*this);
         }
-
+    
+    public:
         bool hasChanged() const noexcept
         {
             return changed;
@@ -58,6 +66,11 @@ namespace og
         template<typename U, typename std::enable_if_t<
             std::is_convertible_v<T, U>, U> * = nullptr>
         operator U() const
+        { return value; }
+
+        template<typename U, typename std::enable_if_t<
+            std::is_convertible_v<T, U>, U> * = nullptr>
+        operator ObservableNumeric<U>() const
         { return value; }
 
         template<typename U, typename std::enable_if_t<
@@ -560,7 +573,7 @@ a >> b
 */
     template<typename T, 
         typename std::enable_if_t<std::is_arithmetic_v<T>, T> * = nullptr>
-    T operator !(ObservableNumeric<T> const & lhs)
+    bool operator !(ObservableNumeric<T> const & lhs)
     {
         return ! static_cast<T>(lhs);
     }
@@ -770,6 +783,15 @@ a >> b
     std::ostream & operator <<(std::ostream & out, ObservableNumeric<T> const & arg)
     {
         out << static_cast<T>(arg);
+        return out;
+    }
+
+    template<typename T, typename std::enable_if_t<std::is_arithmetic_v<T>, T> * = nullptr>
+    std::ostream & operator >>(std::ostream & out, ObservableNumeric<T> const & arg)
+    {
+        T narg;
+        out >> narg;
+        arg = narg;
         return out;
     }
 }

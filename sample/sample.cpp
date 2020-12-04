@@ -3,9 +3,11 @@
 #include "gen-cpp/inc/og.hpp"
 #include "observableVector.hpp"
 #include "observableNumeric.hpp"
+#include "observableString.hpp"
 
 int main()
 {
+    #if 0
     auto desRes = hu::Trove::fromFile("sample/ogdata.hu");
     if (auto error = std::get_if<hu::ErrorCode>(& desRes))
     {
@@ -95,7 +97,7 @@ int main()
     }
 
     og::ObservableVector<int> ov;
-    ov.setNotifyFn([](){ std::cout << "change\n"; });
+    ov.setNotifyFn([](auto &){ std::cout << "change\n"; });
 
     ov.push_back(3);
     ov.push_back(3);
@@ -129,7 +131,7 @@ int main()
     }
 
     og::ObservableNumeric<int> oi { 10 };
-    oi.setNotifyFn([](){std::cout << "int changed\n"; });
+    oi.setNotifyFn([](auto &){std::cout << "int changed\n"; });
     oi = 1;
     oi += 2;
     oi -= 4;
@@ -143,7 +145,7 @@ int main()
     std::cout << "oi: " << oi << "\n";
 
     og::ObservableVector<og::ObservableNumeric<float>> ov3;
-    ov3.setNotifyFn([](){ std::cout << "ov3 change\n"; });
+    ov3.setNotifyFn([](auto & t){ std::cout << "ov3 change: new size == " << t.size() << "\n"; });
 
     ov3.push_back(3);
     ov3.push_back(3.0f);
@@ -167,9 +169,41 @@ int main()
         std::cout << ov3[i] << "\n";
     }
 
+    og::ObservableNumeric<int> ppe = ov3[7];
+    std::cout << "PPE: " << ppe << "\n";
+
     for (auto & [changeType, startIndex, num] : ov3.getChanges())
     {
         std::cout << "Change type: " << (int) changeType << "; startIndex: " << startIndex << "; num: " << num << "\n";
+    }
+    #endif
+
+    og::ObservableVector<og::ObservableString<char>> ov4;
+    ov4.setNotifyFn([](auto & t)
+    {
+        std::cout << "ov4 change: new size == " << t.size() << "\n";
+        for (std::size_t i = 0; i < t.size(); ++i) { std::cout << " " << t[i]; }
+        std::cout << "\n";
+    });
+
+    ov4.push_back("foo");
+    ov4.push_back("bar");
+    ov4.push_back("baz");
+//    ov4[0].setNotifyFn([](auto & t) { std::cout << "Changed idx 0 to " << t << "\n"; });
+//    ov4[1].setNotifyFn([](auto & t) { std::cout << "Changed idx 1 to " << t << "\n"; });
+//    ov4[2].setNotifyFn([](auto & t) { std::cout << "Changed idx 2 to " << t << "\n"; });
+
+    std::cout << "Changing [0]:\n";
+    ov4[0] = "Floo";
+
+    std::cout << "Assigning 3:\n";
+    ov4.assign({"Foo", "Bar", "Baz"});
+    std::cout << "Changing [2]:\n";
+    ov4[2] = "Schmoo";
+
+    for (std::size_t i = 0; i < ov4.size(); ++i)
+    {
+        std::cout << ov4[i] << "\n";
     }
 
     return 0;
