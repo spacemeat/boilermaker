@@ -4,6 +4,7 @@
 #include "observableVector.hpp"
 #include "observableNumeric.hpp"
 #include "observableString.hpp"
+#include "observableArray.hpp"
 
 int main()
 {
@@ -176,7 +177,6 @@ int main()
     {
         std::cout << "Change type: " << (int) changeType << "; startIndex: " << startIndex << "; num: " << num << "\n";
     }
-    #endif
 
     og::ObservableVector<og::ObservableString<char>> ov4;
     ov4.setNotifyFn([](auto & t)
@@ -204,6 +204,37 @@ int main()
     for (std::size_t i = 0; i < ov4.size(); ++i)
     {
         std::cout << ov4[i] << "\n";
+    }
+    #endif
+
+    og::ObservableArray<og::ObservableString<char>, 3> 
+        ov5 { "foo", "bar", "baz"};
+    ov5.setNotifyFn([](auto & t)
+    {
+        std::cout << "ov5 change; new values:\n";
+        for (std::size_t i = 0; i < t.size(); ++i) { std::cout << " " << t[i]; }
+        std::cout << "\n";
+    });
+
+    ov5.at(0) = "foO";
+    ov5.at(1) = "baR";
+    ov5.at(2) = "baZ";
+//    ov5[0].setNotifyFn([](auto & t) { std::cout << "Changed idx 0 to " << t << "\n"; });
+//    ov5[1].setNotifyFn([](auto & t) { std::cout << "Changed idx 1 to " << t << "\n"; });
+//    ov5[2].setNotifyFn([](auto & t) { std::cout << "Changed idx 2 to " << t << "\n"; });
+
+    std::cout << "Changing [0]:\n";
+    ov5[0] = "Floo";
+
+    std::cout << "Filling 3:\n";
+    ov5.fill("Foo");
+
+    std::cout << "Changing [2]:\n";
+    ov5[2] = "Schmoo";
+
+    for (std::size_t i = 0; i < ov5.size(); ++i)
+    {
+        std::cout << ov5[i] << "\n";
     }
 
     return 0;

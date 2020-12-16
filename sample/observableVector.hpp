@@ -173,7 +173,7 @@ namespace og
         obvec_t & operator =(obvec_t && other) noexcept(
                std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value
             || std::allocator_traits<allocator_type>::is_always_equal::value)
-        {
+        {   // TODO: redo
             auto num = vect.size();
             vect = other.vect;
             onChange(ChangeType::ElementsReplaced, 0, num);
@@ -183,7 +183,7 @@ namespace og
         obvec_t & operator =(vec_t && other) noexcept(
                std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value
             || std::allocator_traits<allocator_type>::is_always_equal::value)
-        {
+        {   // TODO: redo
             auto num = vect.size();
             vect = other;
             onChange(ChangeType::ElementsReplaced, 0, num);
