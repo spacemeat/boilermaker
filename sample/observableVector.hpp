@@ -40,7 +40,6 @@ namespace og
 
         // TODO: Add the NotifyFn to each constructor?
         // TODO: Add constructor for Humon pass-through
-        // TODO: observeElements(); in each constructor
         ObservableVector() noexcept(noexcept(Allocator()))
         : vect() { }
 
@@ -48,41 +47,41 @@ namespace og
         : vect(alloc) { }
 
         ObservableVector(size_type count, T const & value, Allocator const & alloc = Allocator())
-        : vect(count, value, alloc) { }
+        : vect(count, value, alloc) { observeElements(0, vect.size()); }
 
         explicit ObservableVector(size_type count, Allocator const & alloc = Allocator())
-        : vect(count, alloc) { }
+        : vect(count, alloc) { observeElements(0, vect.size()); }
 
         template <class InputIt>
         ObservableVector(InputIt first, InputIt last, Allocator const & alloc = Allocator())
-        : vect(std::forward<InputIt>(first), std::forward<InputIt>(last), alloc) { }
+        : vect(std::forward<InputIt>(first), std::forward<InputIt>(last), alloc) { observeElements(0, vect.size()); }
 
         ObservableVector(obvec_t const & other)
-        : Observable<obvec_t>(other), vect(other.vect) { }
+        : Observable<obvec_t>(other), vect(other.vect) { observeElements(0, vect.size()); }
 
         ObservableVector(obvec_t const & other, Allocator const & alloc)
-        : Observable<obvec_t>(other), vect(other.vect, alloc) { }
+        : Observable<obvec_t>(other), vect(other.vect, alloc) { observeElements(0, vect.size()); }
 
         ObservableVector(obvec_t && other) noexcept
-        : Observable<obvec_t>(other), vect(std::move(other.vect)) { }
+        : Observable<obvec_t>(other), vect(std::move(other.vect)) { observeElements(0, vect.size()); }
 
         ObservableVector(obvec_t && other, Allocator const & alloc)
-        : Observable<obvec_t>(other), vect(std::move(other.vect), alloc) { }
+        : Observable<obvec_t>(other), vect(std::move(other.vect), alloc) { observeElements(0, vect.size()); }
 
         ObservableVector(std::initializer_list<T> init, Allocator const & alloc = Allocator())
-        : vect(init, alloc) { }
+        : vect(init, alloc) { observeElements(0, vect.size()); }
 
         ObservableVector(vec_t const & other)
-        : vect(other) { }
+        : vect(other) { observeElements(0, vect.size()); }
 
         ObservableVector(vec_t const & other, Allocator const & alloc)
-        : vect(other, alloc) { }
+        : vect(other, alloc) { observeElements(0, vect.size()); }
 
         ObservableVector(vec_t && other) noexcept
-        : vect(other) { }   // TODO: std::move(other) ?
+        : vect(std::move(other)) { observeElements(0, vect.size()); }   // TODO: std::move(other) ?
 
         ObservableVector(vec_t && other, Allocator const & alloc)
-        : vect(other, alloc) { } // TODO: std::move(other) ?
+        : vect(std::move(other), std::move(alloc)) { observeElements(0, vect.size()); } // TODO: std::move(other) ?
 
     private:
         void onChange(ChangeType changeType, size_type index = 0, size_type num = 1)
@@ -92,41 +91,28 @@ namespace og
 
             // essentially reindex the change notifier for new or moved elements
             // TODO: This is for observeChildDiffs only
-            if constexpr (std::is_base_of_v<Observable<T>, T>)
-            {
-                switch(changeType)
-                {
-                case ChangeType::ElementChanged:
-                    std::cout << "! Element changed: " << index << "\n";
-                    vect[index].setNotifyFn([this, index](T& ){ this->onChange(ChangeType::ElementChanged, index, 1); });
-                    break;
-                case ChangeType::ElementAdded:
-                    observeElements(index);
-                    break;
-                case ChangeType::ElementRemoved:
-                    observeElements(index);
-                    break;
-                case ChangeType::ElementsReplaced:
-                    observeElements(index);
-                    break;
-                }
-            }
+            observeElements(index, num);
 
             // let any observers of this vector know that the vector has changes
             Observable<obvec_t>::notifyChange(*this);
         }
 
         // TODO: This is for observeChildDiffs only
-        void observeElements(size_type startingAt)
+        void observeElements(size_type startingAt = 0, size_type num = 1)
         {
             if constexpr (std::is_base_of_v<Observable<T>, T>)
             {
                 T * observableElement = vect.data();
-                for (size_type i = startingAt; i < vect.size(); ++i)
+                for (size_type i = startingAt; i < startingAt + num; ++i)
                 {
                     std::cout << "observeElements staringAt: " << startingAt << "; index: " << i << "\n";
                     (observableElement + i)->setNotifyFn([this, i](T &){ this->onChange(ChangeType::ElementChanged, i); });
                 }
+            }
+            else
+            {
+                (void)(startingAt);
+                (void)(num);
             }
         }
 

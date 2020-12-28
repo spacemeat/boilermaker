@@ -21,15 +21,15 @@ namespace og
         template< class U1, class U2 >
         constexpr ObservablePair(U1 && x, U2 && y)
         : Observable<ObservablePair<T1, T2>>(), _pair{std::move(x), std::move(y)}, first(_pair.first), second(_pair.second)
-        { onChange(); }
+        { observeElements(0, 2); }
 
         ObservablePair(obpair_t const & p)
         : Observable<ObservablePair<T1, T2>>(), _pair{p._pair}, first(_pair.first), second(_pair.second)
-        { onChange(); }
+        { observeElements(0, 2); }
 
         ObservablePair(obpair_t && p) noexcept
         : Observable<ObservablePair<T1, T2>>(), _pair{std::move(p._pair)}, first(_pair.first), second(_pair.second)
-        { onChange(); }
+        { observeElements(0, 2); }
 
     private:
         void onChange(std::size_t index = 0, std::size_t num = 2)
@@ -48,10 +48,16 @@ namespace og
 
         void observeElements(std::size_t index = 0, std::size_t num = 2)
         {
-            if (index == 0 && num > 0)
-                { _pair.first.setNotifyFn([this](T1 &){ this->onChange(0, 1); }); }
-            if (index + num > 1)
-                { _pair.second.setNotifyFn([this](T2 &){ this->onChange(1, 1); }); }
+            if constexpr (std::is_base_of_v<Observable<T1>, T1>)
+            {
+                if (index == 0 && num > 0)
+                    { _pair.first.setNotifyFn([this](T1 &){ this->onChange(0, 1); }); }
+            }
+            if constexpr (std::is_base_of_v<Observable<T2>, T2>)
+            {
+                if (index + num > 1)
+                    { _pair.second.setNotifyFn([this](T2 &){ this->onChange(1, 1); }); }
+            }
         }
 
     public:
