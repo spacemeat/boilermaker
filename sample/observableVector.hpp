@@ -38,8 +38,9 @@ namespace og
         using NotifyFn                  = typename Observable<obvec_t>::NotifyFn;
         using ChangeLogEntry            = std::tuple<ChangeType, size_type, size_type>;
 
-        // TODO: Add the NotifyFn to each constructor
+        // TODO: Add the NotifyFn to each constructor?
         // TODO: Add constructor for Humon pass-through
+        // TODO: observeElements(); in each constructor
         ObservableVector() noexcept(noexcept(Allocator()))
         : vect() { }
 

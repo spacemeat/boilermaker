@@ -91,7 +91,7 @@ namespace og
             // TODO: only for observeChildDiffs ?
             if constexpr (std::is_base_of_v<Observable<T>, T>)
             {
-                for (auto & elem : static_cast<std::array<T, N>>(*this))
+                for (auto & elem : static_cast<arr_t>(*this))
                 {
                     elem.forgetChanges();
                 }
@@ -103,9 +103,9 @@ namespace og
         {
             if (& rhs != this)
             {
-                (*this) = static_cast<std::array<T, N>>(rhs);
+                (*this) = static_cast<arr_t>(rhs);
+                onChange();
             }
-            onChange();
             return * this;
         }
 
@@ -114,8 +114,8 @@ namespace og
             if (& rhs != this)
             {
                 (*this) = rhs;
+                onChange();
             }
-            onChange();
             return * this;
         }
 
@@ -124,9 +124,9 @@ namespace og
             if (& rhs != this)
             {
                 using std::swap;
-                swap((*this), static_cast<std::array<T, N>>(rhs));
+                swap((*this), static_cast<arr_t>(rhs));
+                onChange();
             }
-            onChange();
             return * this;
         }
 
@@ -136,8 +136,8 @@ namespace og
             {
                 using std::swap;
                 swap((*this), rhs);
+                onChange();
             }
-            onChange();
             return * this;
         }
 
@@ -149,8 +149,9 @@ namespace og
 
         void swap( obarr_t & other ) noexcept(std::is_nothrow_swappable_v<T>)
         {
-            arr_t::swap(static_cast<std::array<T, N>>(other));
+            arr_t::swap(static_cast<arr_t>(other));
             onChange();
+            other.onChange();
         }
 
         void swap( arr_t & other ) noexcept(std::is_nothrow_swappable_v<T>)

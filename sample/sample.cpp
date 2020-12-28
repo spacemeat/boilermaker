@@ -5,6 +5,7 @@
 #include "observableNumeric.hpp"
 #include "observableString.hpp"
 #include "observableArray.hpp"
+#include "observablePair.hpp"
 
 int main()
 {
@@ -205,7 +206,6 @@ int main()
     {
         std::cout << ov4[i] << "\n";
     }
-    #endif
 
     og::ObservableArray<og::ObservableString<char>, 3> 
         ov5 { "foo", "bar", "baz"};
@@ -236,6 +236,17 @@ int main()
     {
         std::cout << ov5[i] << "\n";
     }
+    #endif
+
+    og::ObservablePair<og::ObservableString<char>, og::ObservableNumeric<int>> ov6 { "foo", 10 };
+    ov6.setNotifyFn([](auto & t)
+    {
+        std::cout << "ov6 change; new values:\n";
+        std::cout << "First: " << t.first << "; second: " << t.second << "\n";
+    });
+
+    ov6.first = "FOO";
+    ov6.second = 20;
 
     return 0;
 }
