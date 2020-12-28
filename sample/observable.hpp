@@ -26,23 +26,28 @@ namespace og
         : notify()
         { }
 
-        Observable(Observable<T> const & rhs)
-        : notify(rhs.notify)
-        { }
+        template<class U>
+        Observable(Observable<U> const &)
+        : notify() // notify(rhs.notify)
+        { } // we specifically do not want to copy notifiers
 
-        Observable(Observable<T> && rhs) noexcept
-        : notify(std::move(rhs.notify))
-        { }
+        template<class U>
+        Observable(Observable<U> &&) noexcept
+        : notify() // notify(std::move(rhs.notify))
+        { } // we specifically do not want to move notifiers
 
-        Observable<T> & operator =(Observable<T> const & rhs)
+        template<class U>
+        Observable<T> & operator =(Observable<U> const &)
         {
-            notify = rhs.notify;
+            // we specifically do not want to copy notifiers
+            return * this;
         }
 
-        Observable<T> & operator =(Observable<T> && rhs)
+        template<class U>
+        Observable<T> & operator =(Observable<U> &&)
         {
-            using std::swap;
-            swap(notify, rhs.notify);
+            // we specifically do not want to move notifiers
+            return * this;
         }
 
     private:

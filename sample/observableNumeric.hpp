@@ -14,36 +14,52 @@ namespace og
     {
     public:
         ObservableNumeric() noexcept
-        : value() { }
+        : _value() { }
 
         template<typename U, typename std::enable_if_t<
             std::is_convertible_v<U, T>, U> * = nullptr>
         ObservableNumeric(U newValue) noexcept
-        : value(newValue) { }
+        : _value(newValue) { }
 
-        ObservableNumeric(ObservableNumeric<T> const & other)
-        : Observable<ObservableNumeric<T>>(other), value(other.value) { }
+        template<typename U, typename std::enable_if_t<
+            std::is_convertible_v<U, T>, U> * = nullptr>
+        ObservableNumeric(ObservableNumeric<U> const & other)
+        : Observable<ObservableNumeric<T>>(other), _value(other.value()) { }
 
-        ObservableNumeric(ObservableNumeric<T> && other)
-        : Observable<ObservableNumeric<T>>(other), value(other.value) { }
+        template<typename U, typename std::enable_if_t<
+            std::is_convertible_v<U, T>, U> * = nullptr>
+        ObservableNumeric(ObservableNumeric<U> && other)
+        : Observable<ObservableNumeric<T>>(other), _value(other.value()) { }
 
         template<typename U, typename std::enable_if_t<
             std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator =(U const & rhs)
         {
-            value = rhs;
+            _value = rhs;
             onChange();
             return * this;
         }
 
         template<typename U, typename std::enable_if_t<
-            std::is_arithmetic_v<U>, U> * = nullptr>
+            std::is_convertible_v<U, T>, U> * = nullptr>
         ObservableNumeric<T> & operator =(ObservableNumeric<U> const & rhs)
         {
-            value = rhs.value;
+            _value = rhs._value;
             onChange();
             return * this;
         }
+
+        template<typename U, typename std::enable_if_t<
+            std::is_convertible_v<U, T>, U> * = nullptr>
+        ObservableNumeric<T> & operator =(ObservableNumeric<U> && rhs)
+        {
+            using std::swap;
+            swap(_value, rhs._value);
+            onChange();
+            return * this;
+        }
+
+        T value() const noexcept { return _value; }
 
     private:
         void onChange()
@@ -66,18 +82,18 @@ namespace og
         template<typename U, typename std::enable_if_t<
             std::is_convertible_v<T, U>, U> * = nullptr>
         operator U() const
-        { return value; }
+        { return static_cast<U>(_value); }
 
         template<typename U, typename std::enable_if_t<
             std::is_convertible_v<T, U>, U> * = nullptr>
         operator ObservableNumeric<U>() const
-        { return value; }
+        { return static_cast<U>(_value); }
 
         template<typename U, typename std::enable_if_t<
             std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator +=(U const & rhs)
         {
-            value += rhs;
+            _value += rhs;
             onChange();
             return * this;
         }
@@ -86,7 +102,7 @@ namespace og
             std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator +=(ObservableNumeric<U> const & rhs)
         {
-            value += rhs.value;
+            _value += rhs._value;
             onChange();
             return * this;
         }
@@ -95,7 +111,7 @@ namespace og
             std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator -=(U const & rhs)
         {
-            value -= rhs;
+            _value -= rhs;
             onChange();
             return * this;
         }
@@ -104,7 +120,7 @@ namespace og
             std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator -=(ObservableNumeric<U> const & rhs)
         {
-            value -= rhs.value;
+            _value -= rhs._value;
             onChange();
             return * this;
         }
@@ -113,7 +129,7 @@ namespace og
             std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator *=(U const & rhs)
         {
-            value *= rhs;
+            _value *= rhs;
             onChange();
             return * this;
         }
@@ -122,7 +138,7 @@ namespace og
             std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator *=(ObservableNumeric<U> const & rhs)
         {
-            value *= rhs.value;
+            _value *= rhs._value;
             onChange();
             return * this;
         }
@@ -131,7 +147,7 @@ namespace og
             std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator /=(U const & rhs)
         {
-            value /= rhs;
+            _value /= rhs;
             onChange();
             return * this;
         }
@@ -140,7 +156,7 @@ namespace og
             std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator /=(ObservableNumeric<U> const & rhs)
         {
-            value /= rhs.value;
+            _value /= rhs._value;
             onChange();
             return * this;
         }
@@ -149,7 +165,7 @@ namespace og
             std::is_integral_v<T> && std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator %=(U const & rhs)
         {
-            value %= rhs;
+            _value %= rhs;
             onChange();
             return * this;
         }
@@ -158,7 +174,7 @@ namespace og
             std::is_integral_v<T> && std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator %=(ObservableNumeric<U> const & rhs)
         {
-            value %= rhs.value;
+            _value %= rhs._value;
             onChange();
             return * this;
         }
@@ -167,7 +183,7 @@ namespace og
             std::is_integral_v<T> && std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator ^=(U const & rhs)
         {
-            value ^= rhs;
+            _value ^= rhs;
             onChange();
             return * this;
         }
@@ -176,7 +192,7 @@ namespace og
             std::is_integral_v<T> && std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator ^=(ObservableNumeric<U> const & rhs)
         {
-            value ^= rhs.value;
+            _value ^= rhs._value;
             onChange();
             return * this;
         }
@@ -185,7 +201,7 @@ namespace og
             std::is_integral_v<T> && std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator &=(U const & rhs)
         {
-            value &= rhs;
+            _value &= rhs;
             onChange();
             return * this;
         }
@@ -194,7 +210,7 @@ namespace og
             std::is_integral_v<T> && std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator &=(ObservableNumeric<U> const & rhs)
         {
-            value &= rhs.value;
+            _value &= rhs._value;
             onChange();
             return * this;
         }
@@ -203,7 +219,7 @@ namespace og
             std::is_integral_v<T> && std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator |=(U const & rhs)
         {
-            value |= rhs;
+            _value |= rhs;
             onChange();
             return * this;
         }
@@ -212,7 +228,7 @@ namespace og
             std::is_integral_v<T> && std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator |=(ObservableNumeric<U> const & rhs)
         {
-            value |= rhs.value;
+            _value |= rhs._value;
             onChange();
             return * this;
         }
@@ -221,7 +237,7 @@ namespace og
             std::is_integral_v<T> && std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator >>=(U const & rhs)
         {
-            value >>= rhs;
+            _value >>= rhs;
             onChange();
             return * this;
         }
@@ -230,7 +246,7 @@ namespace og
             std::is_integral_v<T> && std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator >>=(ObservableNumeric<U> const & rhs)
         {
-            value >>= rhs.value;
+            _value >>= rhs._value;
             onChange();
             return * this;
         }
@@ -239,7 +255,7 @@ namespace og
             std::is_integral_v<T> && std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator <<=(U const & rhs)
         {
-            value <<= rhs;
+            _value <<= rhs;
             onChange();
             return * this;
         }
@@ -248,14 +264,14 @@ namespace og
             std::is_integral_v<T> && std::is_arithmetic_v<U>, U> * = nullptr>
         ObservableNumeric<T> & operator <<=(ObservableNumeric<U> const & rhs)
         {
-            value <<= rhs.value;
+            _value <<= rhs._value;
             onChange();
             return * this;
         }
 
         ObservableNumeric<T> & operator ++()
         {
-            value += 1;
+            _value += 1;
             onChange();
             return * this;
         }
@@ -270,7 +286,7 @@ namespace og
 
         ObservableNumeric<T> & operator --()
         {
-            value -= 1;
+            _value -= 1;
             onChange();
             return * this;
         }
@@ -284,7 +300,7 @@ namespace og
         }
 
     private:
-        T value;
+        T _value;
         bool changed = false;
     };
 

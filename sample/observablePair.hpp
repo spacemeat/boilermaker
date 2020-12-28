@@ -18,57 +18,18 @@ namespace og
 
         constexpr ObservablePair() { }
 
-        /*
-        constexpr ObservablePair( const T1& x, const T2& y )
-        : Observable<ObservablePair<T1, T2>>(), _pair{x, y}, first(_pair.first), second(_pair.second)
-        { observeElements(); }
-        */
-
         template< class U1, class U2 >
-        constexpr ObservablePair( U1&& x, U2&& y )
+        constexpr ObservablePair(U1 && x, U2 && y)
         : Observable<ObservablePair<T1, T2>>(), _pair{std::move(x), std::move(y)}, first(_pair.first), second(_pair.second)
-        { observeElements(); }
+        { onChange(); }
 
-        /*
-        template< class U1, class U2 >
-        constexpr ObservablePair( const std::pair<U1, U2>& p )
-        : Observable<ObservablePair<T1, T2>>(), _pair{p}, first(_pair.first), second(_pair.second)
-        { observeElements(); }
-        */
-
-        /*
-        template< class U1, class U2 >
-        constexpr ObservablePair( std::pair<U1, U2> && p )
-        : Observable<ObservablePair<T1, T2>>(), _pair{std::move(p)}, first(_pair.first), second(_pair.second)
-        { observeElements(); }
-        */
-
-        /*
-        template< class... Args1, class... Args2 >
-        ObservablePair( std::piecewise_construct_t,
-            std::tuple<Args1...> first_args,
-            std::tuple<Args2...> second_args )
-        : Observable<ObservablePair<T1, T2>>(), _pair{std::piecewise_construct_t {}, std::forward<Args1>(first_args)..., std::forward<Args2>(second_args)...}, first(_pair.first), second(_pair.second)
-        { observeElements(); }
-
-        ObservablePair( const pair_t& p )
-        : Observable<ObservablePair<T1, T2>>(), _pair{p}, first(_pair.first), second(_pair.second)
-        { observeElements(); }
-        */
-
-        ObservablePair( const obpair_t& p )
+        ObservablePair(obpair_t const & p)
         : Observable<ObservablePair<T1, T2>>(), _pair{p._pair}, first(_pair.first), second(_pair.second)
-        { observeElements(); }
+        { onChange(); }
 
-        /*
-        ObservablePair( pair_t && p )
-        : Observable<ObservablePair<T1, T2>>(), _pair{std::move(p)}, first(_pair.first), second(_pair.second)
-        { observeElements(); }
-        */
-
-        ObservablePair( obpair_t && p )
+        ObservablePair(obpair_t && p) noexcept
         : Observable<ObservablePair<T1, T2>>(), _pair{std::move(p._pair)}, first(_pair.first), second(_pair.second)
-        { observeElements(); }
+        { onChange(); }
 
     private:
         void onChange(std::size_t index = 0, std::size_t num = 2)
@@ -93,6 +54,7 @@ namespace og
                 { _pair.second.setNotifyFn([this](T2 &){ this->onChange(1, 1); }); }
         }
 
+    public:
         bool hasChanged() const noexcept
         {
             return changeBits.any();
@@ -119,22 +81,8 @@ namespace og
             }
         }
 
-    public:
-
-/*
-        obpair_t & operator=( const pair_t & rhs )
+        obpair_t & operator =(obpair_t const & rhs)
         {
-            if (& rhs != this)
-            {
-                _pair = rhs;
-                onChange();
-            }
-            return * this;
-        }
-*/
-        obpair_t & operator=( const obpair_t & rhs )
-        {
-            Observable<ObservablePair<T1, T2>>::operator =(rhs);
             if (& rhs != this)
             {
                 _pair = rhs._pair;
@@ -143,9 +91,8 @@ namespace og
             return * this;
         }
 
-        obpair_t & operator=( obpair_t && rhs )
+        obpair_t & operator =(obpair_t && rhs) noexcept
         {
-            Observable<ObservablePair<T1, T2>>::operator =(std::move(rhs));
             if (& rhs != this)
             {
                 using std::swap;
@@ -154,47 +101,6 @@ namespace og
             }
             return * this;
         }
-
-        /*
-        template< class U1, class U2 >
-        obpair_t& operator=( const std::pair<U1,U2> & rhs )
-        {
-            if (& rhs != this)
-            {
-                _pair = rhs;
-                onChange();
-            }
-            return * this;
-        }
-        */
-
-        /*
-        obpair_t& operator=( pair_t && rhs ) noexcept(
-            std::is_nothrow_move_assignable<T1>::value &&
-            std::is_nothrow_move_assignable<T2>::value)
-        {
-            if (& rhs != this)
-            {
-                using std::swap;
-                swap(_pair, rhs);
-                onChange();
-            }
-            return * this;
-        }
-        */
-        /*
-        template< class U1, class U2 >
-        obpair_t & operator=( std::pair<U1,U2> && rhs )
-        {
-            if (& rhs != this)
-            {
-                using std::swap;
-                swap(_pair, rhs);
-                onChange();
-            }
-            return * this;
-        }
-        */
 
         void swap(obpair_t& other) noexcept(
             std::is_nothrow_swappable_v<T1> &&

@@ -7,9 +7,8 @@
 #include "observableArray.hpp"
 #include "observablePair.hpp"
 
-int main()
+int test()
 {
-    #if 0
     auto desRes = hu::Trove::fromFile("sample/ogdata.hu");
     if (auto error = std::get_if<hu::ErrorCode>(& desRes))
     {
@@ -98,6 +97,11 @@ int main()
         std::cout << "\n" << std::get<std::string>(t->toPrettyString(4, false, hu::getAnsiColorTable()));
     }
 
+    return 0;
+}
+
+int testObVector()
+{
     og::ObservableVector<int> ov;
     ov.setNotifyFn([](auto &){ std::cout << "change\n"; });
 
@@ -132,6 +136,11 @@ int main()
         std::cout << ov[i] << "\n";
     }
 
+    return 0;
+}
+
+int testObNumeric()
+{
     og::ObservableNumeric<int> oi { 10 };
     oi.setNotifyFn([](auto &){std::cout << "int changed\n"; });
     oi = 1;
@@ -179,6 +188,11 @@ int main()
         std::cout << "Change type: " << (int) changeType << "; startIndex: " << startIndex << "; num: " << num << "\n";
     }
 
+    return 0;
+}
+
+int testObString()
+{
     og::ObservableVector<og::ObservableString<char>> ov4;
     ov4.setNotifyFn([](auto & t)
     {
@@ -207,6 +221,11 @@ int main()
         std::cout << ov4[i] << "\n";
     }
 
+    return 0;
+}
+
+int testObArray()
+{
     og::ObservableArray<og::ObservableString<char>, 3> 
         ov5 { "foo", "bar", "baz"};
     ov5.setNotifyFn([](auto & t)
@@ -236,17 +255,46 @@ int main()
     {
         std::cout << ov5[i] << "\n";
     }
-    #endif
 
+    return 0;
+}
+
+int testObPair()
+{
     og::ObservablePair<og::ObservableString<char>, og::ObservableNumeric<int>> ov6 { "foo", 10 };
     ov6.setNotifyFn([](auto & t)
     {
         std::cout << "ov6 change; new values:\n";
-        std::cout << "First: " << t.first << "; second: " << t.second << "\n";
+        if (t.getChanges()[0]) { std::cout << "first changed. "; }
+        if (t.getChanges()[1]) { std::cout << "second changed. "; }
+        std::cout << "first: " << t.first << "; second: " << t.second << "\n";
     });
+    ov6.forgetChanges();
 
     ov6.first = "FOO";
+    ov6.forgetChanges();
     ov6.second = 20;
+
+    ov6 = { "baz", 30 };
+
+    return 0;
+}
+
+int main()
+{
+    int r;
+    r = test();
+    if (r) { return r; }
+    r = testObVector();
+    if (r) { return r; }
+    r = testObNumeric();
+    if (r) { return r; }
+    r = testObArray();
+    if (r) { return r; }
+    r = testObString();
+    if (r) { return r; }
+    r = testObPair();
+    if (r) { return r; }
 
     return 0;
 }
