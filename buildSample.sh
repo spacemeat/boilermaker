@@ -7,3 +7,4 @@ else
     echo "Making build/bin/sample using generated .hpp source."
     g++ -std=c++17 -Wall -O0 -g -Wextra sample/sample.cpp -Isample -o build/bin/sample -lhumon
 fi
+

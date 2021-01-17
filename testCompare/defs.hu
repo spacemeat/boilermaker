@@ -1,0 +1,52 @@
+@{ app: boma, boma-version: 1.0.0 }
+{
+    platforms: {
+        c++: {
+            includeFiles: [
+                testCompare.hpp
+            ]
+            outputPaths: {
+                header: gen-cpp/inc/testCompare.hpp
+                source: 'gen-cpp/src/*.cpp'
+                inline: gen-cpp/inc/inl/_*.inl.hpp
+            }
+            settings: {
+                namespace: testCompare
+                const: east
+                noexcept: true
+                headerOnly: true
+                cavepersonCtrs: false
+            }
+            features: {
+                copyable: false
+                setters: false
+                setByMovers: false
+                getters: true
+                privateMembers: true
+            }
+        }
+    }
+
+    pods: {
+        achievement: {
+            titleId: int
+            id: int
+            when: 'long long'
+            timeToEarn: 'long long'
+            metatags: { type: unordered_map of: [string, string]}
+        }
+        user: {
+            id: int
+            username: string
+            lastLoggedIn: 'long long'
+            lastTitlePlayed: int
+            achievements: { type: vector of: achievement }
+            metatags: { type: unordered_map of: [string, string]}
+        }
+        testRoot: {
+            v_of_ints: { type: vector of: int }
+            a_of_v_of_ints: { type: array of: [{ type: vector of: int }, 4 ]}
+            users: { type: vector of: user }
+        }
+    }
+}

@@ -11,17 +11,18 @@ class ProjectDef:
         self.trove, self.version, _ = loadHumonFile(path)
         self.enums = Enums()
         defsNode = self.trove.root['defs']
-        for platformNode in defsNode:
-            platformName = platformNode.key
-            if platformName == 'c++':
-                platformSources = [pd.value for pd in platformNode['sources']]
-                scanner = CplusplusEnums()
-                for platformSource in platformSources:
-                    scanner.processHeader(platformSource, self.enums)
-                for enumNode in platformNode['attributes']:
-                    for attribNode in enumNode:
-                        enum = self.enums.getEnum(enumNode.key, platformName)
-                        enum.setAttrib(attribNode.value)
+        if defsNode:
+            for platformNode in defsNode:
+                platformName = platformNode.key
+                if platformName == 'c++':
+                    platformSources = [pd.value for pd in platformNode['sources']]
+                    scanner = CplusplusEnums()
+                    for platformSource in platformSources:
+                        scanner.processHeader(platformSource, self.enums)
+                    for enumNode in platformNode['attributes']:
+                        for attribNode in enumNode:
+                            enum = self.enums.getEnum(enumNode.key, platformName)
+                            enum.setAttrib(attribNode.value)
 
         self.platformDefs = {}
         configNode = self.trove.root['platforms']

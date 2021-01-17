@@ -28,12 +28,12 @@ namespace og
 
         template<class U>
         Observable(Observable<U> const &)
-        : notify() // notify(rhs.notify)
+        : notify()
         { } // we specifically do not want to copy notifiers
 
         template<class U>
         Observable(Observable<U> &&) noexcept
-        : notify() // notify(std::move(rhs.notify))
+        : notify()
         { } // we specifically do not want to move notifiers
 
         template<class U>

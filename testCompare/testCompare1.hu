@@ -1,0 +1,55 @@
+{
+    testRoot: {
+        v_of_ints: [1 2 3 4 5 6]
+        a_of_v_of_ints: [[10, 20, 30, 40, 50, 60],
+                         [100, 200, 300, 400, 450, 500], 
+                         [999, 1000, 2000, 3000, 4000, 5000], 
+                         [10000, 20000, 30000, 40000, 50000]]
+        users: [{
+                id: 0000
+                username: plugh
+                lastLoggedIn: 00133677
+                lastTitlePlayed: 27
+                achievements: [{
+                        titelId: 27
+                        id: 0
+                        when: 00483488
+                        timeToEarn: 00003343
+                    } {
+                        titelId: 27
+                        id: 1
+                        when: 00483775
+                        timeToEarn: 00003443
+                    }
+                ]
+            } {
+                id: 0001
+                username: snaa
+                lastLoggedIn: 001333325
+                lastTitlePlayed: 3
+                achievements: [{
+                        titelId: 3
+                        id: 0
+                        when: 00483488
+                        timeToEarn: 00003343
+                    } {
+                        titelId: 3
+                        id: 1
+                        when: 00485544
+                        timeToEarn: 00003433
+                    } {
+                        titelId: 3
+                        id: 3
+                        when: 00444455
+                        timeToEarn: 00004333
+                    }
+                ]
+            } {
+                id: 0002
+                username: floo
+                lastLoggedIn: 001336554
+                lastTitlePlayed: 34
+            }
+        ]
+    }
+}

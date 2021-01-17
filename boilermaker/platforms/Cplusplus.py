@@ -940,6 +940,58 @@ class CplusplusDef(PlatformDef):
         return src
 
 
+    def genComparator(self, podNode, classScope, ind):
+        src = ''
+        if not self.getFeature('diffable') == 'true':
+            return src
+        
+        detailedDiffs = self.getFeature('detailedDiffs') == 'true'
+
+        if detailedDiffs:
+            diffType = getDiffType(podNode)
+            if classScope:
+                src += f'''
+{self.ind(ind + 0)}friend {diffType} operator ==({podNode.key} const & lhs, {podNode.key} const & rhs){self.getNoexceptStr()};'''
+            else:
+                src += f'''
+
+                
+{self.ind(ind + 0)}{diffType} {self.getNamespaceScope()}operator ==({self.getNamespaceScope()}{podNode.key} const & lhs, {podNode.key} const & rhs){self.getNoexceptStr()}
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}return'''
+
+        else:
+            if classScope:
+                src += f'''
+{self.ind(ind + 0)}friend bool operator ==({podNode.key} const & lhs, {podNode.key} const & rhs){self.getNoexceptStr()};'''
+            else:
+                src += f'''
+
+
+{self.ind(ind + 0)}bool {self.getNamespaceScope()}operator ==({self.getNamespaceScope()}{podNode.key} const & lhs, {podNode.key} const & rhs){self.getNoexceptStr()}
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}return'''
+                firstTime = True
+                for memberNode in podNode:
+                    memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+                    mbt = self.getPodMemberBaseType(memberNode)
+
+
+                    if firstTime:
+                        firstTime = False
+                        src += ' '
+                    else:
+                        src += f'''
+{self.ind(ind + 1)}    && '''
+
+                    src += f'''lhs.{memberName} == rhs.{memberName}'''
+
+                src += f''';
+{self.ind(ind + 0)}}}'''
+
+        return src
+
+
     def generateHeader(self):
         headerOnly = self.getSetting('headerOnly') == 'true'
         eastConst = self.getSetting('const') == 'east'
@@ -1073,6 +1125,7 @@ class CplusplusDef(PlatformDef):
                 src += self.genSetByMove(podNode, memberNode, True, ind)
 
             src += self.genStreamInserter(podNode, True, ind)
+            src += self.genComparator(podNode, True, ind)
 
             # TODO: other features here
 
@@ -1141,7 +1194,6 @@ struct hu::val<{podName}>
 
     def generateSrc(self, podName):
         headerOnly = self.getSetting('headerOnly') == 'true'
-
         eastConst = self.getSetting('const') == 'east'
         noexcept = self.getSetting('noexcept') == 'true'
         noexceptStr = ' noexcept' if noexcept else ''
@@ -1191,6 +1243,7 @@ struct hu::val<{podName}>
             src += self.genSetByMove(podNode, memberNode, False, 0)
 
         src += self.genStreamInserter(podNode, False, 0)
+        src += self.genComparator(podNode, False, 0)
 
         return src
 

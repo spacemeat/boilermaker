@@ -1,11 +1,6 @@
 #include <iostream>
 #include "sample.hpp"
 #include "gen-cpp/inc/og.hpp"
-#include "observableVector.hpp"
-#include "observableNumeric.hpp"
-#include "observableString.hpp"
-#include "observableArray.hpp"
-#include "observablePair.hpp"
 
 int test()
 {
@@ -100,10 +95,11 @@ int test()
     return 0;
 }
 
+/*
 int testObVector()
 {
     og::ObservableVector<int> ov;
-    ov.setNotifyFn([](auto &){ std::cout << "change\n"; });
+    ov.setNotifyFn([](auto & ovp){ std::cout << "ov change; new size = " << ovp.size() << "\n"; });
 
     ov.push_back(3);
     ov.push_back(3);
@@ -142,7 +138,7 @@ int testObVector()
 int testObNumeric()
 {
     og::ObservableNumeric<int> oi { 10 };
-    oi.setNotifyFn([](auto &){std::cout << "int changed\n"; });
+    oi.setNotifyFn([](auto & oip){std::cout << "int changed to " << oip << "\n"; });
     oi = 1;
     oi += 2;
     oi -= 4;
@@ -279,12 +275,44 @@ int testObPair()
 
     return 0;
 }
+*/
+
+int testCompare()
+{
+    auto desRes = hu::Trove::fromFile("sample/ogdata.hu");
+    if (auto error = std::get_if<hu::ErrorCode>(& desRes))
+    {
+        std::cerr << "Error loading the token stream: " << to_string(* error) << "\n";
+        return 1;
+    }
+
+    auto & trove = std::get<hu::Trove>(desRes);
+    auto node = trove.root();
+    auto c = node % hu::val<og::config>{};
+
+    auto desRes = hu::Trove::fromFile("sample/ogdata.hu");
+    if (auto error = std::get_if<hu::ErrorCode>(& desRes))
+    {
+        std::cerr << "Error loading the token stream: " << to_string(* error) << "\n";
+        return 1;
+    }
+
+    auto & trove = std::get<hu::Trove>(desRes);
+    auto node = trove.root();
+    auto c = node % hu::val<og::config>{};
+
+    return 0;
+}
 
 int main()
 {
     int r;
     r = test();
     if (r) { return r; }
+
+    r = testCompare();
+    if (r) { return r; }
+    /*
     r = testObVector();
     if (r) { return r; }
     r = testObNumeric();
@@ -295,6 +323,7 @@ int main()
     if (r) { return r; }
     r = testObPair();
     if (r) { return r; }
+    */
 
     return 0;
 }

@@ -65,7 +65,7 @@ namespace og
         ObservableVector(obvec_t && other) noexcept
         : Observable<obvec_t>(other), vect(std::move(other.vect)) { observeElements(0, vect.size()); }
 
-        ObservableVector(obvec_t && other, Allocator const & alloc)
+        ObservableVector(obvec_t && other, Allocator const & alloc) noexcept
         : Observable<obvec_t>(other), vect(std::move(other.vect), alloc) { observeElements(0, vect.size()); }
 
         ObservableVector(std::initializer_list<T> init, Allocator const & alloc = Allocator())
