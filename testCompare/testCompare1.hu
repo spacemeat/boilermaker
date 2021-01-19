@@ -51,5 +51,8 @@
                 lastTitlePlayed: 34
             }
         ]
+        things: [
+            "ideas" "designs" "plans" "opi"
+        ]
     }
 }

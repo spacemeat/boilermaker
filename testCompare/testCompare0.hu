@@ -41,5 +41,8 @@
                 ]
             }
         ]
+        things: [
+            "ideas" "designs" "plans"
+        ]
     }
 }

@@ -33,7 +33,7 @@
             id: int
             when: 'long long'
             timeToEarn: 'long long'
-            metatags: { type: unordered_map of: [string, string]}
+            metatags: { type: map of: [string, string]}
         }
         user: {
             id: int
@@ -47,6 +47,7 @@
             v_of_ints: { type: vector of: int }
             a_of_v_of_ints: { type: array of: [{ type: vector of: int }, 4 ]}
             users: { type: vector of: user }
+            things: { type: set of: string }
         }
     }
 }

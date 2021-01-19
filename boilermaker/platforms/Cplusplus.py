@@ -49,7 +49,7 @@ class CplusplusDef(PlatformDef):
 
 
     def fixupScope(self, typeName):
-        if typeName in ['string', 'string_view', 'array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
+        if typeName in ['string', 'string_view', 'array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
             return 'std::' + typeName
         elif typeName in self.podsNode:
             namespace = self.getSetting('namespace')
@@ -347,7 +347,7 @@ class CplusplusDef(PlatformDef):
             scope = namespace + '::'
 
         mbt = self.getPodMemberBaseType(memberNode)
-        if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
+        if mbt in ['array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
             mbpt = self.getPodMemberBasePlatformType(memberNode)
             mtas = self.getPodMemberTypeArgNodes(memberNode)
 
@@ -405,7 +405,7 @@ class CplusplusDef(PlatformDef):
                 src += f"""
 {self.ind(ind + 1)}out << ']';"""
 
-            elif mbt == 'vector':
+            elif mbt == 'vector' or mbt == 'set' or mbt == 'unordered_set':
                 elemPlatformType = self.getPodMemberPlatformType(mtas[0])
                 mbta0 = self.getPodMemberBaseType(mtas[0])
                 src += f"""
@@ -482,7 +482,7 @@ class CplusplusDef(PlatformDef):
         memo.add(mpt)
 
         mbt = self.getPodMemberBaseType(memberNode)
-        if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
+        if mbt in ['array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
             mbpt = self.getPodMemberBasePlatformType(memberNode)
             mtas = self.getPodMemberTypeArgNodes(memberNode)
 
@@ -525,30 +525,17 @@ class CplusplusDef(PlatformDef):
 {endl.join([f"{self.ind(ind + 3)}std::move(hu::val<{epts[i]}>::extract(node / {i}))" for i in range(0, len(epts))])}
 {self.ind(ind + 2)}}};'''
 
-            elif mbt == 'vector':
+            elif mbt == 'vector' or mbt == 'set' or mbt == 'unordered_set':
                 elemPlatformType = self.getPodMemberPlatformType(mtas[0])
                 src += f'''
 {self.ind(ind + 2)}{mpt} rv;
 {self.ind(ind + 2)}for (hu::size_t i = 0; i < node.numChildren(); ++i)
 {self.ind(ind + 2)}{{
-{self.ind(ind + 3)}rv.emplace_back(std::move(node / i % hu::val<{elemPlatformType}>{{}}));
+{self.ind(ind + 3)}rv.emplace{'_back' if mbt == 'vector' else ''}(std::move(node / i % hu::val<{elemPlatformType}>{{}}));
 {self.ind(ind + 2)}}}
 {self.ind(ind + 2)}return rv;'''
 
-            elif mbt == 'map':
-                eptkey = self.getPodMemberPlatformType(mtas[0])
-                eptvalue = self.getPodMemberPlatformType(mtas[1])
-                src += f'''
-{self.ind(ind + 2)}{mpt} rv;
-{self.ind(ind + 2)}for (hu::size_t i = 0; i < node.numChildren(); ++i)
-{self.ind(ind + 2)}{{
-{self.ind(ind + 3)}hu::Node elemNode = node / i;
-{self.ind(ind + 3)}rv.emplace(std::move(hu::val<{eptkey}>::extract(elemNode.key().str())),
-{self.ind(ind + 3)}           std::move(elemNode % hu::val<{eptvalue}>{{}}));
-{self.ind(ind + 2)}}}
-{self.ind(ind + 2)}return rv;'''
-
-            elif mbt == 'unordered_map':
+            elif mbt == 'map' or mbt == 'unordered_map':
                 eptkey = self.getPodMemberPlatformType(mtas[0])
                 eptvalue = self.getPodMemberPlatformType(mtas[1])
                 src += f'''
@@ -1029,7 +1016,7 @@ class CplusplusDef(PlatformDef):
                 mpt = self.getPodMemberPlatformType(memberNode)
                 mtas = self.getPodMemberTypeArgNodes(memberNode)
 
-                if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
+                if mbt in ['array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
                     src += f'''
 {self.ind(ind + 1)}Diff<{mpt}> {memberNode.key}_diffs;'''
             src += f'''
@@ -1060,7 +1047,7 @@ class CplusplusDef(PlatformDef):
                 mpt = self.getPodMemberPlatformType(memberNode)
                 mtas = self.getPodMemberTypeArgNodes(memberNode)
 
-                if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
+                if mbt in ['array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
                     src += f''',
   {memberNode.key}_diffs(lhs.{memberNode.key}, rhs.{memberNode.key})'''
             src += f'''
@@ -1110,6 +1097,12 @@ class CplusplusDef(PlatformDef):
             elif typeName == 'vector':
                 src += '''
 #include <vector>'''
+            elif typeName == 'set':
+                src += '''
+#include <set>'''
+            elif typeName == 'unordered_set':
+                src += '''
+#include <unordered_set>'''
             elif typeName == 'map':
                 src += '''
 #include <map>'''
@@ -1131,6 +1124,9 @@ class CplusplusDef(PlatformDef):
             src += '''
 #include <bitset>'''
             if (('array' in self.seenTypes or
+                 'set' in self.seenTypes or
+                 'unordered_set' in self.seenTypes or
+                 'map' in self.seenTypes or
                  'unordered_map' in self.seenTypes) and 
                  'vector' not in self.seenTypes):
                 src += '''
@@ -1140,6 +1136,9 @@ class CplusplusDef(PlatformDef):
                 src += '''
 #include <utility>'''
             if (('vector' in self.seenTypes or
+                 'set' in self.seenTypes or
+                 'unordered_set' in self.seenTypes or
+                 'map' in self.seenTypes or
                  'unordered_map' in self.seenTypes) and 
                  'tuple' not in self.seenTypes):
                 src += '''
@@ -1184,8 +1183,14 @@ class CplusplusDef(PlatformDef):
                 src += StdDiffs.getDiff_array(self.ind, 1)
             if 'vector' in self.seenTypes:
                 src += StdDiffs.getDiff_vector(self.ind, 1)
+            if 'unordered_set' in self.seenTypes:
+                src += StdDiffs.getDiff_unordered_set(self.ind, 1)
+            if 'set' in self.seenTypes:
+                src += StdDiffs.getDiff_set(self.ind, 1)
             if 'unordered_map' in self.seenTypes:
                 src += StdDiffs.getDiff_unordered_map(self.ind, 1)
+            if 'map' in self.seenTypes:
+                src += StdDiffs.getDiff_map(self.ind, 1)
 
         # bomaStream
         src += self.genBomaStreamClass(ind)

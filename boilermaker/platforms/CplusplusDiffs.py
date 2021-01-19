@@ -78,18 +78,58 @@ def getDiff_vector(indenter, ind):
     }};'''
 
 
-def getDiff_unordered_map(indenter, ind):
+def getDiff_set(indenter, ind):
+    return f'''
+
+    
+    template <class T>
+    struct Diff<std::set<T>>
+    {{
+        enum class DiffKind {{ added, removed }};
+
+        Diff() {{ }}
+
+        Diff(std::set<T> const & lhs, std::set<T> const & rhs)
+        {{
+            // figure out diffs in maps
+            for (auto const & lelem : lhs)
+            {{
+                if (auto it = rhs.find(lelem); it == rhs.end())
+                {{
+                    differenceKeys.emplace_back(lelem, DiffKind::removed, Diff<T> ());
+                }}
+            }}
+
+            // figure out diffs in maps
+            for (auto const & relem : rhs)
+            {{
+                if (auto it = lhs.find(relem); it == lhs.end())
+                {{
+                    differenceKeys.emplace_back(relem, DiffKind::added, Diff<T> ());
+                }}
+            }}
+        }}
+
+        std::vector<std::tuple<T, DiffKind, Diff<T>>> differenceKeys;
+    }};'''
+
+
+def getDiff_unordered_set(indenter, ind):
+    return getDiff_set(indenter, ind).replace('set', 'unordered_set')
+
+
+def getDiff_map(indenter, ind):
     return f'''
 
 
     template <class Key, class T>
-    struct Diff<std::unordered_map<Key, T>>
+    struct Diff<std::map<Key, T>>
     {{
         enum class DiffKind {{ added, replaced, removed }};
 
         Diff() {{ }}
 
-        Diff(std::unordered_map<Key, T> const & lhs, std::unordered_map<Key, T> const & rhs)
+        Diff(std::map<Key, T> const & lhs, std::map<Key, T> const & rhs)
         {{
             // figure out diffs in maps
             for (auto const & lkvp : lhs)
@@ -121,3 +161,7 @@ def getDiff_unordered_map(indenter, ind):
         
         std::vector<std::tuple<T, DiffKind, Diff<T>>> differenceKeys;
     }};'''
+
+
+def getDiff_unordered_map(indenter, ind):
+    return getDiff_map(indenter, ind).replace('map', 'unordered_map')

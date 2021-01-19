@@ -29,7 +29,7 @@ int test()
     auto t1 = node % hu::val<testCompare::testRoot>{};
 
     // compare t0 and t1, and get the diff object back
-    auto diff = testCompare::Diff<testCompare::testRoot>(t0, t1);
+    auto diff = testCompare::Diff(t0, t1);
 
     // now check diff's contents
     std::cout << "diffs: " << diff.diffs << "\n";
@@ -58,6 +58,13 @@ int test()
         auto & [idx, kind, obj] = diff.users_diffs.diffs[i];
         std::cout << "diffs.users_diffs.diffs[" << i << "]: "
             << "idx: " << idx << "; kind: " << (int) kind << "; user_diffs: " << obj.diffs << "\n";
+    }
+
+    for (std::size_t i = 0; i < diff.things_diffs.differenceKeys.size(); ++i)
+    {
+        auto & [elem, kind, obj] = diff.things_diffs.differenceKeys[i];
+        std::cout << "diffs.things_diffs.differenceKeys[" << i << "]: "
+            << "elem: " << elem << "; kind: " << (int) kind << "\n";
     }
 
     return 0;
