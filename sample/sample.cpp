@@ -286,20 +286,23 @@ int testCompare()
         return 1;
     }
 
-    auto & trove = std::get<hu::Trove>(desRes);
-    auto node = trove.root();
-    auto c = node % hu::val<og::config>{};
+    auto & trove0 = std::get<hu::Trove>(desRes);
+    auto node = trove0.root();
+    auto c0 = node % hu::val<og::config>{};
 
-    auto desRes = hu::Trove::fromFile("sample/ogdata.hu");
+    desRes = hu::Trove::fromFile("sample/ogdata.hu");
     if (auto error = std::get_if<hu::ErrorCode>(& desRes))
     {
         std::cerr << "Error loading the token stream: " << to_string(* error) << "\n";
         return 1;
     }
 
-    auto & trove = std::get<hu::Trove>(desRes);
-    auto node = trove.root();
-    auto c = node % hu::val<og::config>{};
+    auto & trove1 = std::get<hu::Trove>(desRes);
+    node = trove1.root();
+    auto c1 = node % hu::val<og::config>{};
+
+    auto diff = og::Diff(c0, c1);
+    std::cout << "diffs: " << diff.diffs << "\n";
 
     return 0;
 }

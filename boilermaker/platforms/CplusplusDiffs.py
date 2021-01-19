@@ -81,7 +81,7 @@ def getDiff_vector(indenter, ind):
 def getDiff_set(indenter, ind):
     return f'''
 
-    
+
     template <class T>
     struct Diff<std::set<T>>
     {{
@@ -159,7 +159,7 @@ def getDiff_map(indenter, ind):
             }}
         }}
         
-        std::vector<std::tuple<T, DiffKind, Diff<T>>> differenceKeys;
+        std::vector<std::tuple<Key, DiffKind, Diff<T>>> differenceKeys;
     }};'''
 
 
