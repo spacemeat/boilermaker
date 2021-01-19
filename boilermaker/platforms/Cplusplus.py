@@ -7,6 +7,7 @@ from pygccxml import parser
 
 from humon import humon, enums as humonEnums
 from ..PlatformDef import PlatformDef
+from . import CplusplusDiffs as StdDiffs
 
 from pprint import PrettyPrinter
 
@@ -160,6 +161,8 @@ class CplusplusDef(PlatformDef):
         src = ''
         if self.getFeature('serialize'):
             src += f'''
+
+
 {self.ind(ind + 0)}class bomaStream
 {self.ind(ind + 0)}{{
 {self.ind(ind + 0)}public:
@@ -595,7 +598,9 @@ class CplusplusDef(PlatformDef):
 
         makingSwap = self.getFeature('copyable') == 'true' or self.getFeature('movable') == 'true'
         makingInserter = self.getFeature('serialize') == 'true'
-        if makingSwap or makingInserter:
+        makingComparator = self.getFeature('comparable') == 'true'
+
+        if makingSwap or makingInserter or makingComparator:
             src += f'''
 
 
@@ -606,6 +611,12 @@ class CplusplusDef(PlatformDef):
             if makingInserter:
                 src += f'''
 {self.ind(ind + 0)}std::ostream & operator <<(std::ostream & out, {podNode.key} const & obj){self.getNoexceptStr()};'''
+        
+            if makingComparator:
+                src += f'''
+{self.ind(ind + 0)}bool operator ==({podNode.key} const & lhs, {podNode.key} const & rhs) noexcept;
+{self.ind(ind + 0)}bool operator !=({podNode.key} const & lhs, {podNode.key} const & rhs) noexcept;'''
+
         return src + f'''
 '''
 
@@ -942,52 +953,119 @@ class CplusplusDef(PlatformDef):
 
     def genComparator(self, podNode, classScope, ind):
         src = ''
-        if not self.getFeature('diffable') == 'true':
+        if not self.getFeature('comparable') == 'true':
             return src
-        
-        detailedDiffs = self.getFeature('detailedDiffs') == 'true'
 
-        if detailedDiffs:
-            diffType = getDiffType(podNode)
-            if classScope:
-                src += f'''
-{self.ind(ind + 0)}friend {diffType} operator ==({podNode.key} const & lhs, {podNode.key} const & rhs){self.getNoexceptStr()};'''
-            else:
-                src += f'''
-
-                
-{self.ind(ind + 0)}{diffType} {self.getNamespaceScope()}operator ==({self.getNamespaceScope()}{podNode.key} const & lhs, {podNode.key} const & rhs){self.getNoexceptStr()}
-{self.ind(ind + 0)}{{
-{self.ind(ind + 1)}return'''
+        if classScope:
+            src += f'''
+{self.ind(ind + 0)}friend bool operator ==({podNode.key} const & lhs, {podNode.key} const & rhs){self.getNoexceptStr()};
+{self.ind(ind + 0)}friend bool operator !=({podNode.key} const & lhs, {podNode.key} const & rhs){self.getNoexceptStr()};'''
 
         else:
-            if classScope:
-                src += f'''
-{self.ind(ind + 0)}friend bool operator ==({podNode.key} const & lhs, {podNode.key} const & rhs){self.getNoexceptStr()};'''
-            else:
-                src += f'''
+            src += f'''
 
 
 {self.ind(ind + 0)}bool {self.getNamespaceScope()}operator ==({self.getNamespaceScope()}{podNode.key} const & lhs, {podNode.key} const & rhs){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}return'''
-                firstTime = True
-                for memberNode in podNode:
-                    memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-                    mbt = self.getPodMemberBaseType(memberNode)
+            firstTime = True
+            for memberNode in podNode:
+                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+                mbt = self.getPodMemberBaseType(memberNode)
 
 
-                    if firstTime:
-                        firstTime = False
-                        src += ' '
-                    else:
-                        src += f'''
+                if firstTime:
+                    firstTime = False
+                    src += ' '
+                else:
+                    src += f'''
 {self.ind(ind + 1)}    && '''
 
-                    src += f'''lhs.{memberName} == rhs.{memberName}'''
+                src += f'''lhs.{memberName} == rhs.{memberName}'''
 
-                src += f''';
+            src += f''';
+{self.ind(ind + 0)}}}
+
+
+{self.ind(ind + 0)}bool {self.getNamespaceScope()}operator !=({podNode.key} const & lhs, {podNode.key} const & rhs) noexcept
+{self.ind(ind + 0)}{{
+{self.ind(ind + 1)}return !(lhs == rhs);
 {self.ind(ind + 0)}}}'''
+
+        return src
+
+
+    def genDiffer(self, podNode, headerScope, classScope, ind):
+        src = ''
+
+        diffable = self.getFeature('diffable') == 'true'
+        if not diffable:
+            return src
+
+        if headerScope:
+            src += f'''
+{self.ind(ind + 0)}template<>
+{self.ind(ind + 0)}class Diff<{podNode.key}>
+{self.ind(ind + 0)}{{
+{self.ind(ind + 0)}public:
+{self.ind(ind + 1)}enum class Members
+{self.ind(ind + 1)}{{'''
+            for memberNode in podNode:
+                src += f'''
+{self.ind(ind + 2)}{memberNode.key}'''
+                if memberNode.childOrdinal < podNode.numChildren - 1:
+                    src += ','
+            src += f'''
+{self.ind(ind + 1)}}};
+
+{self.ind(ind + 1)}Diff() noexcept {{ }}
+{self.ind(ind + 1)}Diff({podNode.key} const & lhs, {podNode.key} const & rhs) noexcept;
+'''
+            if podNode.numChildren > 0:
+                src += f'''
+{self.ind(ind + 1)}std::bitset<{podNode.numChildren}> diffs;'''
+            for memberNode in podNode:
+                mbt = self.getPodMemberBaseType(memberNode)
+                mpt = self.getPodMemberPlatformType(memberNode)
+                mtas = self.getPodMemberTypeArgNodes(memberNode)
+
+                if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
+                    src += f'''
+{self.ind(ind + 1)}Diff<{mpt}> {memberNode.key}_diffs;'''
+            src += f'''
+{self.ind(ind + 0)}}};'''
+
+        elif classScope:
+            src += f'''
+{self.ind(ind + 0)}friend Diff<{podNode.key}>::Diff() noexcept;
+{self.ind(ind + 0)}friend Diff<{podNode.key}>::Diff({podNode.key} const & lhs, {podNode.key} const & rhs) noexcept;'''
+
+        else:   # in source scope, not class scope
+            src += f'''
+
+
+{self.ind(ind + 0)}{self.getNamespaceScope()}Diff<{self.getNamespaceScope()}{podNode.key}>::Diff({self.getNamespaceScope()}{podNode.key} const & lhs, {self.getNamespaceScope()}{podNode.key} const & rhs) noexcept
+: diffs('''
+            for memberNode in podNode:
+                if memberNode.childOrdinal > 0:
+                    src += f'''        '''
+                src += f'''(lhs.{memberNode.key} != rhs.{memberNode.key}) << static_cast<int>(Members::{memberNode.key})'''
+                if memberNode.childOrdinal < podNode.numChildren - 1:
+                    src += ' |\n'
+                else:
+                    src += ')'
+
+            for memberNode in podNode:
+                mbt = self.getPodMemberBaseType(memberNode)
+                mpt = self.getPodMemberPlatformType(memberNode)
+                mtas = self.getPodMemberTypeArgNodes(memberNode)
+
+                if mbt in ['array', 'pair', 'tuple', 'vector', 'map', 'unordered_map', 'optional', 'variant']:
+                    src += f''',
+  {memberNode.key}_diffs(lhs.{memberNode.key}, rhs.{memberNode.key})'''
+            src += f'''
+{{ }}
+'''
 
         return src
 
@@ -998,6 +1076,7 @@ class CplusplusDef(PlatformDef):
         noexcept = self.getSetting('noexcept') == 'true'
         noexceptStr = ' noexcept' if noexcept else ''
         namespace = self.getSetting('namespace')
+
         usingNamespace = namespace != ''
         ind = 0
 
@@ -1045,8 +1124,27 @@ class CplusplusDef(PlatformDef):
 #include <variant>'''
 
         if self.getFeature('deserialize') == 'true':
-                src += '''
+            src += '''
 #include <humon/humon.hpp>'''
+
+        if self.getFeature('diffable') == 'true':
+            src += '''
+#include <bitset>'''
+            if (('array' in self.seenTypes or
+                 'unordered_map' in self.seenTypes) and 
+                 'vector' not in self.seenTypes):
+                src += '''
+#include <vector>'''
+            if (('array' in self.seenTypes) and 
+                 'pair' not in self.seenTypes):
+                src += '''
+#include <utility>'''
+            if (('vector' in self.seenTypes or
+                 'unordered_map' in self.seenTypes) and 
+                 'tuple' not in self.seenTypes):
+                src += '''
+#include <tuple>'''
+
 
         incFiles = self.getIncludeFiles()
         if incFiles:
@@ -1075,13 +1173,24 @@ class CplusplusDef(PlatformDef):
         if usingNamespace:
             src += f'''
 
-
 {self.ind(ind + 0)}namespace {namespace}
 {self.ind(ind + 0)}{{'''
             ind += 1
-        
+
+        # collection-level differs
+        if self.getFeature('diffable') == 'true':
+            src += StdDiffs.getDiff_template(self.ind, 1)
+            if 'array' in self.seenTypes:
+                src += StdDiffs.getDiff_array(self.ind, 1)
+            if 'vector' in self.seenTypes:
+                src += StdDiffs.getDiff_vector(self.ind, 1)
+            if 'unordered_map' in self.seenTypes:
+                src += StdDiffs.getDiff_unordered_map(self.ind, 1)
+
+        # bomaStream
         src += self.genBomaStreamClass(ind)
 
+        # collection-level stream inserters
         for enumName, enum in self.enums.getAllEnums().items():
             # Skip any enums that have a typedef referencing them.
             if enum.isTypedefTarget:
@@ -1102,7 +1211,12 @@ class CplusplusDef(PlatformDef):
             src += self.genFriendDecls(podNode, ind)
 
             podName = podNode.key
+
+            src += self.genDiffer(podNode, True, False, ind)
+
             src += f'''
+
+
 {self.ind(ind + 0)}class {podName}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 0)}public:'''
@@ -1126,6 +1240,7 @@ class CplusplusDef(PlatformDef):
 
             src += self.genStreamInserter(podNode, True, ind)
             src += self.genComparator(podNode, True, ind)
+            src += self.genDiffer(podNode, False, True, ind)
 
             # TODO: other features here
 
@@ -1244,6 +1359,7 @@ struct hu::val<{podName}>
 
         src += self.genStreamInserter(podNode, False, 0)
         src += self.genComparator(podNode, False, 0)
+        src += self.genDiffer(podNode, False, False, 0)
 
         return src
 

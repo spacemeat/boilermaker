@@ -29,7 +29,7 @@ int test()
     auto t1 = node % hu::val<testCompare::testRoot>{};
 
     // compare t0 and t1, and get the diff object back
-    auto diff = testCompare::testRoot_diff(t0, t1);
+    auto diff = testCompare::Diff<testCompare::testRoot>(t0, t1);
 
     // now check diff's contents
     std::cout << "diffs: " << diff.diffs << "\n";
