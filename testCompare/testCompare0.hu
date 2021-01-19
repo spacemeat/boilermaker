@@ -44,5 +44,10 @@
         things: [
             "ideas" "designs" "plans"
         ]
+        stuff: [ "one", 2, {
+                        titelId: 27
+                        id: 0
+                        when: 00483488
+                        timeToEarn: 00003343}]
     }
 }

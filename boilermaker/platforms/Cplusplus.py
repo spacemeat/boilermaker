@@ -401,7 +401,7 @@ class CplusplusDef(PlatformDef):
                     else:
                         first = False
                     src += f"""
-{self.ind(ind + 1)}out << std::get<{i}>().value();"""
+{self.ind(ind + 1)}out << std::get<{i}>(obj);"""
                 src += f"""
 {self.ind(ind + 1)}out << ']';"""
 
@@ -522,7 +522,7 @@ class CplusplusDef(PlatformDef):
                 epts = [self.getPodMemberPlatformType(mta) for mta in mtas]
                 src += f'''
 {self.ind(ind + 2)}return {mpt} {{
-{endl.join([f"{self.ind(ind + 3)}std::move(hu::val<{epts[i]}>::extract(node / {i}))" for i in range(0, len(epts))])}
+{f',{endl}'.join([f"{self.ind(ind + 3)}std::move(hu::val<{epts[i]}>::extract(node / {i}))" for i in range(0, len(epts))])}
 {self.ind(ind + 2)}}};'''
 
             elif mbt == 'vector' or mbt == 'set' or mbt == 'unordered_set':
@@ -1179,6 +1179,8 @@ class CplusplusDef(PlatformDef):
         # collection-level differs
         if self.getFeature('diffable') == 'true':
             src += StdDiffs.getDiff_template(self.ind, 1)
+            if 'tuple' in self.seenTypes:
+                src += StdDiffs.getDiff_tuple(self.ind, 1)
             if 'array' in self.seenTypes:
                 src += StdDiffs.getDiff_array(self.ind, 1)
             if 'vector' in self.seenTypes:

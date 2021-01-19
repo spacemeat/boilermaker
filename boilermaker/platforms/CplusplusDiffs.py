@@ -16,6 +16,24 @@ def getDiff_template(indenter, ind):
 {indenter(ind + 0)}}};'''
 
 
+def getDiff_tuple(indenter, ind):
+    return f'''
+
+    
+    template <class ... Args>
+    struct Diff<std::tuple<Args...>>
+    {{
+        Diff() {{ }}
+
+        Diff(std::tuple<Args...> const & lhs, std::tuple<Args...> const & rhs)
+        {{
+            diffs = {{ Diff<Args>(std::get<Args>(lhs), std::get<Args>(rhs))... }};
+        }}
+
+        std::tuple<Diff<Args>...> diffs;
+    }};'''
+
+
 def getDiff_array(indenter, ind):
     return f'''
 

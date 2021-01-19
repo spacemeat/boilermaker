@@ -48,6 +48,7 @@
             a_of_v_of_ints: { type: array of: [{ type: vector of: int }, 4 ]}
             users: { type: vector of: user }
             things: { type: set of: string }
+            stuff: { type: tuple of: [string, int, achievement ]}
         }
     }
 }

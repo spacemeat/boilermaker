@@ -35,19 +35,19 @@ int test()
     std::cout << "diffs: " << diff.diffs << "\n";
     for (std::size_t i = 0; i < diff.v_of_ints_diffs.diffs.size(); ++i)
     {
-        auto & [idx, kind, obj] = diff.v_of_ints_diffs.diffs[i];
+        auto const & [idx, kind, obj] = diff.v_of_ints_diffs.diffs[i];
         std::cout << "diffs.v_of_ints_diffs.diffs[" << i << "]: "
             << "idx: " << idx << "; kind: " << (int) kind << "\n";
     }
 
     for (std::size_t i = 0; i < diff.a_of_v_of_ints_diffs.diffs.size(); ++i)
     {
-        auto & [idx, obj] = diff.a_of_v_of_ints_diffs.diffs[i];
+        auto const & [idx, obj] = diff.a_of_v_of_ints_diffs.diffs[i];
         std::cout << "diffs.a_of_v_of_ints_diffs.diffs[" << i << "]: "
             << "idx: " << idx << "\n";
         for (std::size_t j = 0; j < obj.diffs.size(); ++j)
         {
-            auto & [idx2, kind2, obj2] = obj.diffs[j];
+            auto const & [idx2, kind2, obj2] = obj.diffs[j];
             std::cout << "diffs.v_of_ints_diffs.diffs[" << i << "][" << j << "]: "
                 << "idx: " << idx2 << "; kind: " << (int) kind2 << "\n";
         }
@@ -55,17 +55,25 @@ int test()
 
     for (std::size_t i = 0; i < diff.users_diffs.diffs.size(); ++i)
     {
-        auto & [idx, kind, obj] = diff.users_diffs.diffs[i];
+        auto const & [idx, kind, obj] = diff.users_diffs.diffs[i];
         std::cout << "diffs.users_diffs.diffs[" << i << "]: "
             << "idx: " << idx << "; kind: " << (int) kind << "; user_diffs: " << obj.diffs << "\n";
     }
 
     for (std::size_t i = 0; i < diff.things_diffs.differenceKeys.size(); ++i)
     {
-        auto & [elem, kind, obj] = diff.things_diffs.differenceKeys[i];
+        auto const & [elem, kind, obj] = diff.things_diffs.differenceKeys[i];
         std::cout << "diffs.things_diffs.differenceKeys[" << i << "]: "
             << "elem: " << elem << "; kind: " << (int) kind << "\n";
     }
+
+    auto & tup = diff.stuff_diffs.diffs;
+    if (std::get<0>(tup).diff)
+        { std::cout << "Stuff<0> diff: true\n"; }
+    if (std::get<1>(tup).diff)
+        { std::cout << "Stuff<1> diff: true\n"; }
+    if (std::get<2>(tup).diffs.any())
+        { std::cout << "Stuff<2> diff: true\n"; }
 
     return 0;
 }
