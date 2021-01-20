@@ -992,9 +992,8 @@ class CplusplusDef(PlatformDef):
         if headerScope:
             src += f'''
 {self.ind(ind + 0)}template<>
-{self.ind(ind + 0)}class Diff<{podNode.key}>
+{self.ind(ind + 0)}struct Diff<{podNode.key}>
 {self.ind(ind + 0)}{{
-{self.ind(ind + 0)}public:
 {self.ind(ind + 1)}enum class Members
 {self.ind(ind + 1)}{{'''
             for memberNode in podNode:
@@ -1010,7 +1009,7 @@ class CplusplusDef(PlatformDef):
 '''
             if podNode.numChildren > 0:
                 src += f'''
-{self.ind(ind + 1)}std::bitset<{podNode.numChildren}> diffs;'''
+{self.ind(ind + 1)}std::bitset<{podNode.numChildren}> memberDiffs;'''
             for memberNode in podNode:
                 mbt = self.getPodMemberBaseType(memberNode)
                 mpt = self.getPodMemberPlatformType(memberNode)
@@ -1032,7 +1031,7 @@ class CplusplusDef(PlatformDef):
 
 
 {self.ind(ind + 0)}{self.getNamespaceScope()}Diff<{self.getNamespaceScope()}{podNode.key}>::Diff({self.getNamespaceScope()}{podNode.key} const & lhs, {self.getNamespaceScope()}{podNode.key} const & rhs) noexcept
-: diffs('''
+: memberDiffs('''
             for memberNode in podNode:
                 if memberNode.childOrdinal > 0:
                     src += f'''        '''

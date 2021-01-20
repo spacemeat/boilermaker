@@ -32,51 +32,51 @@ int test()
     auto diff = testCompare::Diff(t0, t1);
 
     // now check diff's contents
-    std::cout << "diffs: " << diff.diffs << "\n";
-    for (std::size_t i = 0; i < diff.v_of_ints_diffs.diffs.size(); ++i)
+    std::cout << "diffs: " << diff.memberDiffs << "\n";
+    for (std::size_t i = 0; i < diff.v_of_ints_diffs.elementDiffs.size(); ++i)
     {
-        auto const & [idx, kind, obj] = diff.v_of_ints_diffs.diffs[i];
-        std::cout << "diffs.v_of_ints_diffs.diffs[" << i << "]: "
+        auto const & [idx, kind, obj] = diff.v_of_ints_diffs.elementDiffs[i];
+        std::cout << "diffs.v_of_ints_diffs.elementDiffs[" << i << "]: "
             << "idx: " << idx << "; kind: " << (int) kind << "\n";
     }
 
-    for (std::size_t i = 0; i < diff.a_of_v_of_ints_diffs.diffs.size(); ++i)
+    for (std::size_t i = 0; i < diff.a_of_v_of_ints_diffs.elementDiffs.size(); ++i)
     {
-        auto const & [idx, obj] = diff.a_of_v_of_ints_diffs.diffs[i];
-        std::cout << "diffs.a_of_v_of_ints_diffs.diffs[" << i << "]: "
+        auto const & [idx, obj] = diff.a_of_v_of_ints_diffs.elementDiffs[i];
+        std::cout << "diffs.a_of_v_of_ints_diffs.elementDiffs[" << i << "]: "
             << "idx: " << idx << "\n";
-        for (std::size_t j = 0; j < obj.diffs.size(); ++j)
+        for (std::size_t j = 0; j < obj.elementDiffs.size(); ++j)
         {
-            auto const & [idx2, kind2, obj2] = obj.diffs[j];
-            std::cout << "diffs.v_of_ints_diffs.diffs[" << i << "][" << j << "]: "
+            auto const & [idx2, kind2, obj2] = obj.elementDiffs[j];
+            std::cout << "diffs.v_of_ints_diffs.elementDiffs[" << i << "][" << j << "]: "
                 << "idx: " << idx2 << "; kind: " << (int) kind2 << "\n";
         }
     }
 
-    for (std::size_t i = 0; i < diff.users_diffs.diffs.size(); ++i)
+    for (std::size_t i = 0; i < diff.users_diffs.elementDiffs.size(); ++i)
     {
-        auto const & [idx, kind, obj] = diff.users_diffs.diffs[i];
-        std::cout << "diffs.users_diffs.diffs[" << i << "]: "
-            << "idx: " << idx << "; kind: " << (int) kind << "; user_diffs: " << obj.diffs << "\n";
+        auto const & [idx, kind, obj] = diff.users_diffs.elementDiffs[i];
+        std::cout << "diffs.users_diffs.elementDiffs[" << i << "]: "
+            << "idx: " << idx << "; kind: " << (int) kind << "; user_diffs: " << obj.memberDiffs << "\n";
     }
 
-    for (std::size_t i = 0; i < diff.things_diffs.differenceKeys.size(); ++i)
+    for (std::size_t i = 0; i < diff.things_diffs.elementDiffs.size(); ++i)
     {
-        auto const & [elem, kind, obj] = diff.things_diffs.differenceKeys[i];
-        std::cout << "diffs.things_diffs.differenceKeys[" << i << "]: "
+        auto const & [elem, kind, obj] = diff.things_diffs.elementDiffs[i];
+        std::cout << "diffs.things_diffs.elementDiffs[" << i << "]: "
             << "elem: " << elem << "; kind: " << (int) kind << "\n";
     }
 
-    std::cout << "stuff.diffs: " << diff.stuff_diffs.diffs << "\n";
-    auto & tup = diff.stuff_diffs.diffObjs;
-    if (std::get<0>(tup).diff)
+    std::cout << "stuff.diffs: " << diff.stuff_diffs.memberDiffs << "\n";
+    auto & tup = diff.stuff_diffs.diffObjects;
+    if (std::get<0>(tup).memberDiffs)
         { std::cout << "Stuff<0> diff: true\n"; }
-    if (std::get<1>(tup).diff)
+    if (std::get<1>(tup).memberDiffs)
         { std::cout << "Stuff<1> diff: true\n"; }
-    if (std::get<2>(tup).diffs.any())
+    if (std::get<2>(tup).memberDiffs.any())
         { std::cout << "Stuff<2> diff: true\n"; }
     
-    std::cout << "two.diffs: " << diff.two_diffs.diffs << "\n";
+    std::cout << "two.diffs: " << diff.two_diffs.memberDiffs << "\n";
 
     return 0;
 }

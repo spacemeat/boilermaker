@@ -2,18 +2,17 @@ def getDiff_template(indenter, ind):
     return f'''
 
 
-{indenter(ind + 0)}template <class PodType>
-{indenter(ind + 0)}struct Diff
-{indenter(ind + 0)}{{
-{indenter(ind + 1)}Diff() {{ }}
+    template <class PodType>
+    struct Diff
+    {{
+        Diff() : memberDiffs(false) {{ }}
 
-{indenter(ind + 1)}Diff(PodType const & lhs, PodType const & rhs)
-{indenter(ind + 1)}{{
-{indenter(ind + 2)}diff = lhs != rhs;
-{indenter(ind + 1)}}}
+        Diff(PodType const & lhs, PodType const & rhs)
+        : memberDiffs(lhs != rhs)
+        {{ }}
 
-{indenter(ind + 1)}bool diff = false;
-{indenter(ind + 0)}}};'''
+        bool memberDiffs = false;
+    }};'''
 
 
 def getDiff_tuple(indenter, ind):
@@ -23,7 +22,7 @@ def getDiff_tuple(indenter, ind):
     // Calls func with tuple element.
     // https://stackoverflow.com/questions/28997271/c11-way-to-index-tuple-at-runtime-without-using-switch
     template <class Func, class Tuple, size_t N = 0>
-    void setCompareBit(Func func, Tuple& tup0, Tuple& tup1, size_t idx)
+    void setCompareBit(Func func, Tuple const & tup0, Tuple const & tup1, size_t idx)
     {{
         if (N == idx)
         {{
@@ -39,25 +38,24 @@ def getDiff_tuple(indenter, ind):
 
 
     template <class ... Args>
-    struct Diff<std::tuple<Args...>>
+    struct Diff<std::tuple<Args...>>    
     {{
         Diff() {{ }}
 
         Diff(std::tuple<Args...> const & lhs, std::tuple<Args...> const & rhs)
+        : diffObjects {{ Diff<Args>(std::get<Args>(lhs), std::get<Args>(rhs))... }}
         {{
             for (std::size_t i = 0; i < sizeof...(Args); ++i)
             {{
                 setCompareBit(
                     [this](auto const & a, auto const & b, std::size_t idx)
-                        {{ diffs[idx] = a != b; }}, 
+                        {{ memberDiffs[idx] = a != b; }}, 
                     lhs, rhs, i);
             }}
-
-            diffObjs = {{ Diff<Args>(std::get<Args>(lhs), std::get<Args>(rhs))... }};
         }}
 
-        std::bitset<sizeof...(Args)> diffs;
-        std::tuple<Diff<Args>...> diffObjs;
+        std::bitset<sizeof...(Args)> memberDiffs;
+        std::tuple<Diff<Args>...> diffObjects;
     }};'''
 
 
@@ -71,15 +69,12 @@ def getDiff_pair(indenter, ind):
         Diff() {{ }}
 
         Diff(std::pair<TF, TS> const & lhs, std::pair<TF, TS> const & rhs)
-        {{
-            diffs = (lhs.first != rhs.first) << 0 | (lhs.second != rhs.second) << 1;
-            diffFirst = Diff<TF>(lhs.first, rhs.first);
-            diffSecond = Diff<TS>(lhs.second, rhs.second);
-        }}
+        : memberDiffs((lhs.first != rhs.first) << 0 | (lhs.second != rhs.second) << 1),
+          diffObjects(Diff<TF>(lhs.first, rhs.first), Diff<TS>(lhs.second, rhs.second))
+        {{ }}
 
-        std::bitset<2> diffs;
-        Diff<TF> diffFirst;
-        Diff<TS> diffSecond;
+        std::bitset<2> memberDiffs;
+        std::pair<Diff<TF>, Diff<TS>> diffObjects;
     }};'''
 
 
@@ -88,24 +83,24 @@ def getDiff_array(indenter, ind):
     return f'''
 
 
-{indenter(ind + 0)}template <class T, std::size_t Size>
-{indenter(ind + 0)}struct Diff<std::array<T, Size>>
-{indenter(ind + 0)}{{
-{indenter(ind + 1)}Diff() {{ }}
+    template <class T, std::size_t Size>
+    struct Diff<std::array<T, Size>>
+    {{
+        Diff() {{ }}
 
-{indenter(ind + 1)}Diff(std::array<T, Size> const & lhs, std::array<T, Size> const & rhs)
-{indenter(ind + 1)}{{
-{indenter(ind + 2)}for (std::size_t i = 0; i < lhs.size(); ++i)
-{indenter(ind + 2)}{{
-{indenter(ind + 3)}if (lhs[i] != rhs[i])
-{indenter(ind + 3)}{{
-{indenter(ind + 4)}diffs.emplace_back(i, Diff<T> {{ lhs[i], rhs[i] }});
-{indenter(ind + 3)}}}
-{indenter(ind + 2)}}}
-{indenter(ind + 1)}}}
+        Diff(std::array<T, Size> const & lhs, std::array<T, Size> const & rhs)
+        {{
+            for (std::size_t i = 0; i < lhs.size(); ++i)
+            {{
+                if (lhs[i] != rhs[i])
+                {{
+                    elementDiffs.emplace_back(i, Diff<T> {{ lhs[i], rhs[i] }});
+                }}
+            }}
+        }}
 
-{indenter(ind + 1)}std::vector<std::pair<std::size_t, Diff<T>>> diffs;
-{indenter(ind + 0)}}};'''
+        std::vector<std::pair<std::size_t, Diff<T>>> elementDiffs;
+    }};'''
 
 
 def getDiff_vector(indenter, ind):
@@ -127,22 +122,22 @@ def getDiff_vector(indenter, ind):
                 {{
                     if (lhs[i] != rhs[i])
                     {{
-                        diffs.emplace_back(i, DiffKind::replaced, Diff<T>(lhs[i], rhs[i]));
+                        elementDiffs.emplace_back(i, DiffKind::replaced, Diff<T>(lhs[i], rhs[i]));
                     }}
                 }}
                 else
                 {{
-                    diffs.emplace_back(i, DiffKind::removed, Diff<T>());
+                    elementDiffs.emplace_back(i, DiffKind::removed, Diff<T>());
                 }}
             }}
 
             for (std::size_t i = lhs.size(); i < rhs.size(); ++i)
             {{
-                diffs.emplace_back(i, DiffKind::added, Diff<T>());
+                elementDiffs.emplace_back(i, DiffKind::added, Diff<T>());
             }}
         }}
 
-        std::vector<std::tuple<std::size_t, DiffKind, Diff<T>>> diffs;
+        std::vector<std::tuple<std::size_t, DiffKind, Diff<T>>> elementDiffs;
     }};'''
 
 
@@ -164,7 +159,7 @@ def getDiff_set(indenter, ind):
             {{
                 if (auto it = rhs.find(lelem); it == rhs.end())
                 {{
-                    differenceKeys.emplace_back(lelem, DiffKind::removed, Diff<T> ());
+                    elementDiffs.emplace_back(lelem, DiffKind::removed, Diff<T> ());
                 }}
             }}
 
@@ -173,12 +168,12 @@ def getDiff_set(indenter, ind):
             {{
                 if (auto it = lhs.find(relem); it == lhs.end())
                 {{
-                    differenceKeys.emplace_back(relem, DiffKind::added, Diff<T> ());
+                    elementDiffs.emplace_back(relem, DiffKind::added, Diff<T> ());
                 }}
             }}
         }}
 
-        std::vector<std::tuple<T, DiffKind, Diff<T>>> differenceKeys;
+        std::vector<std::tuple<T, DiffKind, Diff<T>>> elementDiffs;
     }};'''
 
 
@@ -204,7 +199,7 @@ def getDiff_map(indenter, ind):
             {{
                 if (auto it = rhs.find(lkvp.first); it == rhs.end())
                 {{
-                    differenceKeys.emplace_back(lkvp.first, DiffKind::removed, Diff<T> ());
+                    elementDiffs.emplace_back(lkvp.first, DiffKind::removed, Diff<T> ());
                 }}
             }}
 
@@ -213,7 +208,7 @@ def getDiff_map(indenter, ind):
                 if (auto it = rhs.find(lkvp.first); it != rhs.end() &&
                     lkvp.second != it->second)
                 {{
-                    differenceKeys.emplace_back(lkvp.first, DiffKind::replaced, Diff<T> ( lkvp.second, it->second ));
+                    elementDiffs.emplace_back(lkvp.first, DiffKind::replaced, Diff<T> ( lkvp.second, it->second ));
                 }}
             }}
 
@@ -222,12 +217,12 @@ def getDiff_map(indenter, ind):
                 if (auto it = lhs.find(rkvp.first); it != lhs.end() &&
                     rkvp.second != it->second)
                 {{
-                    differenceKeys.emplace_back(rkvp.first, DiffKind::added, Diff<T> ());
+                    elementDiffs.emplace_back(rkvp.first, DiffKind::added, Diff<T> ());
                 }}
             }}
         }}
         
-        std::vector<std::tuple<Key, DiffKind, Diff<T>>> differenceKeys;
+        std::vector<std::tuple<Key, DiffKind, Diff<T>>> elementDiffs;
     }};'''
 
 
