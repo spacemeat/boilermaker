@@ -61,6 +61,29 @@ def getDiff_tuple(indenter, ind):
     }};'''
 
 
+def getDiff_pair(indenter, ind):
+    return f'''
+
+
+    template <class TF, class TS>
+    struct Diff<std::pair<TF, TS>>
+    {{
+        Diff() {{ }}
+
+        Diff(std::pair<TF, TS> const & lhs, std::pair<TF, TS> const & rhs)
+        {{
+            diffs = (lhs.first != rhs.first) << 0 | (lhs.second != rhs.second) << 1;
+            diffFirst = Diff<TF>(lhs.first, rhs.first);
+            diffSecond = Diff<TS>(lhs.second, rhs.second);
+        }}
+
+        std::bitset<2> diffs;
+        Diff<TF> diffFirst;
+        Diff<TS> diffSecond;
+    }};'''
+
+
+
 def getDiff_array(indenter, ind):
     return f'''
 

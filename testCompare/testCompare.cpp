@@ -75,6 +75,8 @@ int test()
         { std::cout << "Stuff<1> diff: true\n"; }
     if (std::get<2>(tup).diffs.any())
         { std::cout << "Stuff<2> diff: true\n"; }
+    
+    std::cout << "two.diffs: " << diff.two_diffs.diffs << "\n";
 
     return 0;
 }

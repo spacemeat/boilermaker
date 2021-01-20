@@ -1184,6 +1184,8 @@ class CplusplusDef(PlatformDef):
             src += StdDiffs.getDiff_template(self.ind, 1)
             if 'tuple' in self.seenTypes:
                 src += StdDiffs.getDiff_tuple(self.ind, 1)
+            if 'pair' in self.seenTypes:
+                src += StdDiffs.getDiff_pair(self.ind, 1)
             if 'array' in self.seenTypes:
                 src += StdDiffs.getDiff_array(self.ind, 1)
             if 'vector' in self.seenTypes:

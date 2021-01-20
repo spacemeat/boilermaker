@@ -49,6 +49,7 @@
             users: { type: vector of: user }
             things: { type: set of: string }
             stuff: { type: tuple of: [string, int, achievement ]}
+            two: { type: pair of: [float, int ]}
         }
     }
 }
