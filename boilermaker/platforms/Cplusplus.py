@@ -1143,6 +1143,9 @@ class CplusplusDef(PlatformDef):
                  'tuple' not in self.seenTypes):
                 src += '''
 #include <tuple>'''
+            if ('tuple') in self.seenTypes:
+                src += '''
+#include <functional>'''
 
 
         incFiles = self.getIncludeFiles()

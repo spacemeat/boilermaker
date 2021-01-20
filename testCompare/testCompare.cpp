@@ -67,7 +67,8 @@ int test()
             << "elem: " << elem << "; kind: " << (int) kind << "\n";
     }
 
-    auto & tup = diff.stuff_diffs.diffs;
+    std::cout << "stuff.diffs: " << diff.stuff_diffs.diffs << "\n";
+    auto & tup = diff.stuff_diffs.diffObjs;
     if (std::get<0>(tup).diff)
         { std::cout << "Stuff<0> diff: true\n"; }
     if (std::get<1>(tup).diff)

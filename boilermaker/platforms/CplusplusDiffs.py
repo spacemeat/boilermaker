@@ -19,7 +19,25 @@ def getDiff_template(indenter, ind):
 def getDiff_tuple(indenter, ind):
     return f'''
 
-    
+
+    // Calls func with tuple element.
+    // https://stackoverflow.com/questions/28997271/c11-way-to-index-tuple-at-runtime-without-using-switch
+    template <class Func, class Tuple, size_t N = 0>
+    void setCompareBit(Func func, Tuple& tup0, Tuple& tup1, size_t idx)
+    {{
+        if (N == idx)
+        {{
+            std::invoke(func, std::get<N>(tup0), std::get<N>(tup1), idx);
+            return;
+        }}
+
+        if constexpr (N + 1 < std::tuple_size_v<Tuple>)
+        {{
+            return setCompareBit<Func, Tuple, N + 1>(func, tup0, tup1, idx);
+        }}
+    }}
+
+
     template <class ... Args>
     struct Diff<std::tuple<Args...>>
     {{
@@ -27,10 +45,19 @@ def getDiff_tuple(indenter, ind):
 
         Diff(std::tuple<Args...> const & lhs, std::tuple<Args...> const & rhs)
         {{
-            diffs = {{ Diff<Args>(std::get<Args>(lhs), std::get<Args>(rhs))... }};
+            for (std::size_t i = 0; i < sizeof...(Args); ++i)
+            {{
+                setCompareBit(
+                    [this](auto const & a, auto const & b, std::size_t idx)
+                        {{ diffs[idx] = a != b; }}, 
+                    lhs, rhs, i);
+            }}
+
+            diffObjs = {{ Diff<Args>(std::get<Args>(lhs), std::get<Args>(rhs))... }};
         }}
 
-        std::tuple<Diff<Args>...> diffs;
+        std::bitset<sizeof...(Args)> diffs;
+        std::tuple<Diff<Args>...> diffObjs;
     }};'''
 
 
