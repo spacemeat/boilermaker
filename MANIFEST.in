@@ -1,0 +1,11 @@
+include *.sh
+include LICENSE
+recursive-include boilermaker *.hu
+recursive-include boilermaker *.py
+recursive-include sample *.cpp
+recursive-include sample *.hpp
+recursive-include sample *.hu
+recursive-include sample *.py
+recursive-include testCompare *.cpp
+recursive-include testCompare *.hpp
+recursive-include testCompare *.hu

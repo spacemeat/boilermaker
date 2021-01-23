@@ -41,7 +41,7 @@ class CplusplusDef(PlatformDef):
         configIncFiles = self.node['includeFiles'].objectify()  # TODO: don't objectify here
         incFiles = []
         for inc in configIncFiles:
-            if type(inc) == 'dict':
+            if type(inc) is dict:
                 incFiles.append((inc['file'], inc['system'] == 'true'))
             else:
                 incFiles.append((inc, False))
@@ -76,8 +76,10 @@ class CplusplusDef(PlatformDef):
                 self.recordUseOfType(memberNode.value)
             elif memberNode.kind == humonEnums.NodeKind.DICT:
                 self.recordUseOfType(memberNode['type'].value)
-                for ofNode in memberNode['of']:
-                    self.seeUsedTypesRec(ofNode)
+                ofNode = memberNode['of']
+                if ofNode:
+                    for ofElementNode in memberNode['of']:
+                        self.seeUsedTypesRec(ofElementNode)
 
 
     def seeUsedTypes(self):
@@ -129,6 +131,8 @@ class CplusplusDef(PlatformDef):
         if memberNode.kind == humonEnums.NodeKind.DICT:
             typeArgsNode = memberNode['of']
             if typeArgsNode.kind == humonEnums.NodeKind.VALUE:
+                return [typeArgsNode]
+            elif typeArgsNode.kind == humonEnums.NodeKind.DICT:
                 return [typeArgsNode]
             elif typeArgsNode.kind == humonEnums.NodeKind.LIST:
                 return [tan for tan in typeArgsNode]
@@ -1155,7 +1159,7 @@ class CplusplusDef(PlatformDef):
 #include <{incFile}>'''
                 else:
                     headerDir = os.path.dirname(self.getOutputPath('header'))
-                    includePath = os.path.join(os.path.dirname(self.defPath), incFile)
+                    includePath = os.path.join(os.path.dirname(self.defPath), incFile['file'])
                     relativeIncPath = makeRelativePath(headerDir, includePath)
                     src += f'''
 #include "{relativeIncPath}"'''
