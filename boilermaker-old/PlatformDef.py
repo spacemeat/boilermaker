@@ -3,12 +3,31 @@ from humon import humon, enums as humonEnums
 from .loader import loadHumonFile
 
 class PlatformDef:
-    def __init__(self, node, defPath, backupDef=None, podsNode=None):
+    def __init__(self, platformName, project, node, defPath, backupDef=None, podsNode=None):
         '''Make a PlatformDef. Generally should be a base class for a specific platform.'''
+        self.platformName = platformName
+        self.project = project
         self.node = node
         self.defPath = defPath
         self.backupDef = backupDef
         self.podsNode = podsNode
+    
+
+    def loadDefaultPlatformDefs(self, platformInit):
+        scriptDir = f'{os.path.dirname(os.path.realpath(__file__))}/platforms'
+        for huPath in [f'{scriptDir}/{f}' for f in os.listdir(scriptDir) if os.path.isfile(f'{scriptDir}/{f}') and f.endswith('.hu')]:
+            trove, version, platformName = loadHumonFile(huPath)
+            #if platformName == 'c++':
+            defaultDefs[platformName] = (platformInit(self.platformName, self.project, trove.root, huPath), trove, version)
+            #else:
+            #    raise RuntimeError(f"Unsupported platform '{platformName}'")
+
+        print(f'{ansi.dk_blue_fg}Default defs: {ansi.lt_blue_fg}{defaultDefs}{ansi.all_off}')
+
+
+    @property
+    def project(self):
+        return self.project
     
 
     def getValue(self, nodeAddress):

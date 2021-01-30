@@ -1,0 +1,20 @@
+@{ app: boma, boma-version: 0.0.4 }
+{
+    flags: {
+        nameContains: FlagBits
+    }
+
+    prefix: {
+        exclude: common
+        delimit: _
+    }
+
+    suffix: {
+        exclude: common
+        delimit: _
+    }
+
+    case: {
+        encode: lower
+    }
+}

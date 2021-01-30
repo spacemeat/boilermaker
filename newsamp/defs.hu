@@ -1,0 +1,46 @@
+@{ app: boma, boma-version: 0.0.4 }
+{
+    inherit: c++|gnu
+    enums: [{
+            tools: gnu
+            source: [<vulkan/vulkan.h>]
+            languageVersion: c|gnu17
+            platform: vulkan
+            attributes: {}
+        }
+    ]
+    types: {
+        couple: {
+            a: string
+            b: string
+        }
+
+        v_of_couples: {
+            type: vector of: couple
+        }
+    }
+    
+    variants: {
+        txtToBin: {
+            headerDir: '../txtToBin/inc/boma'
+            sourceDir: '../txtToBin/src/boma'
+            inlineDir: '../txtToBin/inc/boma/inl'
+
+            namespace: txtToBin
+            initFromDefault: true
+            initFromHumon: true
+            copyable: false
+            serializeToBinary: true
+            comparable: false
+            diffable: false
+        }
+        app: {
+            namespace: app
+            defaultConstructible: true
+            initFromBinary: true
+            copyable: true
+            comparable: true
+            diffable: true
+        }
+    }
+}

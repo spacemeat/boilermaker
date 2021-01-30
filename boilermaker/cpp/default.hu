@@ -1,0 +1,41 @@
+@{ app: boma, boma-version: 0.0.4 }
+{
+    inherit: boilermaker
+
+    targetLanguage: 'c++'
+    headerDir: '../inc/boma'
+    sourceDir: '../src/boma'
+    inlineDir: '../inc/boma/inl'
+    headerFile: '${settings.namespace}.hpp'
+    sourceFile: '${type.name}.cpp'
+    inlineFile: '${type.name}.inl.hpp'
+    const: west
+    noexcept: false
+    headerOnly: false
+    cavepersonCtrs: false
+
+    defaultConstructible: false
+    memberwiseConstructible: false
+    virtualDestructor: false
+    nullVariant: default // or throw
+    copyable: true
+    movable: true
+    getters: true
+    nonConstGetters: true   // requires getters, privateMembers
+    setters: true       // requires copyable
+    setByMovers: true   // requires movable
+    privateMembers: true
+    deserialize: true   // requires movable
+    serialize: true
+    comparable: true
+    diffable: true  // requires comparable
+
+    variants: {
+        gnu: {
+            tools: 'gnu'
+        }
+        clang: {
+            tools: 'clang'
+        }
+    }
+}

@@ -1,117 +1,165 @@
-import sys
+from copy import deepcopy
 import os
-import os.path
-import subprocess
-from .platforms.Cplusplus import CplusplusDef
-from .ProjectDef import ProjectDef
-from .loader import loadHumonFile
-from . import ansi
-
-defs = {}
-defaultDefs = {}     # {'Cplusplus': Def, ...}
+import sys
+from . import utilities
 
 
-def processTrove_1_0(defEntry, trove, version, ppArgs):
-    defEntry['config'] = Config(version, ppArgs)
-    print (len(trove.root))
-    configNode = trove.root['config']
-    if configNode:
-        argsNode = configNode['args']
-        if argsNode:
-            defEntry['config'].preprocessArgs.append(argsNode.value)
-        langsNode = configNode['platforms']
-        for langNode in langsNode:
-            if str(langNode.key).lower() == "c++":
-                defEntry['config'].platforms['c++'] = langNode.objectify()
-                cpp10.processCplusplus_1_0(defEntry['config'].platforms['c++'], langNode)
-            else:
-                raise ValueError(f'Boilermaker: Unsupported language {langNode.key}')
-
-    # get types
-    typesNode = trove.root['pods']
-    
-    defEntry['seenTypes'] = {}
-
-    # record lang-agnostic types
-    defEntry['pods'] = {}
-    defEntry['pods']['data'] = typesNode.objectify()
-
-    # TODO: for each lang, record lang-specific types
-    defEntry['seenTypes']['c++'] = []
-    defEntry['pods']['c++'] = {}
-    cpp10.processCplusplusTypes_1_0(defEntry, typesNode)
+# TODO: Make this a plugin thing. Nice info: https://realpython.com/python-import/
+from .project import Project as Project
+from .cpp.project import Project as CppProject
 
 
-def reportDecls(decls):
-    # Get access to the global namespace
-    global_namespace = declarations.get_global_namespace(decls)
+def inherit(base, addTo, inheritInherits):
+    defsData = deepcopy(base)
 
-    # Get access to the namespace
-    ns = global_namespace.namespace("og")
+    defsData['inherit'] = utilities.listify(defsData.get('inherit'))
+    defsData['enums'] = utilities.listify(defsData.get('enums'))
+    defsData['types'] = utilities.dictify(defsData.get('types'))
 
-    for decl in ns.declarations:
-        print         (f"decl:                {decl}")
-        print         (f"attributes:          {decl.attributes}")
-        print         (f"decl_string:         {decl.decl_string}")
-        print         (f"location:            {decl.location}")
-        print         (f"name:                {decl.name}")
-        print         (f"parent:              {decl.parent}")
-        print         (f"partial_decl_string: {decl.partial_decl_string}")
-        print         (f"partial_name:        {decl.partial_name}")
-        print         (f"top_parent:          {decl.top_parent}")
-        if hasattr(decl, "elaborated_type_specifier"):
-            print     (f"elaborated_type_specifier:  {decl.elaborated_type_specifier}")
-        if hasattr(decl, "values"):
-            for value in decl.values:
-                print (f"value:                      {value}")
-        if hasattr(decl, "decl_type"):
-            print     (f"decl_type:           {decl.decl_type}")
-        if hasattr(decl, "is_artificial"):
-            print     (f"is_artificial:       {decl.is_artificial}")
-        print ("")
-    
-    #print (dir(ns.declarations[0]))
-    #print (dir(ns.declarations[4]))
+    # inherit inheritance from base data, but not from external DefsFiles
+    if inheritInherits:
+        defsData['inherit'].extend(utilities.listify(addTo.get('inherit')))
+    else:
+        defsData['inherit'] = utilities.listify(addTo.get('inherit'))
+
+    # inherit enums
+    defsData['enums'].extend(utilities.listify(addTo.get('enums')))
+    #print (f' ----- paste {utilities.listify(addTo.get("enums"))}')
+
+    # inherit types
+    defsData['types'].update(utilities.dictify(addTo.get('types')))
+
+    # inherit errything else by override
+    for k, v in addTo.items():
+        if k not in ['inherit', 'enums', 'types']:
+            # print (f' ----- paste {k}: {v}')
+            defsData[k] = v
+        
+    return defsData
 
 
-def findPod(defName, podName):
-    if defName in defs:
-        for defEntry in defs[defName]:
-            for podKey, podValue in defEntry.pods.items():
-                if podKey == podName:
-                    return (podValue, defsEntry.config)
-    
-    return (None, None)
+class DefsVariant:
+    def __init__(self, defsName, variantName, defsPath, baseDefsData, variantDefsData):
+        '''baseDefsData and variantDefsData have both been cleansed of "variant" members.'''
 
-
-def loadDefaultPlatformDefs():
-    global defaultDefs
-
-    scriptDir = f'{os.path.dirname(os.path.realpath(__file__))}/platforms'
-    for huPath in [f'{scriptDir}/{f}' for f in os.listdir(scriptDir) if os.path.isfile(f'{scriptDir}/{f}') and f.endswith('.hu')]:
-        trove, version, platformName = loadHumonFile(huPath)
-        if platformName == 'c++':
-            defaultDefs[platformName] = (CplusplusDef(trove.root, huPath), trove, version)
+        # normalize 'inherit' elements.
+        if variantName == '*':
+            self.defsData = inherit(baseDefsData, {}, True)
         else:
-            raise RuntimeError(f"Unsupported platform '{platformName}'")
+            print (f'''Folding base data: {defsName}|{variantName} = {defsName}|* + {defsName}|{variantName}''')
+            self.defsData = inherit(baseDefsData, variantDefsData, True)
 
-    print(f'{ansi.dk_blue_fg}Default defs: {ansi.lt_blue_fg}{defaultDefs}{ansi.all_off}')
+        self.defsData['variant'] = '|'.join([defsName, variantName])
+        self.defsData['defsPath'] = defsPath
 
 
-def loadProjectDef(defsPath):
-    projectDef = ProjectDef(defsPath, defaultDefs)
-    print(f'{ansi.dk_blue_fg}Project def: {ansi.lt_blue_fg}{projectDef}{ansi.all_off}')
-    return projectDef
+class DefsFile:
+    cache = {}
 
+    @classmethod
+    def make(cls, name, path):
+        if path in cls.cache:
+            return cls.cache[path]
+        else:
+            defs = DefsFile(name, path)
+            cls.cache[path] = defs
+            return defs
+            
+
+    @staticmethod
+    def getDefNameParts(name):
+        tokens = name.split('|')
+        defsName = tokens[0]
+        variantName = '*'
+        if len(tokens) > 1:
+            variantName = tokens[1]
+        return (defsName, variantName)
+
+    def __init__(self, name, path):
+        self.name = name
+        self.path = path
+
+        # acquire the trove
+        t, defFileVersion = utilities.loadHumonFile(path)
+        defsData = t.root.objectify()
+        self.variants = {}
+
+        # cache and remove variants
+        vdescs = defsData.get('variants')
+        if vdescs:
+            del defsData['variants']
+    
+            # variants can't have variants... yet. But, that's intersting, no?
+            for vk, vv in vdescs.items():
+                if 'variants' in vv:
+                    raise RuntimeError(f'Error in variant "{name}|{vk}": Variants cannot have "variant" members.')
+
+        # set the * variant
+        self.variants['*'] = DefsVariant(name, '*', path, defsData, {})
+        if vdescs:
+            # fold in variant data and base data for each variant
+            for vk, vv in vdescs.items():
+                self.variants[vk] = DefsVariant(name, vk, path, defsData, vv)
+
+
+    def resolve(self, variantName):
+        defsData = self.variants[variantName].defsData
+        for inherited in defsData['inherit']:
+            # make the inherited DefsFile
+            inheritedDefsName, inheritedVariantName = DefsFile.getDefNameParts(inherited.lower())
+            inheritedDefsPath = utilities.getBuiltinDefsPath(inheritedDefsName)
+            inheritedDefs = DefsFile.make(inheritedDefsName, inheritedDefsPath)
+
+            # recursive call to inherited def's resolve.
+            inheritedData = inheritedDefs.resolve(inheritedVariantName)
+
+            print (f'Folding inherited variants: defsData = {inheritedDefsName}|{inheritedVariantName} + defsData')
+            defsData = inherit(inheritedData, defsData, False)
+
+            defsData['tools'] = defsData.get('tools', '').lower()
+            defsData['targetLanguage'] = defsData.get('targetLanguage', '').lower()
+ 
+        return defsData
+
+
+def makeProject(defsData):
+    if defsData['targetLanguage'] == 'c++':
+        return CppProject(defsData)
+    else:
+        return Project(defsData)
+
+
+# Use like this, from a project root:
+# /src/samples:$ boma ./boma/defs.hu -p newsample
 
 def main():
     defFile = None
-    troves = []
-    for i, arg in enumerate(sys.argv[1:]):
-        defFile = arg
-    
-    loadDefaultPlatformDefs()
+    variantsRequested = []
+    operations = []
+    color = True
 
+    for i in range(0, len(sys.argv)):
+        if sys.argv[i] == '-v':
+            variantsRequested.append(sys.argv[i + 1])
+            i += 1
+        elif sys.argv[i] == '-r':
+            operations.append('report')
+        elif sys.argv[i] == '-g':
+            operations.append('generateCode')
+        elif sys.argv[i] == '-C':
+            color = False
+        else:
+            defFile = sys.argv[i]
+
+    if len(operations) == 0:
+        operations.append('generateCode')
+    
     if defFile:
-        projectDef = loadProjectDef(os.path.realpath(defFile))
-        projectDef.generateCode()
+        defsFile = DefsFile.make('defs', os.path.realpath(defFile))
+        if len(variantsRequested) == 0:
+            variantsRequested = defsFile.variants
+
+        for v in variantsRequested:
+            p = makeProject(defsFile.resolve(v))
+            for op in operations:
+                p.run(op)

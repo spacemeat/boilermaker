@@ -29,7 +29,7 @@ class Enums:
 
 
 class Enum:
-    def __init__(self, enumName, enumVals=None, typedefOf=None):
+    def __init__(self, enumName, enumVals=None, typedefOf=None, namespaceName='', isCPlusPlus=True):
         self._name = enumName
         self.typedefOf = typedefOf
         self.typedefTargetOf = None
@@ -37,6 +37,8 @@ class Enum:
             self.typedefOf.typedefTargetOf = self
         self._values = enumVals
         self._attribs = set()
+        self._namespaceName = namespaceName
+        self._isCPlusPlus = isCPlusPlus
     
     @property
     def isTypedef(self):
@@ -61,6 +63,14 @@ class Enum:
         if self.isTypedef:
             return self.typedefOf.attribs
         return self._attribs
+    
+    @property
+    def namespaceName(self):
+        return self._namespaceName
+    
+    @property
+    def isCPlusPlus(self):
+        return self._isCPlusPlus
 
     def hasAttrib(self, attrib):
         if self.isTypedef:

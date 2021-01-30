@@ -22,9 +22,10 @@
         cavepersonCtrs: false
     }
     features: {
-        defaultConstructable: false
+        defaultConstructible: false
         memberwiseConstructible: false
         virtualDestructor: false
+        nullVariant: default // or throw
         copyable: true
         movable: true
         getters: true

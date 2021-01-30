@@ -9,7 +9,7 @@ from humon import humon, enums as humonEnums
 from ..PlatformDef import PlatformDef
 from . import CplusplusDiffs as StdDiffs
 
-from pprint import PrettyPrinter
+from ..enums import Enums, Enum
 
 
 endl = '\n'
@@ -31,10 +31,99 @@ def makeRelativePath(sourceDir, destinationPath):
 
 
 class CplusplusDef(PlatformDef):
-    def __init__(self, node, defPath, backupDef=None, podsNode=None):
-        super().__init__(node, defPath, backupDef, podsNode)
+    def __init__(self, project, node, defPath, backupDef=None, podsNode=None):
+        super().__init__('c++', project, node, defPath, backupDef, podsNode)
         self.seenTypes = []
         self.collectionMakerMemo = set()
+        self.getSearchPaths()
+        self.searchPathsFound = False
+        self.quotedSearchPaths = []
+        self.systemSearchPaths = []
+        self.loadDefaultPlatformDefs(self.__init__)
+    
+    def getSearchPaths(self):
+        if self.searchPathsFound:
+            return
+
+        cp = project.doShellCommand('cpp -v /dev/null -o /dev/null')
+        if cp.returncode == 0:
+            sps = cp.stderr[
+                cp.stderr.find('#include "..." search starts here:') : 
+                cp.stderr.find('#include <...> search starts here:')].strip()
+            spsp = sps.find('/')
+            if spsp >= 0:
+                sps = sps[spsp:]
+                self.quotedSearchPaths = [p.strip() for p in sps.split('\n')]
+            else:
+                self.quotedSearchPaths = []
+
+            sps = cp.stderr[
+                cp.stderr.find('#include <...> search starts here:') : 
+                cp.stderr.find('End of search list.')].strip()
+            spsp = sps.find('/')
+            if spsp >= 0:
+                sps = sps[spsp:]
+                self.systemSearchPaths = [p.strip() for p in sps.split('\n')]
+            else:
+                self.systemSearchPaths = []
+
+        self.searchPathsFound = True
+
+
+    def processNamespace(self, enums, ns, isCPlusPlus):
+        for decl in ns.declarations:
+            if hasattr(decl, "elaborated_type_specifier"):
+                if decl.elaborated_type_specifier == "enum":
+                    enumType = decl.partial_decl_string.replace('::', '.')
+                    if enumType[0] == '.':
+                        enumType = enumType[1:]
+                    enums.addEnum('c++', Enum(enumType, decl.values, None, ns.name, isCPlusPlus))
+
+        for decl in ns.declarations:
+            if hasattr(decl, "decl_type"):
+                typedefName = decl.partial_decl_string.replace('::', '.')
+                if typedefName[0] == '.':
+                    typedefName = typedefName[1:]
+                declType = decl.decl_type.decl_string.replace('::', '.')
+                if declType[0] == '.':
+                    declType = declType[1:]
+                enum = enums.getEnum(declType)
+                if enum:
+                    enums.addEnum('c++', Enum(typedefName, None, enum, ns.name, isCPlusPlus))
+        
+        for decl in ns.namespaces(allow_empty=True):
+            self.processNamespace(enums, decl)
+
+
+    def processHeader(self, filename, isSystemInclude, isCPlusPlus, enums):
+        # Find the location of the xml generator (castxml or gccxml)
+        generator_path, generator_name = utils.find_xml_generator()
+
+        # Configure the xml generator
+        if isSystemInclude:
+            incPaths = self.systemSearchPaths
+        else:
+            incPaths = [*self.quotedSearchPaths, *self.systemSearchPaths]
+        xml_generator_config = parser.xml_generator_configuration_t(
+            xml_generator_path = generator_path,
+            xml_generator = generator_name,
+            cflags="-std=c++17",
+            include_paths=incPaths)
+
+        # Parse the c++ file
+        decls = parser.parse([filename], xml_generator_config)
+
+        # Get access to the global namespace
+        global_namespace = declarations.get_global_namespace(decls)
+
+        self.processNamespace(enums, global_namespace, isCPlusPlus)
+
+        print ('Enums processed:')
+        for enumName, enumVals in enums.getAllEnums().items():
+            print(f'  {enumName}:')
+            for enumValName, enumValVal in enumVals.values:
+                print(f'    {enumValName}: {enumValVal}')
+        return enums
 
 
     def getIncludeFiles(self):
@@ -49,7 +138,7 @@ class CplusplusDef(PlatformDef):
 
 
     def fixupScope(self, typeName):
-        if typeName in ['string', 'string_view', 'array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
+        if typeName in ['size_t', 'string', 'string_view', 'array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
             return 'std::' + typeName
         elif typeName in self.podsNode:
             namespace = self.getSetting('namespace')
@@ -63,6 +152,11 @@ class CplusplusDef(PlatformDef):
             return f'{typee} const'
         else:
             return f'const {typee}'
+    
+
+    def preprocessTypes(self):
+        for podNode in self.podsNode:
+            self.spreprocessTypesRec(podNode)
 
 
     def recordUseOfType(self, typeName):
@@ -189,7 +283,8 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}struct hu::val<{enumType}>
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}static inline {enumType} extract(hu::Node node){self.getNoexceptStr()}
-{self.ind(ind + 1)}{{'''
+{self.ind(ind + 1)}{{
+{self.ind(ind + 2)}auto nodeVal = node.value().str().data();'''
         if enum.hasAttrib('flags'):
             src += f'''
 {self.ind(ind + 2)}using enumIntType = std::underlying_type<{enumType}>::type;
@@ -200,26 +295,32 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 2)}while(node)
 {self.ind(ind + 2)}{{'''
 
+        if enumName == 'VkStructureType':
+            breakpoint()
+
         firstTime = True
+        #breakpoint()
         for enumValName, enumValVal in enum.values:
             prefix = enumType
             if enum.hasAttrib('cStyle'):
-                prefix = prefix[:prefix.rfind('::')]
+                scopePos = prefix.rfind('::')
+                if scopePos >= 0:
+                    prefix = prefix[:scopePos + 1]
             
             modifiers = self.getModifiers(enumName)
             modName = enumValName
             modPrefix = modifiers.get('prefix')
-            if modPrefix and modName.startswith(modPrefix):
+            if modPrefix and len(modPrefix) > 0: # and modName.startswith(modPrefix):
                 modName = modName[len(modPrefix):]
             postfix = modifiers.get('postfix')
-            if postfix and modName.endswith(postfix):
+            if postfix and len(postfix) > 0: # and modName.endswith(postfix):
                 modName = modName[:len(modName) - len(postfix)]
             case = modifiers.get('case')
-            if case == 'toUpper':
+            if case == 'upper':
                 modName = modName.lower()
-            elif case == 'toLower':
+            elif case == 'lower':
                 modName = modName.upper()
-            
+
             if firstTime:
                 doElse = ''
                 spaces = '     '
@@ -230,10 +331,10 @@ class CplusplusDef(PlatformDef):
 
             if enum.hasAttrib('flags'):
                 src += f'''
-{self.ind(ind + 3)}{doElse}if {spaces}(std::strncmp(node.value().str().data(), "{modName}", {len(modName)}) == 0) {{ e |= static_cast<enumIntType>({prefix}::{enumValName}); }}'''
+{self.ind(ind + 3)}{doElse}if {spaces}(std::strncmp(nodeVal, "{modName}", {len(modName)}) == 0) {{ e |= static_cast<enumIntType>({prefix}::{enumValName}); }}'''
             else:
                 src += f'''
-{self.ind(ind + 2)}if (std::strncmp(node.value().str().data(), "{modName}", {len(modName)}) == 0) {{ return {prefix}::{enumValName}; }}'''
+{self.ind(ind + 2)}if (std::strncmp(nodeVal, "{modName}", {len(modName)}) == 0) {{ return {prefix}::{enumValName}; }}'''
 
         if enum.hasAttrib('flags'):
             src += f'''
@@ -278,23 +379,30 @@ class CplusplusDef(PlatformDef):
         if enum.hasAttrib('flags'):
             enumValues = reversed(enumValues)
 
+        seenVals = set()
         for enumValName, enumValVal in enumValues:
+            if enumValVal in seenVals:
+                continue
+            seenVals.add(enumValVal)
+
             prefix = enumType
             if enum.hasAttrib('cStyle'):
-                prefix = prefix[:prefix.rfind('::')]
+                scopePos = prefix.rfind('::')
+                if scopePos >= 0:
+                    prefix = prefix[:scopePos + 1]
             
             modifiers = self.getModifiers(enumName)
             modName = enumValName
             modPrefix = modifiers.get('prefix')
-            if modPrefix and modName.startswith(modPrefix):
+            if modPrefix and len(modPrefix) > 0: # and modName.startswith(modPrefix):
                 modName = modName[len(modPrefix):]
             postfix = modifiers.get('postfix')
-            if postfix and modName.endswith(postfix):
+            if postfix and len(postfix) > 0: # and modName.endswith(postfix):
                 modName = modName[:len(modName) - len(postfix)]
             case = modifiers.get('case')
-            if case == 'toUpper':
+            if case == 'upper':
                 modName = modName.lower()
-            elif case == 'toLower':
+            elif case == 'lower':
                 modName = modName.upper()
 
             if enum.hasAttrib('flags'):
@@ -487,6 +595,7 @@ class CplusplusDef(PlatformDef):
 
         mbt = self.getPodMemberBaseType(memberNode)
         if mbt in ['array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
+            #breakpoint()
             mbpt = self.getPodMemberBasePlatformType(memberNode)
             mtas = self.getPodMemberTypeArgNodes(memberNode)
 
@@ -565,10 +674,14 @@ class CplusplusDef(PlatformDef):
             elif mbt == 'variant':
                 epts = [(self.getPodMemberPlatformType(mta), 
                         mta['alias'].value if mta['alias'] else self.getPodMemberBaseType(mta)) for mta in mtas]
+                if self.getFeature('nullVariant') == 'default':
+                    nullOperation = f'''return {{ }};'''
+                else:
+                    nullOperation = f'''throw std::runtime_error("Variant could not be initialized.");'''
                 src += f'''
 {self.ind(ind + 2)}hu::Token tok = node.annotation("type");
 {self.ind(ind + 2)}if (! tok)
-{self.ind(ind + 3)}{{ return {{}}; }}
+{self.ind(ind + 3)}{{ {nullOperation} }}
 {self.ind(ind + 2)}std::string_view tokStr;'''
                 for ept, alias in epts:
                     src += f'''
@@ -576,7 +689,7 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 2)}if (tokStr == "{alias}")
 {self.ind(ind + 3)}{{ return node % hu::val<{ept}>{{}}; }}'''
                 src += f'''
-{self.ind(ind + 2)}return {{}};'''
+{self.ind(ind + 2)}{nullOperation}'''
 
             src += f'''
 {self.ind(ind + 1)}}}
@@ -959,21 +1072,23 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}bool {self.getNamespaceScope()}operator ==({self.getNamespaceScope()}{podNode.key} const & lhs, {podNode.key} const & rhs){self.getNoexceptStr()}
 {self.ind(ind + 0)}{{
 {self.ind(ind + 1)}return'''
-            firstTime = True
-            for memberNode in podNode:
-                memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
-                mbt = self.getPodMemberBaseType(memberNode)
+            if podNode.numChildren > 0:
+                firstTime = True
+                for memberNode in podNode:
+                    memberName, memberType = memberNode.key, self.getPodMemberPlatformType(memberNode)
+                    mbt = self.getPodMemberBaseType(memberNode)
 
 
-                if firstTime:
-                    firstTime = False
-                    src += ' '
-                else:
-                    src += f'''
+                    if firstTime:
+                        firstTime = False
+                        src += ' '
+                    else:
+                        src += f'''
 {self.ind(ind + 1)}    && '''
 
-                src += f'''lhs.{memberName} == rhs.{memberName}'''
-
+                    src += f'''lhs.{memberName} == rhs.{memberName}'''
+            else:
+                src += f''' true'''
             src += f''';
 {self.ind(ind + 0)}}}
 
@@ -997,17 +1112,20 @@ class CplusplusDef(PlatformDef):
             src += f'''
 {self.ind(ind + 0)}template<>
 {self.ind(ind + 0)}struct Diff<{podNode.key}>
-{self.ind(ind + 0)}{{
+{self.ind(ind + 0)}{{'''
+            if podNode.numChildren > 0:
+                src += f'''
 {self.ind(ind + 1)}enum class Members
 {self.ind(ind + 1)}{{'''
-            for memberNode in podNode:
-                src += f'''
+                for memberNode in podNode:
+                    src += f'''
 {self.ind(ind + 2)}{memberNode.key}'''
-                if memberNode.childOrdinal < podNode.numChildren - 1:
-                    src += ','
-            src += f'''
-{self.ind(ind + 1)}}};
+                    if memberNode.childOrdinal < podNode.numChildren - 1:
+                        src += ','
+                src += f'''
+{self.ind(ind + 1)}}};'''
 
+            src += f'''
 {self.ind(ind + 1)}Diff() noexcept {{ }}
 {self.ind(ind + 1)}Diff({podNode.key} const & lhs, {podNode.key} const & rhs) noexcept;
 '''
@@ -1034,7 +1152,9 @@ class CplusplusDef(PlatformDef):
             src += f'''
 
 
-{self.ind(ind + 0)}{self.getNamespaceScope()}Diff<{self.getNamespaceScope()}{podNode.key}>::Diff({self.getNamespaceScope()}{podNode.key} const & lhs, {self.getNamespaceScope()}{podNode.key} const & rhs) noexcept
+{self.ind(ind + 0)}{self.getNamespaceScope()}Diff<{self.getNamespaceScope()}{podNode.key}>::Diff({self.getNamespaceScope()}{podNode.key} const & lhs, {self.getNamespaceScope()}{podNode.key} const & rhs) noexcept'''
+            if podNode.numChildren > 0:
+                src += f'''
 : memberDiffs('''
             for memberNode in podNode:
                 if memberNode.childOrdinal > 0:
@@ -1205,7 +1325,7 @@ class CplusplusDef(PlatformDef):
         # bomaStream
         src += self.genBomaStreamClass(ind)
 
-        # collection-level stream inserters
+        # enum stream inserters
         for enumName, enum in self.enums.getAllEnums().items():
             # Skip any enums that have a typedef referencing them.
             if enum.isTypedefTarget:
@@ -1219,10 +1339,6 @@ class CplusplusDef(PlatformDef):
         # class decl
         memo = set()    # one memo to constrain them all
         for podNode in self.podsNode:
-            # static stream inserters for std collections
-            for memberNode in podNode:
-                src += self.generateCollectionStreamInserter(memo, memberNode, ind)
-
             src += self.genFriendDecls(podNode, ind)
 
             podName = podNode.key
@@ -1273,7 +1389,11 @@ class CplusplusDef(PlatformDef):
             # end of class def
             src += f'''
 {self.ind(ind + 0)}}};'''
-            
+
+            # static stream inserters for std collections
+            for memberNode in podNode:
+                src += self.generateCollectionStreamInserter(memo, memberNode, ind)
+
         if usingNamespace:
             ind -= 1
             src += f'''
@@ -1345,7 +1465,7 @@ struct hu::val<{podName}>
             headerPath = self.getOutputPath('header')
             headerFile = os.path.basename(headerPath)
             src += f'''
-#include "../inc/{headerFile}"'''
+#include "../../inc/gen-boma/{headerFile}"'''
 
         podNode = self.getPodNode(podName)
 
@@ -1401,3 +1521,97 @@ struct hu::val<{podName}>
         self.seeUsedTypes()
         self.generateHeaderFile()
         self.generateSrcFiles()
+    
+
+    def generateEnumSuggestions(self, enums):
+        def determineCommonPrePostfixLengthBetweenTwo(a, b, postfix):
+            # I'm sure there's a pythonic way
+            commonLength = 0
+            for i in range(0, min(len(a), len(b))):
+                idx = i if not postfix else -i - 1
+                if a[idx] == b[idx]:
+                    commonLength += 1
+                else:
+                    break
+
+            # if the prefix ends in a non-_, dial it back until we find one
+            # (also if postfix starts in a non-_...)
+            
+            #if commonLength < len(a):
+            if True:
+                idx = commonLength - 1 if not postfix else -commonLength
+                while commonLength > 0 and a[idx] != '_':
+                    commonLength -= 1
+                    idx -= 1
+
+            return commonLength
+
+
+        def determineCommonPrePostfixLength(strs, postfix):
+            cev = strs[0]
+            commonLength = len(cev[0])
+            for ev in strs[1:]:
+                l = determineCommonPrePostfixLengthBetweenTwo(cev[0], ev[0], postfix)
+                if l < commonLength:
+                    commonLength = l
+                if commonLength == 0:
+                    break
+            return commonLength
+        
+        self.enums = enums
+
+        src = ''
+
+        # looking for cStyle, flags
+        src += f'''
+            attributes: {{'''
+        for enumName, enum in self.enums.getAllEnums().items():
+            # TODO: This is Vulkan-specific! Parameterize this:
+            attribs = []
+            if enum.isCPlusPlus:
+                attribs.append('cStyle')
+            if 'FlagBits' in enumName:  # This is the Vulkan-specific part
+                attribs.append('flags')
+
+            ns = enum.namespaceName
+            if ns == '::':
+                ns = ''
+            if len(attribs) > 0:
+                src += f'''
+                {ns}{enumName}: [{' '.join(attribs)}]'''
+
+        src += f'''
+            }}'''
+        
+        # looking for prefixes, postfixes
+        src += f'''
+            modifiers: {{'''
+        for enumName, enum in self.enums.getAllEnums().items():
+            mods = {}
+            if len(enum.values) == 0:
+                continue
+            
+            #if enumName == 'VkStructureType':
+            #    breakpoint()
+
+            #breakpoint()
+            prefixLen = determineCommonPrePostfixLength(enum.values, False)
+            if prefixLen > 0:
+                mods['prefix'] = enum.values[0][0][0:prefixLen]
+
+            postfixLen = determineCommonPrePostfixLength(enum.values, True)
+            if postfixLen > 0:
+                mods['postfix'] = enum.values[0][0][-postfixLen:]
+            
+            ns = enum.namespaceName
+            if ns == '::':
+                ns = ''
+
+            if len(mods) > 0:
+                src += f'''
+                {ns}{enumName}: {{ {' '.join([f'{k}: {v}' for k, v in mods.items()])} }}'''
+            
+        src += f'''
+            }}'''
+
+        print (src)

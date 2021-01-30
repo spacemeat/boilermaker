@@ -1,0 +1,5 @@
+@{ app: boma, boma-version: 0.0.4 }
+{
+    namespace: boma
+    indent: { type: space, num: 4 }
+}

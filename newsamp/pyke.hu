@@ -1,0 +1,26 @@
+@ { app: pyke pyke-version: 0.0.1 } {
+    txt2bin: {
+        projects: {
+            build: {
+                using: [release]
+            }   // makes txt2bin.build.targets
+            run: {
+                dependsOn: .build
+            }
+        }
+    }
+
+    app-boma: {
+
+    }
+
+    app: {
+        dependsOn: {
+            txt2bin: {
+                run: {
+
+                }   // makes txt2bin.run.targets
+            }
+        }
+    }
+}

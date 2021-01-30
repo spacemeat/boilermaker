@@ -24,6 +24,7 @@ setup(name="boilermaker",
       ],
       install_requires = [
           'humon',
+          'castxml',
           'pygccxml>=2.0.1'
       ],
       extras_require = {
