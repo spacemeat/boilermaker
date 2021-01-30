@@ -27,10 +27,15 @@ def getLanguageVersionParts(name):
 
 
 def findPlatformFile(language, platform, filename, defsPath):
+    if language == 'c': languages = ['c', 'cFamily']
+    elif language == 'c++': languages = ['c++', 'cFamily']
+    else: languages = [language]
+
     # ~/src/project/boma/c/platforms/vulkan/enums.hu
-    d = os.path.join( defsPath, language, 'platforms', platform, filename )
-    if os.path.isfile(d):
-        return d
+    for language in languages:
+        d = os.path.join( defsPath, language, 'platforms', platform, filename )
+        if os.path.isfile(d):
+            return d
 
     # ~/src/project/boma/platforms/vulkan/enums.hu
     d = os.path.join( defsPath, 'platforms', platform, filename )
@@ -43,9 +48,10 @@ def findPlatformFile(language, platform, filename, defsPath):
         return d
 
     # ~/src/boma/.venv/boma/lib/python3.8/site-packages/boilermaker/c/platforms/vulkan/enums.hu
-    d = os.path.join( os.path.dirname(__file__), language, 'platforms', platform, filename )
-    if os.path.isfile(d):
-        return d
+    for language in languages:
+        d = os.path.join( os.path.dirname(__file__), language, 'platforms', platform, filename )
+        if os.path.isfile(d):
+            return d
 
     raise RuntimeError(f'Could not find platform file {language}/{platform}/{filename}.')
 

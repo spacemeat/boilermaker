@@ -2,8 +2,7 @@ from . import utilities
 
 # TODO: Make this a plugin thing.
 from .enums import Enums as Enums
-from .c.enums import Enums as CEnums
-from .cpp.enums import Enums as CppEnums
+from .cFamily.enums import Enums as CfamilyEnums
 
 class Project:
     def __init__(self, defsData):
@@ -26,10 +25,8 @@ class Project:
         self.enums = []
         for enumDefsData in self.defsData['enums']:
             language, _ = utilities.getLanguageVersionParts(enumDefsData.get('languageVersion', 'c|gnu17'))
-            if language == "c":
-                self.enums.append(CEnums(self.defsData, enumDefsData))
-            elif language == 'c++':
-                self.enums.append(CppEnums(self.defsData, enumDefsData))
+            if language == "c" or language == 'c++':
+                self.enums.append(CfamilyEnums(self.defsData, enumDefsData))
             else:
                 raise RuntimeError(f'Unrecognized enums language: {language}')
         

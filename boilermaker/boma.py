@@ -24,7 +24,6 @@ def inherit(base, addTo, inheritInherits):
 
     # inherit enums
     defsData['enums'].extend(utilities.listify(addTo.get('enums')))
-    #print (f' ----- paste {utilities.listify(addTo.get("enums"))}')
 
     # inherit types
     defsData['types'].update(utilities.dictify(addTo.get('types')))
@@ -32,7 +31,6 @@ def inherit(base, addTo, inheritInherits):
     # inherit errything else by override
     for k, v in addTo.items():
         if k not in ['inherit', 'enums', 'types']:
-            # print (f' ----- paste {k}: {v}')
             defsData[k] = v
         
     return defsData
@@ -55,6 +53,7 @@ class DefsVariant:
 
 class DefsFile:
     cache = {}
+    
 
     @classmethod
     def make(cls, name, path):
@@ -74,6 +73,7 @@ class DefsFile:
         if len(tokens) > 1:
             variantName = tokens[1]
         return (defsName, variantName)
+
 
     def __init__(self, name, path):
         self.name = name

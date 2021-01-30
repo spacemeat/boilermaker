@@ -1,6 +1,6 @@
 from .. import utilities
 from ..enums import Enums as BaseEnums, Enum as BaseEnum
-from ..cpp.getSearchPaths_gnu import getSearchPaths as getSearchPaths_gnu
+from ..cFamily.getSearchPaths_gnu import getSearchPaths as getSearchPaths_gnu
 import pygccxml
 
 
@@ -22,12 +22,12 @@ class Enums(BaseEnums):
             self._processSource(sourceFilename)
         
 
-    def _processNamespace(self, enums, ns):
+    def _processNamespace(self, enums, ns, isScoped):
         for decl in ns.declarations:
             if hasattr(decl, "elaborated_type_specifier"):
                 if decl.elaborated_type_specifier == "enum":
                     enumType = decl.partial_decl_string.replace('::', '.')
-                    self.enums[enumType] = Enum(enumType, decl.values, False, self)
+                    self.enums[enumType] = Enum(enumType, decl.values, isScoped, self)
 
         for decl in ns.declarations:
             if hasattr(decl, "decl_type"):
@@ -36,6 +36,9 @@ class Enums(BaseEnums):
                 enum = enums.get(declType)
                 if enum:
                     self.enumTypedefs[typedefName] = EnumTypedef(typedefName, declType, ns.name)
+
+        for decl in ns.namespaces(allow_empty=True):
+            self._processNamespace(enums, decl, isScoped)
 
 
     def _processSource(self, sourceFilename):
@@ -55,17 +58,33 @@ class Enums(BaseEnums):
             incPaths = [*self.quotedSearchPaths, *self.systemSearchPaths]
         
         cflags = ''
-        languageVersion = self.defsData.get('languageVersion', 'gnu17')[1:]
-        if languageVersion in [
-                'c89', 'gnu89',
-                'c90', 'iso9899:1990', 'gnu90', 
-                'iso9899:199409', 
-                'c99', 'iso9899:1999', 'gnu99', 
-                'c11', 'iso9899:2011', 'gnu11', 
-                'c17', 'iso9899:2017','gnu17', 
-                'c18', 'iso9899:2018', 'gnu18',
-                'c2x', 'gnu2x']:
-            cflags = f'-std={languageVersion}'
+
+        if tools == 'gnu':
+            language, version = utilities.getLanguageVersionParts(
+                self.defsData.get('languageVersion', 'c|gnu17'))
+            if language == 'c':
+                if version in [
+                    'c89', 'c90', 'c99', 'c11', 'c17', 'c18', 'c2x',
+                    'gnu89',
+                    'iso9899:1990', 'gnu90', 
+                    'iso9899:199409', 
+                    'iso9899:1999', 'gnu99', 
+                    'iso9899:2011', 'gnu11', 
+                    'iso9899:2017','gnu17', 
+                    'iso9899:2018', 'gnu18',
+                    'gnu2x']:
+                    cflags = f'-std=c++98'  # We run C through g++ anyway.
+                else:
+                    raise RuntimeError(f'Unsupported C language version "{version}".')
+            elif language == 'c++':
+                if version in ['98', '11', '14', '17', '20']:
+                    cflags = f'-std=c++{version}'
+                else:
+                    raise RuntimeError(f'Unsupported C++ language version "{version}".')
+            else:
+                raise RuntimeError(f'Unsupported language {language}.')
+        else:
+            RuntimeError(f'Invalid "tools" value: {tools}. Only "gnu" or "clang" are currently supported.')
 
         xml_generator_config = pygccxml.parser.xml_generator_configuration_t(
             xml_generator_path = generator_path,
@@ -73,13 +92,13 @@ class Enums(BaseEnums):
             cflags=cflags,
             include_paths=incPaths)
         
-        # Parse the c file
+        # Parse the include file
         decls = pygccxml.parser.parse([sourceFilename], xml_generator_config)
 
         # Get access to the global namespace
         global_namespace = pygccxml.declarations.get_global_namespace(decls)
 
-        self._processNamespace(enums, global_namespace)
+        self._processNamespace(enums, global_namespace, language == 'c++')
 
 
 class Enum(BaseEnum):
@@ -92,7 +111,6 @@ class Enum(BaseEnum):
 
 
     def _translateEnumVals(self, enumName, pygccxmlEnumVals):
-        #breakpoint()
         declStringValues = [val[0] for val in pygccxmlEnumVals]
         self._computeAttributes(enumName, declStringValues)
 
