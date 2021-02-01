@@ -31,10 +31,10 @@ class Enums:
 
 class Enum:
     def __init__(self, enumName, namespaceName, enumsObject):
-        self._name = enumName
+        self.name = enumName
         self._values = {}
         self._attribs = set()
-        self._namespaceName = namespaceName
+        self.namespaceName = namespaceName
         self.enumsObject = enumsObject
         self.defsData = enumsObject.defsData
         self.enumDefsData = enumsObject.enumDefsData
@@ -181,7 +181,7 @@ class Enum:
 
 class EnumTypedef:
     def __init__(self, typedefName, enumName, namespaceName):
-        self._name = typedefName
-        self._enumName = enumName
-        self._attribs = set()
-        self._namespaceName = namespaceName
+        self.name = typedefName
+        self.enumName = enumName
+        self.attribs = set()
+        self.namespaceName = namespaceName

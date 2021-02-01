@@ -2,17 +2,35 @@
 {
     inherit: boilermaker
 
-    targetLanguage: 'c++'
-    headerDir: '../inc/boma'
-    sourceDir: '../src/boma'
-    inlineDir: '../inc/boma/inl'
-    headerFile: '${settings.namespace}.hpp'
-    sourceFile: '${type.name}.cpp'
-    inlineFile: '${type.name}.inl.hpp'
-    const: west
-    noexcept: false
-    headerOnly: false
+    targetLanguage: c++
+    headerDir:      ../inc/boma
+    sourceDir:      ../src/boma
+    inlineDir:      ../inc/boma/inl
+    headerFile:     $<namespace>-boma.hpp
+    sourceFile:     $<typeName>.cpp
+    inlineFile:     $<typeName>.inl.hpp
+    enumSourceFile: enums.cpp
+    enumInlineFile: enums.inl.hpp
+    const:          west
+    noexcept:       false
+    headerOnly:     false
     cavepersonCtrs: false
+
+    headerTopComment: ^^
+/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
+    Do not bother modifying this file, as your build process will overwrite
+    your changes. */
+^^
+    sourceTopComment: ^^
+/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
+    Do not bother modifying this file, as your build process will overwrite
+    your changes. */
+^^
+    inlineTopComment: ^^
+/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
+    Do not bother modifying this file, as your build process will overwrite
+    your changes. */
+^^
 
     defaultConstructible: false
     memberwiseConstructible: false
@@ -32,10 +50,10 @@
 
     variants: {
         gnu: {
-            tools: 'gnu'
+            tools: gnu
         }
         clang: {
-            tools: 'clang'
+            tools: clang
         }
     }
 }

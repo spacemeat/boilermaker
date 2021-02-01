@@ -53,7 +53,7 @@ class DefsVariant:
 
 class DefsFile:
     cache = {}
-    
+
 
     @classmethod
     def make(cls, name, path):
@@ -137,11 +137,16 @@ def main():
     variantsRequested = []
     operations = []
     color = True
+    skip = False
 
     for i in range(0, len(sys.argv)):
+        if skip:
+            skip = False
+            continue
+        
         if sys.argv[i] == '-v':
             variantsRequested.append(sys.argv[i + 1])
-            i += 1
+            skip = True
         elif sys.argv[i] == '-r':
             operations.append('report')
         elif sys.argv[i] == '-g':
