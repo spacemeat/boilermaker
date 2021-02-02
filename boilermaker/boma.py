@@ -147,10 +147,17 @@ def main():
         if sys.argv[i] == '-v':
             variantsRequested.append(sys.argv[i + 1])
             skip = True
-        elif sys.argv[i] == '-r':
-            operations.append('report')
+
+        elif sys.argv[i] == '-rd':
+            operations.append('reportDefs')
+        elif sys.argv[i] == '-re':
+            operations.append('reportEnums')
+        elif sys.argv[i] == '-rt':
+            operations.append('reportTypes')
+
         elif sys.argv[i] == '-g':
             operations.append('generateCode')
+
         elif sys.argv[i] == '-C':
             color = False
         else:

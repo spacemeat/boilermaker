@@ -1,4 +1,8 @@
 def genEnumDeserializers(self):
+    self._addInclude('mainHeader', '<humon/humon.hpp>')
+    self._addInclude('mainHeader', 
+        '/'.join([self.d('headerToInl'), self.d('enumInlineHeaderFile')])
+           .join(['"', '"']))
     for enumName, enum in self.everyEnum():
         self.gen_enums.genEnumDeserializer(self, enumName, enum)
 
@@ -6,20 +10,34 @@ def genEnumDeserializers(self):
 def genEnumDeserializer(self, enumName, enum):
     it = self.indent()
 
+    self._addInclude('enumInlineSource', '<humon/humon.hpp>')
+
+    for includeFile in enum.enumsObject.sources:
+        if includeFile.startswith('<') and includeFile.endswith('>'):
+            self._addInclude('enumInlineSource', includeFile)
+        else:
+            self._addInclude('enumInlineSource', includeFile.join(['"', '"']))
+
     enumType = enumName.replace('.', '::')
-    src = f'''
-{it}template <>
-{it}struct hu::val<{enumType}>
-{it}{{
-{it}{it}static inline {enumType} extract(hu::Node node) noexcept;
-{it}}}
-'''
-    self._appendToFile(src, 'mainInclude', 'enumDeserializers')
 
+    # write inline bits
     src = f'''
 
+template <>
+struct hu::val<{enumType}>
+{{
+{it}static inline {enumType} extract(hu::Node node) noexcept;
+}};'''
+    #self._appendToFile(src, 'enumInlineSource', 'enumDeserializers')
+    self._appendToSection('enumDeserializerDecls', src)
 
-static inline {enumType} hu::val<{enumType}>::extract(hu::Node node) noexcet
+    # write source bits
+
+    self._addInclude('enumSource', '<cstring>')
+    src = f'''
+
+
+inline {enumType} hu::val<{enumType}>::extract(hu::Node node) noexcept
 {{
 {it}auto nodeVal = node.value().str().data();'''
     if enum.flags:
@@ -47,7 +65,7 @@ static inline {enumType} hu::val<{enumType}>::extract(hu::Node node) noexcet
 {it}{it}{doElse}if {spaces}(std::strncmp(nodeVal, "{modName}", {len(modName)}) == 0) {{ e |= static_cast<enumIntType>({declName}); }}'''
         else:
             src += f'''
-{it}if (std::strncmp(nodeVal, "{modName}", {len(modName)}) == 0) {{ return {enumValName}; }}'''
+{it}if (std::strncmp(nodeVal, "{modName}", {len(modName)}) == 0) {{ return {declName}; }}'''
 
     if enum.flags:
         src += f'''
@@ -64,7 +82,8 @@ static inline {enumType} hu::val<{enumType}>::extract(hu::Node node) noexcet
     # TODO: define and extract a default value
     src += f'''
 }}'''
-    self._appendToFile(src, 'enumSource', 'enumDeserializers')
+    #self._appendToFile(src, 'enumSource', 'enumDeserializers')
+    self._appendToSection('enumDeserializerDefs', src)
 
 
 def genEnumStreamInserters(self):

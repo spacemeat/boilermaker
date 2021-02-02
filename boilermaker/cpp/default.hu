@@ -6,14 +6,14 @@
     headerDir:      ../inc/boma
     sourceDir:      ../src/boma
     inlineDir:      ../inc/boma/inl
-    headerFile:     $<namespace>-boma.hpp
-    sourceFile:     $<typeName>.cpp
-    inlineFile:     $<typeName>.inl.hpp
-    enumSourceFile: enums.cpp
-    enumInlineFile: enums.inl.hpp
+    mainHeaderFile:         $<namespace>-boma.hpp
+    enumInlineHeaderFile:   enums.inl.hpp
+    enumSourceFile:         enums.cpp
+    typeInlineHeaderFile:   $<typeName>.inl.hpp
+    typeSourceFile:         $<typeName>.cpp
     const:          west
     noexcept:       false
-    headerOnly:     false
+    outputForm:     headerOnly  // or library
     cavepersonCtrs: false
 
     headerTopComment: ^^
@@ -55,5 +55,119 @@
         clang: {
             tools: clang
         }
+    }
+
+    layout: {
+        // For making a header-only library.
+        headerOnly.mainHeader: [
+            pragma
+            mainHeaderTopComment
+            mainHeaderIncludes
+            includeEnums
+            namespaceOpen
+            collectionDiffers
+            bomaStreamClass
+            typeHeaders
+            collectionSerializers
+            namespaceClosed
+            typeDeserializers
+            inlineIncludes
+        ]
+
+        headerOnly.enumInlineSource: [
+            pragma
+            inlineTopComment
+            enumInlineSourceIncludes
+            enumSourceIncludes
+            enumDeserializerDecls
+            enumDeserializerDefs
+            namespaceOpen
+            enumSerializerDecls
+            enumSerializerDefs
+            namespaceClosed
+        ]
+
+        headerOnly.typeInlineSource: [
+            pragma
+            topComment
+            includes
+            collectionDeserializers
+            defaultCtr
+            memberwiseCtr
+            humonCtr
+            copyCtr
+            moveCtr
+            copyAssign
+            moveAssign
+            destructor
+            swap
+            memberGetters
+            memberSetters
+            memberSetMovers
+            serialzier
+            comparator
+            differ
+        ]
+
+        // For making library with .cpp sources.
+        library.mainHeader: [
+            pragma
+            mainHeaderTopComment
+            mainHeaderIncludes
+            includeEnums
+            namespaceOpen
+            enumSerialziers
+            collectionDiffers
+            bomaStreamClass
+            includeTypes
+            collectionSerializers
+            namespaceClosed
+            typeDeserializers
+            inlineIncludes
+        ]
+
+        library.enumInlineSource: [
+            pragma
+            inlineTopComment
+            enumInlineSourceIncludes
+            enumDeserializerDecls
+            enumSerializerDecls
+        ]
+
+        library.enumSource: [
+            sourceTopComment
+            enumSourceIncludes
+            enumDeserializerDefs
+            enumSerializerDefs
+        ]
+
+        library.typeInlineSource: [
+            pragma
+            topComment
+            typeInlineSourceIncludes
+            typeHeaders
+        ]
+
+        library.typeSource: [
+            topComment
+            typeSourceIncludes
+            enumDeserializers
+            collectionDeserializers
+            defaultCtr
+            memberwiseCtr
+            humonCtr
+            copyCtr
+            moveCtr
+            copyAssign
+            moveAssign
+            destructor
+            swap
+            memberGetters
+            memberSetters
+            memberSetMovers
+            serialzier
+            comparator
+            differ
+        ]
     }
 }

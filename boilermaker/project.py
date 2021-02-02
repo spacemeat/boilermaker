@@ -41,8 +41,12 @@ class Project:
 
 
     def run(self, op):
-        if op == 'report':
-            self.generateReport()
+        if op == 'reportDefs':
+            self.reportDefs()
+        if op == 'reportEnums':
+            self.reportEnums()
+        if op == 'reportTypes':
+            self.reportTypes()
         elif op == 'generateCode':
             self.generateCode()
     
@@ -74,17 +78,21 @@ class Project:
             self.types[typeName] = StructType(typeName, typeData)
 
 
-    def generateReport(self):
+    def reportDefs(self):
         var = self.d('variant')
         print (f'Report on {var}:')
         for k, v in self.defsData.items():
             print (f'  {k}: {v}')
 
+
+    def reportEnums(self):
         for enumName, enumObject in self.everyEnum():
             print (f'ENUM: {enumName}:')
             for k, v in enumObject.enumVals.items():
                 print (f'    {k} = ({v[0]}, {v[1]})')
         
+
+    def reportTypes(self):
         for typeName, typeData in self.types.items():
             print (f'Type: {typeName}')
             for k, v, in typeData.members.items():

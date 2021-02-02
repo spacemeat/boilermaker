@@ -91,7 +91,6 @@ class Enum:
 
     def _computeAttributes(self, enumName, declStringValues):
         #flags
-        #breakpoint()
         self.flags = False
         if len(self.enumsObject.flagsAttribute) > 0:
             for op, value in self.enumsObject.flagsAttribute.items():
@@ -99,7 +98,7 @@ class Enum:
                     if value and type(value) is not str:
                         raise RuntimeError(f'platform/flags/nameContains must be a string value.')
 
-                    if enumName.find(value):
+                    if enumName.find(value) > 0:
                         self.flags = True
                 else:
                     raise RuntimeError(f'platform/flag contains an invalid operation "{op}".')

@@ -17,8 +17,8 @@ class Enums(BaseEnums):
 
         self.enums = {}
         self.enumTypedefs = {}
-        sources = utilities.listify(enumDefsData.get('source', []))
-        for sourceFilename in sources:
+        self.sources = utilities.listify(enumDefsData.get('source', []))
+        for sourceFilename in self.sources:
             self._processSource(sourceFilename)
         
 

@@ -12,7 +12,7 @@
     types: {
         couple: {
             a: string
-            b: string
+            b: .VkResult
         }
 
         v_of_couples: {

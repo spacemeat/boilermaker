@@ -1,4 +1,5 @@
 import os
+import pathlib
 import subprocess
 from humon import humon, enums as humonEnums
 from . import ansi
@@ -9,12 +10,37 @@ def doShellCommand(cmd):
     return subprocess.run(cmd, shell=True, check=True, encoding='utf-8', capture_output=True)
 
 
+#TODO: Move all os.path things to pathlib things
 def getBuiltinDefsPath(defsName):
     bomaSrcDir = os.path.dirname(__file__)
     if defsName == 'boilermaker':
         return os.path.join(bomaSrcDir, 'default.hu')
     elif defsName == 'c++':
         return os.path.join(bomaSrcDir, 'cpp', 'default.hu')
+
+
+#TODO: Move all os.path things to pathlib things
+def makeRelativeDir(sourcePath, destinationPath):
+    '''sourcePath and destinationPath may include filenames, which are ignored.'''
+    sourceDir = os.path.dirname(sourcePath)
+    destinationDir = os.path.dirname(destinationPath)
+    common = os.path.commonpath([sourceDir, destinationDir])
+    relativePath = ''
+    while str(sourceDir) != str(common):
+        sourceDir = str(pathlib.PurePath(sourceDir).parent)
+        relativePath += '../'
+    return os.path.join(relativePath, str(pathlib.PurePath(destinationDir).relative_to(common)))
+
+#TODO: Move all os.path things to pathlib things
+def makeRelativePath(sourceDir, destinationPath):
+    sourceDir = os.path.dirname(sourceDir)
+    destinationDir = os.path.dirname(destinationPath)
+    common = os.path.commonpath([sourceDir, destinationDir])
+    relativePath = ''
+    while str(sourceDir) != str(common):
+        sourceDir = str(pathlib.PurePath(sourceDir).parent)
+        relativePath += '../'
+    return os.path.join(relativePath, str(pathlib.PurePath(destinationPath).relative_to(common)))
 
 
 def getLanguageVersionParts(name):
