@@ -43,8 +43,10 @@
     setters: true       // requires copyable
     setByMovers: true   // requires movable
     privateMembers: true
-    deserialize: true   // requires movable
-    serialize: true
+    deserializeFromHumon: true   // requires movable
+    deserializeFromBinary: false
+    serializeToHumon: true
+    serializeToBinary: false
     comparable: true
     diffable: true  // requires comparable
 

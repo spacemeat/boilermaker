@@ -24,11 +24,16 @@ class Project:
     
 
     def d(self, key):
-        val = self.defsData[key]
+        val = self.defsData.get(key)
         if type(val) is str:
             val = re.sub(defArgumentReg, lambda m: self.replaceArg(m.group(1)), val)
         return val
+
     
+    def dIs(self, key):
+        val = self.defsData.get(key)
+        return val.lower() == 'true'
+
 
     def indent(self):
         indent = self.defsData.get('indent', {'type':'space', 'num': '4' } )

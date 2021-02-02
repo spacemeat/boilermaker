@@ -9,7 +9,6 @@ class Project(BaseProject):
 
     def __init__(self, defsData):
         super().__init__(defsData)
-        self.targetFiles = {}
         self.includes = {}
         self.sections = {}
         self.defsData['headerToInl'] = utilities.makeRelativeDir(self._getPath('mainHeader'), self._getPath('enumInlineSource'))
@@ -38,13 +37,6 @@ class Project(BaseProject):
             self.sections[section] = src
         else:
             self.sections[section] += src
-        #kind = '.'.join([self.d('outputForm'), kind])
-        #if kind not in self.targetFiles:
-        #    self.targetFiles[kind] = { section: src }
-        #elif section not in self.targetFiles[kind]:
-        #    self.targetFiles[kind][section] = src
-        #else:
-        #    self.targetFiles[kind][section] += src
     
 
     def _addInclude(self, kind, includeFile):
@@ -59,7 +51,7 @@ class Project(BaseProject):
         super().generateCode()
 
         self.gen_enums.genEnumDeserializers(self)
-        self.gen_enums.genEnumStreamInserters(self)
+        self.gen_enums.genEnumSerializers(self)
 
         self.gen_global.genPragma(self)
         self.gen_global.genTopComment(self)
@@ -70,7 +62,6 @@ class Project(BaseProject):
         for formAndKind, layoutSections in layout.items():
             outputForm, kind = formAndKind.split('.')
             if outputForm == self.d('outputForm'):
-                #targetFile = self.targetFiles[formAndKind]
                 path = self._getPath(kind)
                 with open(path, 'wt') as f:
                     for layoutSection in layoutSections:
@@ -78,12 +69,3 @@ class Project(BaseProject):
                         if content:
                             f.write(content)
                             f.write('\n')
-
-
-        #for path, contents in self.targetFiles.items():
-        #    path = Path(path).resolve()
-        #    path.parent.mkdir(parents=True, exist_ok=True)
-        #    with open(path, 'wt') as f:
-        #        for section, content in contents.items():
-        #            f.write(content)
-        
