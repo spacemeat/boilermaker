@@ -18,6 +18,52 @@
         v_of_couples: {
             couples: { type: vector of: couple }
         }
+
+        v_of_a_of_couples: {
+            coupleses: { type: vector of: { type: array of: [couple, 4] } }
+        }
+
+        wut: {
+            huh: { 
+                type: vector 
+                of: [ {
+                        type: array
+                        of: [ {
+                                type: optional
+                                of: [ {
+                                        type: variant
+                                        of: [ {
+                                                type: pair
+                                                of: [string_view, string]
+                                            } {
+                                                type: tuple
+                                                of: [size_t, int, double]
+                                            } {
+                                                type: map
+                                                of: [string_view, int]
+                                            } {
+                                                type: unordered_map
+                                                of: [string_view, int]
+                                            } {
+                                                type: set
+                                                of: [ {
+                                                        type: unordered_map
+                                                        of: [string_view, int]
+                                                    }
+                                                ]
+                                            } {
+                                                type: unordered_set
+                                                of: [string_view, int]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }, 4
+                        ]
+                    }
+                ]
+            }
+        }
     }
     
     variants: {
@@ -28,16 +74,16 @@
 
             namespace: txtToBin
             initFromDefault: true
-            initFromHumon: true
+            deserializeFromHumon: true
             copyable: false
             serializeToBinary: true
-            comparable: false
+            comparable: true
             diffable: false
         }
         app: {
             namespace: app
-            defaultConstructible: true
-            initFromBinary: true
+            initFromDefault: true
+            deserializeFromBinary: true
             copyable: true
             comparable: true
             diffable: true

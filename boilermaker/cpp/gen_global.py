@@ -1,9 +1,5 @@
 def genPragma(self):
     src = f'#pragma once\n'
-    #self._appendToFile(src, 'mainHeader', 'pragma')
-    #self._appendToFile(src, 'enumInlineSource', 'pragma')
-    #self._appendToFile(src, 'typeInlineSource', 'pragma')
-
     self._appendToSection('pragma', src)
 
 
@@ -17,12 +13,27 @@ def genTopComment(self):
 
 def genIncludes(self):
     for kind, includes in self.includes.items():
-        outputForm, kind = kind.split('.')
+        outputForm, kind = kind.split('.', 1)
         if outputForm != self.d('outputForm'):
             continue
 
         src = ''
-        for includeFile in includes:
+        for includeFile, section in includes.items():
             src += f'#include {includeFile}\n'
         #self._appendToFile(src, kind, 'includes')
-        self._appendToSection(''.join([kind, 'Includes']), src)
+        breakpoint()
+        self._appendToSection(section, src)
+
+
+def genNamespaces(self):
+    src = f'''
+namespace {self.d('namespace')}
+{{'''
+
+    self._appendToSection('namespaceOpen', src)
+
+    src = f'''
+}}
+'''
+
+    self._appendToSection('namespaceClose', src)

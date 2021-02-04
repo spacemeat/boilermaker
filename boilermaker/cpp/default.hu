@@ -3,14 +3,19 @@
     inherit: boilermaker
 
     targetLanguage: c++
+    computeEnums:   true
+    computeTypes:   true
     headerDir:      ../inc/boma
     sourceDir:      ../src/boma
     inlineDir:      ../inc/boma/inl
-    mainHeaderFile:         $<namespace>-boma.hpp
-    enumInlineHeaderFile:   enums.inl.hpp
-    enumSourceFile:         enums.cpp
-    typeInlineHeaderFile:   $<typeName>.inl.hpp
-    typeSourceFile:         $<typeName>.cpp
+    mainHeaderFile:             $<namespace>-boma.hpp
+    enumInlineHeaderFile:       enums.inl.hpp
+    enumSourceFile:             enums.cpp
+    typeInlineHeaderFile:       $<type>.inl.hpp
+    typeSourceFile:             $<type>.cpp
+    containersInlineHeaderFile: containers.inl.hpp
+    containersSourceFile:       containers.cpp
+
     const:          west
     noexcept:       false
     outputForm:     headerOnly  // or library
@@ -65,15 +70,10 @@
             pragma
             mainHeaderTopComment
             mainHeaderIncludes
-            includeEnums
-            namespaceOpen
-            collectionDiffers
+            mainHeaderEnumIncludes
             bomaStreamClass
-            typeHeaders
-            collectionSerializers
-            namespaceClosed
+            mainHeaderTypeIncludes
             typeDeserializers
-            inlineIncludes
         ]
 
         headerOnly.enumInlineSource: [
@@ -86,29 +86,69 @@
             namespaceOpen
             enumSerializerDecls
             enumSerializerDefs
-            namespaceClosed
+            namespaceClose
         ]
 
         headerOnly.typeInlineSource: [
             pragma
-            topComment
-            includes
-            collectionDeserializers
-            defaultCtr
-            memberwiseCtr
-            humonCtr
-            copyCtr
-            moveCtr
-            copyAssign
-            moveAssign
-            destructor
-            swap
-            memberGetters
-            memberSetters
-            memberSetMovers
-            serialzier
-            comparator
-            differ
+            inlineTopComment
+            $<type>.typeInlineSourceIncludes
+            $<type>.typeInlineSourceLocalIncludes
+            namespaceOpen
+            $<type>.containerDifferDecl
+            $<type>.forwardClassDecl
+            $<type>.forwardDecls
+            $<type>.classBegin
+            $<type>.defaultCtrDecl
+            $<type>.memberwiseCtrDecl
+            $<type>.humonCtrDecl
+            $<type>.copyCtrDecl
+            $<type>.moveCtrDecl
+            $<type>.copyAssignDecl
+            $<type>.moveAssignDecl
+            $<type>.destructorDecl
+            $<type>.swapDecl
+            $<type>.memberGettersDecl
+            $<type>.memberSettersDecl
+            $<type>.memberSetMoversDecl
+            $<type>.serialzierDecl
+            $<type>.comparatorDecl
+            $<type>.differDecl
+            $<type>.members
+            $<type>.classEnd
+
+            $<type>.containerDifferDef
+            $<type>.defaultCtrDef
+            $<type>.memberwiseCtrDef
+            $<type>.humonCtrDef
+            $<type>.copyCtrDef
+            $<type>.moveCtrDef
+            $<type>.copyAssignDef
+            $<type>.moveAssignDef
+            $<type>.destructorDef
+            $<type>.swapDef
+            $<type>.memberGettersDef
+            $<type>.memberSettersDef
+            $<type>.memberSetMoversDef
+            $<type>.serialzierDef
+            $<type>.comparatorDef
+            $<type>.differDef
+            namespaceClose
+        ]
+
+        headerOnly.containersInlineSource: [
+            pragma
+            inlineTopComment
+            containersInlineSourceIncludes
+            containersInlineSourceLocalIncludes
+            containerDeserializerDecl
+            namespaceOpen
+            containerSerializerDecl
+            namespaceClose
+            containerDeserializerDef
+            namespaceOpen
+            containerSerializerDef
+            namespaceClose
         ]
 
         // For making library with .cpp sources.
@@ -123,7 +163,7 @@
             bomaStreamClass
             includeTypes
             collectionSerializers
-            namespaceClosed
+            namespaceClose
             typeDeserializers
             inlineIncludes
         ]

@@ -1,15 +1,11 @@
 #pragma once
-
 /*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
     Do not bother modifying this file, as your build process will overwrite
     your changes. */
-
 #include <humon/humon.hpp>
 #include <vulkan/vulkan.h>
 #include <iostream>
-
 #include <cstring>
-
 
 
 template <>
@@ -1067,7 +1063,6 @@ struct hu::val<::VkShaderGroupShaderKHR>
 {
     static inline ::VkShaderGroupShaderKHR extract(hu::Node node) noexcept;
 };
-
 
 
 inline ::VkResult hu::val<::VkResult>::extract(hu::Node node) noexcept
@@ -5250,7 +5245,8 @@ inline ::VkShaderGroupShaderKHR hu::val<::VkShaderGroupShaderKHR>::extract(hu::N
     if (std::strncmp(nodeVal, "max_enum", 8) == 0) { return VK_SHADER_GROUP_SHADER_MAX_ENUM_KHR; }
     return {};
 }
-
+namespace txtToBin
+{
     inline std::ostream & operator <<(std::ostream & out, ::VkResult obj);
     inline std::ostream & operator <<(std::ostream & out, ::VkStructureType obj);
     inline std::ostream & operator <<(std::ostream & out, ::VkImageLayout obj);
@@ -5427,7 +5423,6 @@ inline ::VkShaderGroupShaderKHR hu::val<::VkShaderGroupShaderKHR>::extract(hu::N
     inline std::ostream & operator <<(std::ostream & out, ::VkAccelerationStructureCompatibilityKHR obj);
     inline std::ostream & operator <<(std::ostream & out, ::VkAccelerationStructureCreateFlagBitsKHR obj);
     inline std::ostream & operator <<(std::ostream & out, ::VkShaderGroupShaderKHR obj);
-
 
 
     inline std::ostream & operator <<(std::ostream & out, ::VkResult obj)
@@ -12714,3 +12709,4 @@ inline ::VkShaderGroupShaderKHR hu::val<::VkShaderGroupShaderKHR>::extract(hu::N
 
         return out;
     }
+}

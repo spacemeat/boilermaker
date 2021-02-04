@@ -14,7 +14,7 @@ def inherit(base, addTo, inheritInherits):
 
     defsData['inherit'] = utilities.listify(defsData.get('inherit'))
     defsData['enums'] = utilities.listify(defsData.get('enums'))
-    defsData['types'] = utilities.dictify(defsData.get('types'))
+    defsData['types'] = utilities.dictify(defsData.get('types'), 'types')
 
     # inherit inheritance from base data, but not from external DefsFiles
     if inheritInherits:
@@ -26,7 +26,7 @@ def inherit(base, addTo, inheritInherits):
     defsData['enums'].extend(utilities.listify(addTo.get('enums')))
 
     # inherit types
-    defsData['types'].update(utilities.dictify(addTo.get('types')))
+    defsData['types'].update(utilities.dictify(addTo.get('types'), 'types'))
 
     # inherit errything else by override
     for k, v in addTo.items():

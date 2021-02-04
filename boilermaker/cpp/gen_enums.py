@@ -1,26 +1,28 @@
-def genEnumDeserializers(self):
-    if not self.dIs('deserializeFromHumon'):
+def genDeserializers(self):
+    if (not self.dIs('computeEnums') or
+        not self.dIs('deserializeFromHumon')):
         return ''
 
     self._addInclude('mainHeader', 
         '/'.join([self.d('headerToInl'), self.d('enumInlineHeaderFile')])
-           .join(['"', '"']))
+           .join(['"', '"']), 
+        'mainHeaderIncludes')
     for enumName, enum in self.everyEnum():
-        self.gen_enums.genEnumDeserializer(self, enumName, enum)
+        self.gen_enums._genDeserializer(self, enumName, enum)
 
 
-def genEnumDeserializer(self, enumName, enum):
+def _genDeserializer(self, enumName, enum):
     it = self.indent()
 
-    self._addInclude('enumInlineSource', '<humon/humon.hpp>')
+    self._addInclude('enumInlineSource', '<humon/humon.hpp>', 'enumInlineSourceIncludes')
 
     for includeFile in enum.enumsObject.sources:
         if includeFile.startswith('<') and includeFile.endswith('>'):
-            self._addInclude('enumInlineSource', includeFile)
+            self._addInclude('enumInlineSource', includeFile, 'enumInlineSourceIncludes')
         else:
-            self._addInclude('enumInlineSource', includeFile.join(['"', '"']))
+            self._addInclude('enumInlineSource', includeFile.join(['"', '"']), 'enumInlineSourceIncludes')
 
-    enumType = enumName.replace('.', '::')
+    enumType = self.makeNative(enumName)
 
     # write inline bits
     src = f'''
@@ -34,7 +36,7 @@ struct hu::val<{enumType}>
 
     # write source bits
 
-    self._addInclude('enumSource', '<cstring>')
+    self._addInclude('enumSource', '<cstring>', 'enumSourceIncludes')
     src = f'''
 
 
@@ -86,23 +88,25 @@ inline {enumType} hu::val<{enumType}>::extract(hu::Node node) noexcept
     self._appendToSection('enumDeserializerDefs', src)
 
 
-def genEnumSerializers(self):
-    if not self.dIs('serializeToHumon'):
+def genSerializers(self):
+    if (not self.dIs('computeEnums') or
+        not self.dIs('serializeToHumon')):
         return ''
 
     self._addInclude('mainHeader', 
         '/'.join([self.d('headerToInl'), self.d('enumInlineHeaderFile')])
-           .join(['"', '"']))
+           .join(['"', '"']),
+        'mainHeaderIncludes')
     for enumName, enum in self.everyEnum():
-        self.gen_enums.genEnumSerializer(self, enumName, enum)
+        self.gen_enums._genSerializer(self, enumName, enum)
 
 
-def genEnumSerializer(self, enumName, enum):
+def _genSerializer(self, enumName, enum):
     it = self.indent()
 
     enumType = enumName.replace('.', '::')
 
-    self._addInclude('enumInlineSource', '<iostream>')
+    self._addInclude('enumInlineSource', '<iostream>', 'enumInlineSourceIncludes')
 
     # defs
     src = f'''

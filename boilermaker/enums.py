@@ -23,10 +23,10 @@ class Enums:
             platformPath = utilities.findPlatformFile(language, platform, 'enums.hu', defsPath)
             t, _ = utilities.loadHumonFile(platformPath)
             to = t.root.objectify()
-            self.flagsAttribute.update(utilities.dictify(to.get('flags', {})))
-            self.prefixAttribute.update(utilities.dictify(to.get('prefix', {})))
-            self.suffixAttribute.update(utilities.dictify(to.get('suffix', {})))
-            self.caseAttribute.update(utilities.dictify(to.get('case', {})))
+            self.flagsAttribute.update(utilities.dictify(to.get('flags', {}), 'flags'))
+            self.prefixAttribute.update(utilities.dictify(to.get('prefix', {}), 'prefix'))
+            self.suffixAttribute.update(utilities.dictify(to.get('suffix', {}), 'suffix'))
+            self.caseAttribute.update(utilities.dictify(to.get('case', {}), 'case'))
 
 
 class Enum:

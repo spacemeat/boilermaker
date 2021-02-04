@@ -110,10 +110,10 @@ def listify(thing):
         return []
 
 
-def dictify(thing):
+def dictify(thing, key):
     if thing:
         if type(thing) is not dict:
-            return {thing}
+            return {key: thing}
         else:
             return thing
     else:

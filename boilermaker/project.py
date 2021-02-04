@@ -17,22 +17,33 @@ class Project:
         self.defsData = defsData
         self.makeEnums()
         self.makeTypes()
-
-
-    def replaceArg(self, key):            
-        return self.defsData.get(key, f'!{key}!')
     
 
-    def d(self, key):
+    def replaceArgs(self, val, replacements=None):
+        if not replacements:
+            replacements = self.defsData
+
+        def replace(key):
+            if key in replacements:
+                return replacements[key]
+            else:
+                return self.defsData.get(key, f'!{key}!')
+        return re.sub(defArgumentReg, lambda m: replace(m.group(1)), val)
+    
+
+    def d(self, key, replacements=None):
+        if not replacements:
+            replacements = self.defsData
+
         val = self.defsData.get(key)
         if type(val) is str:
-            val = re.sub(defArgumentReg, lambda m: self.replaceArg(m.group(1)), val)
+            val = self.replaceArgs(val, replacements)
         return val
 
     
     def dIs(self, key):
         val = self.defsData.get(key)
-        return val.lower() == 'true'
+        return val and val.lower() == 'true'
 
 
     def indent(self):
