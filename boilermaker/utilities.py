@@ -32,10 +32,19 @@ def makeRelativeDir(sourcePath, destinationPath):
     return os.path.join(relativePath, str(pathlib.PurePath(destinationDir).relative_to(common)))
 
 #TODO: Move all os.path things to pathlib things
-def makeRelativePath(sourceDir, destinationPath):
-    sourceDir = os.path.dirname(sourceDir)
+def makeRelativePath(sourcePath, destinationPath):
+    if type(sourcePath) is str:
+        sourcePath = Path(sourcePath)
+    if type(destinationPath) is str:
+        destinationPath = Path(destinationPath)
+
+    if not sourcePath.is_dir():
+        sourceDir = sourcePath.parent
+    destDir = destinationPath.parent()
+    destFile = destinationPath.name()
+
     destinationDir = os.path.dirname(destinationPath)
-    common = os.path.commonpath([sourceDir, destinationDir])
+    common = os.path.commonprefix([sourceDir, destinationDir])
     relativePath = ''
     while str(sourceDir) != str(common):
         sourceDir = str(pathlib.PurePath(sourceDir).parent)

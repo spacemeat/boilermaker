@@ -5,20 +5,10 @@
     targetLanguage: c++
     computeEnums:   true
     computeTypes:   true
-    headerDir:      ../inc/boma
-    sourceDir:      ../src/boma
-    inlineDir:      ../inc/boma/inl
-    mainHeaderFile:             $<namespace>-boma.hpp
-    enumInlineHeaderFile:       enums.inl.hpp
-    enumSourceFile:             enums.cpp
-    typeInlineHeaderFile:       $<type>.inl.hpp
-    typeSourceFile:             $<type>.cpp
-    containersInlineHeaderFile: containers.inl.hpp
-    containersSourceFile:       containers.cpp
 
     const:          west
     noexcept:       false
-    outputForm:     headerOnly  // or library
+    outputForm:     headerOnly  // or compiled
     cavepersonCtrs: false
 
     headerTopComment: ^^
@@ -64,152 +54,167 @@
         }
     }
 
-    layout: {
-        // For making a header-only library.
-        headerOnly.mainHeader: [
-            pragma
-            mainHeaderTopComment
-            mainHeaderIncludes
-            mainHeaderEnumIncludes
-            bomaStreamClass
-            mainHeaderTypeIncludes
-            typeDeserializers
-        ]
+    headerDir:      inc/boma
+    sourceDir:      src/boma
+    inlineDir:      inc/boma/inl
+    mainHeaderFile:             $<namespace>.hpp
+    enumHeaderFile:         enums.hpp
+    enumInlineFile:         enums.inl.hpp
+    enumSourceFile:         enums.cpp
+    typeHeaderFile:             $<type>.hpp
+    typeInlineFile:             $<type>.inl.hpp
+    typeSourceFile:             $<type>.cpp
+    containersHeaderFile:   containers.hpp
+    containersInlineFile:   containers.inl.hpp
+    containersSourceFile:   containers.cpp
 
-        headerOnly.enumInlineSource: [
-            pragma
-            inlineTopComment
-            enumInlineSourceIncludes
-            enumSourceIncludes
-            enumDeserializerDecls
-            enumDeserializerDefs
-            namespaceOpen
-            enumSerializerDecls
-            enumSerializerDefs
-            namespaceClose
-        ]
+    output: {
+        headerOnly: {           // outputForm
+            mainHeader: {       // kind
+                sourcePath: $<defsDir>/$<headerDir>/$<mainHeaderFile>
+                sections:
+                [
+                    pragma          // section
+                    mainHeaderTopComment
+                    mainHeaderIncludes
+                    bomaStreamClass
+                    mainHeaderLocalIncludes
+                ]
+            }
 
-        headerOnly.typeInlineSource: [
-            pragma
-            inlineTopComment
-            $<type>.typeInlineSourceIncludes
-            $<type>.typeInlineSourceLocalIncludes
-            namespaceOpen
-            $<type>.containerDifferDecl
-            $<type>.forwardClassDecl
-            $<type>.forwardDecls
-            $<type>.classBegin
-            $<type>.defaultCtrDecl
-            $<type>.memberwiseCtrDecl
-            $<type>.humonCtrDecl
-            $<type>.copyCtrDecl
-            $<type>.moveCtrDecl
-            $<type>.copyAssignDecl
-            $<type>.moveAssignDecl
-            $<type>.destructorDecl
-            $<type>.swapDecl
-            $<type>.memberGettersDecl
-            $<type>.memberSettersDecl
-            $<type>.memberSetMoversDecl
-            $<type>.serialzierDecl
-            $<type>.comparatorDecl
-            $<type>.differDecl
-            $<type>.members
-            $<type>.classEnd
+            enumHeader: {
+                sourcePath: $<defsDir>/$<headerDir>/$<enumHeaderFile>
+                sections: [
+                    pragma
+                    inlineTopComment
+                    enumHeaderIncludes
+                    enumHeaderForwardDecls
+                    enumDeserializerDefs
+                    namespaceOpen
+                    enumSerializerDecls
+                    namespaceClose
+                    enumHeaderIncludeInline
+                ]
+            }
 
-            $<type>.containerDifferDef
-            $<type>.defaultCtrDef
-            $<type>.memberwiseCtrDef
-            $<type>.humonCtrDef
-            $<type>.copyCtrDef
-            $<type>.moveCtrDef
-            $<type>.copyAssignDef
-            $<type>.moveAssignDef
-            $<type>.destructorDef
-            $<type>.swapDef
-            $<type>.memberGettersDef
-            $<type>.memberSettersDef
-            $<type>.memberSetMoversDef
-            $<type>.serialzierDef
-            $<type>.comparatorDef
-            $<type>.differDef
-            namespaceClose
-        ]
+            enumSource: {
+                sourcePath: $<defsDir>/$<inlineDir>/$<enumInlineFile>
+                sections: [
+                    pragma
+                    inlineTopComment
+                    enumSourceIncludes
+                    namespaceOpen
+                    enumSerializerDefs
+                    namespaceClose
+                ]
+            }
 
-        headerOnly.containersInlineSource: [
-            pragma
-            inlineTopComment
-            containersInlineSourceIncludes
-            containersInlineSourceLocalIncludes
-            containerDeserializerDecl
-            namespaceOpen
-            containerSerializerDecl
-            namespaceClose
-            containerDeserializerDef
-            namespaceOpen
-            containerSerializerDef
-            namespaceClose
-        ]
+            typeHeader: {
+                sourcePath: $<defsDir>/$<headerDir>/$<typeHeaderFile>
+                sections: [
+                    pragma
+                    inlineTopComment
+                    $<type>|typeHeaderIncludes
+                    $<type>|typeHeaderLocalIncludes
+                    allTypeForwardDecls
+                    namespaceStdOpen
+                    $<type>|stdForwardDecls
+                    namespaceClose
+                    namespaceOpen
+                    $<type>|containerDifferDecl
+                    $<type>|forwardClassDecl
+                    $<type>|forwardDecls
+                    $<type>|classBegin
+                    $<type>|defaultCtrDecl
+                    $<type>|memberwiseCtrDecl
+                    $<type>|humonCtrDecl
+                    $<type>|copyCtrDecl
+                    $<type>|moveCtrDecl
+                    $<type>|copyAssignDecl
+                    $<type>|moveAssignDecl
+                    $<type>|destructorDecl
+                    $<type>|swapDecl
+                    $<type>|memberGettersDecl
+                    $<type>|memberSettersDecl
+                    $<type>|memberSetMoversDecl
+                    $<type>|serialzierDecl
+                    $<type>|comparatorDecl
+                    $<type>|differDecl
+                    $<type>|members
+                    $<type>|classEnd
+                    $<type>|typeSerializerDecls
+                    namespaceClose
+                    $<type>|typeDeserializerDef
+                    $<type>|typeDeserializerDefs
+                    $<type>|typeHeaderIncludeInline
+                ]
+            }
 
-        // For making library with .cpp sources.
-        library.mainHeader: [
-            pragma
-            mainHeaderTopComment
-            mainHeaderIncludes
-            includeEnums
-            namespaceOpen
-            enumSerialziers
-            collectionDiffers
-            bomaStreamClass
-            includeTypes
-            collectionSerializers
-            namespaceClose
-            typeDeserializers
-            inlineIncludes
-        ]
+            typeSource: {
+                sourcePath: $<defsDir>/$<inlineDir>/$<typeInlineFile>
+                sections: [
+                    pragma
+                    inlineTopComment
+                    $<type>|typeSourceIncludes
+                    $<type>|typeSourceLocalIncludes
+                    namespaceOpen
+                    $<type>|containerDifferDef
+                    $<type>|defaultCtrDef
+                    $<type>|memberwiseCtrDef
+                    $<type>|humonCtrDef
+                    $<type>|copyCtrDef
+                    $<type>|moveCtrDef
+                    $<type>|copyAssignDef
+                    $<type>|moveAssignDef
+                    $<type>|destructorDef
+                    $<type>|swapDef
+                    $<type>|memberGettersDef
+                    $<type>|memberSettersDef
+                    $<type>|memberSetMoversDef
+                    $<type>|serialzierDef
+                    $<type>|comparatorDef
+                    $<type>|differDef
+                    $<type>|typeSerializerDefs
+                    namespaceClose
+                ]
+            }
 
-        library.enumInlineSource: [
-            pragma
-            inlineTopComment
-            enumInlineSourceIncludes
-            enumDeserializerDecls
-            enumSerializerDecls
-        ]
+            /*
+            containersHeader: {
+                sourcePath: $<defsDir>/$<headerDir>/$<containersHeaderFile>
+                sections: [
+                    pragma
+                    inlineTopComment
+                    containersHeaderIncludes
+                    containersHeaderLocalIncludes
+                    //namespaceStdOpen
+                    //containersStdForwardDecls
+                    //namespaceClose
+                    //namespaceHuOpen
+                    //containersDeserializerDefs
+                    //namespaceClose
+                    namespaceOpen
+                    containersSerializerDecls
+                    namespaceClose
+                    containersHeaderIncludeInline
+                ]
+            }
 
-        library.enumSource: [
-            sourceTopComment
-            enumSourceIncludes
-            enumDeserializerDefs
-            enumSerializerDefs
-        ]
+            containersSource: {
+                sourcePath: $<defsDir>/$<inlineDir>/$<containersInlineFile>
+                sections: [
+                    pragma
+                    inlineTopComment
+                    containersSourceIncludes
+                    containersSourceLocalIncludes
+                    namespaceOpen
+                    containersSerializerDefs
+                    namespaceClose
+                ]
+            }
+            */
+        }
 
-        library.typeInlineSource: [
-            pragma
-            topComment
-            typeInlineSourceIncludes
-            typeHeaders
-        ]
 
-        library.typeSource: [
-            topComment
-            typeSourceIncludes
-            enumDeserializers
-            collectionDeserializers
-            defaultCtr
-            memberwiseCtr
-            humonCtr
-            copyCtr
-            moveCtr
-            copyAssign
-            moveAssign
-            destructor
-            swap
-            memberGetters
-            memberSetters
-            memberSetMovers
-            serialzier
-            comparator
-            differ
-        ]
     }
 }

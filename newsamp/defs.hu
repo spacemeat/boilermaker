@@ -68,14 +68,15 @@
     
     variants: {
         txtToBin: {
-            headerDir: ../txtToBin/inc/boma
-            sourceDir: ../txtToBin/src/boma
-            inlineDir: ../txtToBin/inc/boma/inl
+            headerDir: txtToBin/inc/boma
+            inlineDir: txtToBin/inc/boma/inl
+            sourceDir: txtToBin/src/boma
 
             namespace: txtToBin
             initFromDefault: true
             deserializeFromHumon: true
             copyable: false
+            serializeToHumon: true
             serializeToBinary: true
             comparable: true
             diffable: false

@@ -4,9 +4,8 @@
     your changes. */
 
 #include "../v_of_couples.hpp"
-#include "containers.inl.hpp"
 
-namespace txtToBin
+namespace shortTest
 {
 
     v_of_couples::v_of_couples(hu::Node node) noexcept
@@ -21,13 +20,20 @@ namespace txtToBin
         out << '}';
         return out;
     }
-}
-
-    
-namespace hu
-{
-    inline txtToBin::v_of_couples val<txtToBin::v_of_couples>::extract(Node const & node) noexcept
+    inline std::ostream & operator <<(std::ostream & out, std::vector<couple> const & obj) noexcept
     {
-        return txtToBin::v_of_couples(node);
+        out << '[';
+        bool firstTime = true;
+        for (auto const & objmem : obj)
+        {
+            if (firstTime)
+                { firstTime = false; }
+            else
+                { out << ' '; }
+            out << objmem;
+        }
+        out << ']';
+        return out;
     }
+
 }

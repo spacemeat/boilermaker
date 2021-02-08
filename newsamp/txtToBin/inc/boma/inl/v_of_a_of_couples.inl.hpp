@@ -2,22 +2,17 @@
 /*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
     Do not bother modifying this file, as your build process will overwrite
     your changes. */
-#include <vector>
-#include <array>
-#include "couple.inl.hpp"
+
+#include "../v_of_a_of_couples.hpp"
 #include "containers.inl.hpp"
 
 namespace txtToBin
 {
-    class v_of_a_of_couples;
-    std::ostream & operator <<(std::ostream & out, v_of_a_of_couples const & obj) noexcept;
 
-    class v_of_a_of_couples
+    v_of_a_of_couples::v_of_a_of_couples(hu::Node node) noexcept
+    : coupleses(node / "coupleses" % hu::val<std::vector<std::array<couple, 4>>>{})
     {
-        friend std::ostream & operator <<(std::ostream & out, v_of_a_of_couples const & obj) noexcept;
-    private:
-        std::vector<std::array<couple, 4>> coupleses;
-    }; // end class v_of_a_of_couples
+    }
 
     std::ostream & operator <<(std::ostream & out, v_of_a_of_couples const & obj) noexcept
     {
@@ -25,5 +20,14 @@ namespace txtToBin
         out << " coupleses: " << obj.coupleses;
         out << '}';
         return out;
+    }
+}
+
+    
+namespace hu
+{
+    inline txtToBin::v_of_a_of_couples val<txtToBin::v_of_a_of_couples>::extract(Node const & node) noexcept
+    {
+        return txtToBin::v_of_a_of_couples(node);
     }
 }

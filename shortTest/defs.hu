@@ -1,0 +1,42 @@
+@{ app: boma, boma-version: 0.0.4 }
+{
+    inherit: c++|gnu
+    enums: [{
+            tools: gnu
+            source: [enums.h]
+            languageVersion: c|gnu17
+            platform: vulkan
+            attributes: {}
+        }
+    ]
+    types: {
+        couple: {
+            a: string
+            b: int
+        }
+
+        v_of_couples: {
+            couples: { type: vector of: couple }
+        }
+
+        a_of_v_of_couples: {
+            coupleses: { type: array of: [{ type: vector of: couple }, 4] }
+        }
+    }
+
+    variants: {
+        shortTest: {
+            headerDir: inc/boma
+            inlineDir: inc/boma/inl
+            sourceDir: src/boma
+
+            namespace: shortTest
+            initFromDefault: true
+            deserializeFromHumon: true
+            serializeToHumon: true
+            copyable: false
+            comparable: true
+            diffable: false
+        }
+    }
+}

@@ -12,6 +12,7 @@ def genTopComment(self):
 
 
 def genIncludes(self):
+    return
     for kind, includes in self.includes.items():
         outputForm, kind = kind.split('.', 1)
         if outputForm != self.d('outputForm'):
@@ -27,13 +28,26 @@ def genIncludes(self):
 
 def genNamespaces(self):
     src = f'''
+
 namespace {self.d('namespace')}
 {{'''
-
     self._appendToSection('namespaceOpen', src)
+
+    src = f'''
+    
+namespace std
+{{'''
+    self._appendToSection('namespaceStdOpen', src)
+
+    src = f'''
+    
+namespace hu
+{{'''
+    self._appendToSection('namespaceHuOpen', src)
 
     src = f'''
 }}
 '''
-
     self._appendToSection('namespaceClose', src)
+
+

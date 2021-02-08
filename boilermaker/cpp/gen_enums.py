@@ -3,10 +3,7 @@ def genDeserializers(self):
         not self.dIs('deserializeFromHumon')):
         return ''
 
-    self._addInclude('mainHeader', 
-        '/'.join([self.d('headerToInl'), self.d('enumInlineHeaderFile')])
-           .join(['"', '"']), 
-        'mainHeaderIncludes')
+    self._addInclude('mainHeaderIncludes', 'enumHeader')
     for enumName, enum in self.everyEnum():
         self.gen_enums._genDeserializer(self, enumName, enum)
 
@@ -14,47 +11,44 @@ def genDeserializers(self):
 def _genDeserializer(self, enumName, enum):
     it = self.indent()
 
-    self._addInclude('enumInlineSource', '<humon/humon.hpp>', 'enumInlineSourceIncludes')
-
-    for includeFile in enum.enumsObject.sources:
-        if includeFile.startswith('<') and includeFile.endswith('>'):
-            self._addInclude('enumInlineSource', includeFile, 'enumInlineSourceIncludes')
-        else:
-            self._addInclude('enumInlineSource', includeFile.join(['"', '"']), 'enumInlineSourceIncludes')
+    self._addInclude('enumHeaderIncludes', '<humon/humon.hpp>')
+    self.gen_enums._addEnumSourceIncludes(self, enum)
 
     enumType = self.makeNative(enumName)
 
     # write inline bits
     src = f'''
 
-template <>
-struct hu::val<{enumType}>
-{{
-{it}static inline {enumType} extract(hu::Node node) noexcept;
-}};'''
+{it}template <>
+{it}struct hu::val<{enumType}>
+{it}{{
+{it}{it}static inline {enumType} extract(hu::Node node) noexcept;
+{it}}};'''
     self._appendToSection('enumDeserializerDecls', src)
 
     # write source bits
 
-    self._addInclude('enumSource', '<cstring>', 'enumSourceIncludes')
+    self._addInclude('enumHeaderIncludes', '<cstring>')
     src = f'''
 
-
-inline {enumType} hu::val<{enumType}>::extract(hu::Node node) noexcept
-{{'''
+template <>
+struct hu::val<{enumType}>
+{{
+{it}static inline {enumType} extract(hu::Node node) noexcept
+{it}{{'''
     if enum.flags:
         src += f'''
-{it}using enumIntType = std::underlying_type<{enumType}>::type;
-{it}enumIntType e = 0;
-{it}bool fromList = node.kind() == hu::NodeKind::list;
-{it}if (fromList)
-{it}{it}{{ node = node.firstChild(); }}
-{it}while(node)
-{it}{{
-{it}{it}auto nodeVal = node.value().str().data();'''
+{it}{it}using enumIntType = std::underlying_type<{enumType}>::type;
+{it}{it}enumIntType e = 0;
+{it}{it}bool fromList = node.kind() == hu::NodeKind::list;
+{it}{it}if (fromList)
+{it}{it}{it}{{ node = node.firstChild(); }}
+{it}{it}while(node)
+{it}{it}{{
+{it}{it}{it}auto nodeVal = node.value().str().data();'''
     else:
         src += f'''
-{it}auto nodeVal = node.value().str().data();'''
+{it}{it}auto nodeVal = node.value().str().data();'''
 
     firstTime = True
     for modName, (declName, numericValue) in enum.enumVals.items():
@@ -68,23 +62,24 @@ inline {enumType} hu::val<{enumType}>::extract(hu::Node node) noexcept
 
         if enum.flags:
             src += f'''
-{it}{it}{doElse}if {spaces}(std::strncmp(nodeVal, "{modName}", {len(modName)}) == 0) {{ e |= static_cast<enumIntType>({declName}); }}'''
+{it}{it}{it}{doElse}if {spaces}(std::strncmp(nodeVal, "{modName}", {len(modName)}) == 0) {{ e |= static_cast<enumIntType>({declName}); }}'''
         else:
             src += f'''
-{it}if (std::strncmp(nodeVal, "{modName}", {len(modName)}) == 0) {{ return {declName}; }}'''
+{it}{it}if (std::strncmp(nodeVal, "{modName}", {len(modName)}) == 0) {{ return {declName}; }}'''
 
     if enum.flags:
         src += f'''
-{it}{it}node = node.nextSibling();
-{it}}}
-{it}return static_cast<{enumType}>(e);'''
+{it}{it}{it}node = node.nextSibling();
+{it}{it}}}
+{it}{it}return static_cast<{enumType}>(e);'''
     else:
         src += f'''
-{it}return {{}};'''
+{it}{it}return {{}};'''
 
     # TODO: define and extract a default value
     src += f'''
-}}'''
+{it}}}
+}};'''
     self._appendToSection('enumDeserializerDefs', src)
 
 
@@ -93,10 +88,14 @@ def genSerializers(self):
         not self.dIs('serializeToHumon')):
         return ''
 
-    self._addInclude('mainHeader', 
-        '/'.join([self.d('headerToInl'), self.d('enumInlineHeaderFile')])
-           .join(['"', '"']),
-        'mainHeaderIncludes')
+    self._addInclude('mainHeaderIncludes', 'enumHeader')
+
+    # because deserializeFromHumon includes humon, which already surfaces std::ostream.
+    if not self.dIs('deserializeFromHumon'):
+        src = f'''
+class std::ostream;'''
+        self._appendToSection('enumHeaderForwardDecls', src)
+
     for enumName, enum in self.everyEnum():
         self.gen_enums._genSerializer(self, enumName, enum)
 
@@ -106,7 +105,9 @@ def _genSerializer(self, enumName, enum):
 
     enumType = enumName.replace('.', '::')
 
-    self._addInclude('enumInlineSource', '<iostream>', 'enumInlineSourceIncludes')
+    self._addInclude('enumSourceIncludes', '<iostream>')
+    self._addInclude('enumSourceIncludes', 'enumHeader')
+    self.gen_enums._addEnumSourceIncludes(self, enum)
 
     # defs
     src = f'''
@@ -173,3 +174,13 @@ def _genSerializer(self, enumName, enum):
     self._appendToSection('enumSerializerDefs', src)
 
 
+def _addEnumSourceIncludes(self, enum):
+    # include things found in the enums block.
+    for includeFile in enum.enumsObject.sources:
+        if includeFile.startswith('<') and includeFile.endswith('>'):
+            self._addInclude('enumHeaderIncludes', includeFile)
+        else:
+            self._addInclude('enumHeaderIncludes', f'"{includeFile}"')
+
+    # for header-only projects, enumHeader has a section for getting inline src.
+    self._addInclude('enumHeaderIncludeInline', 'enumSource')

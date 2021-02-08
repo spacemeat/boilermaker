@@ -1,4 +1,4 @@
-#include "txtToBin/inc/boma/txtToBin-boma.hpp"
+#include "txtToBin/inc/boma/txtToBin.hpp"
 #include <iostream>
 
 int main(int argc, char ** argv)

@@ -11,7 +11,8 @@ class Enums(BaseEnums):
         tools = self.enumDefsData.get('tools', 'gnu').lower()
 
         if tools == 'gnu':
-            self.quotedSearchPaths, self.systemSearchPaths  = getSearchPaths_gnu()
+            defsDir = defsData.get('defsDir')
+            self.quotedSearchPaths, self.systemSearchPaths  = getSearchPaths_gnu(defsDir)
         else:
             raise RuntimeError(f'Invalid tools for enum defs in {defsPath}.')
 

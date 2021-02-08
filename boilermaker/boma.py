@@ -49,6 +49,7 @@ class DefsVariant:
 
         self.defsData['variant'] = '|'.join([defsName, variantName])
         self.defsData['defsPath'] = defsPath
+        self.defsData['defsDir'] = os.path.dirname(defsPath)
 
 
 class DefsFile:

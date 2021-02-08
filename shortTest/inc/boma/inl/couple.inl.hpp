@@ -4,14 +4,13 @@
     your changes. */
 
 #include "../couple.hpp"
-#include "containers.inl.hpp"
 
-namespace txtToBin
+namespace shortTest
 {
 
     couple::couple(hu::Node node) noexcept
     : a(node / "a" % hu::val<std::string>{}), 
-      b(node / "b" % hu::val<::VkResult>{})
+      b(node / "b" % hu::val<int>{})
     {
     }
 
@@ -22,14 +21,5 @@ namespace txtToBin
         out << " b: " << obj.b;
         out << '}';
         return out;
-    }
-}
-
-    
-namespace hu
-{
-    inline txtToBin::couple val<txtToBin::couple>::extract(Node const & node) noexcept
-    {
-        return txtToBin::couple(node);
     }
 }

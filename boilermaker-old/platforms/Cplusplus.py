@@ -264,7 +264,7 @@ class CplusplusDef(PlatformDef):
 {self.ind(ind + 0)}class bomaStream
 {self.ind(ind + 0)}{{
 {self.ind(ind + 0)}public:
-{self.ind(ind + 1)}friend std::ostream & operator <<(std::ostream & out, bomaStream)
+{self.ind(ind + 1)}friend std::ostream & operator <<(std::ostream & out, bomaStream) noexcept
 {self.ind(ind + 1)}{{
 {self.ind(ind + 2)}out << std::boolalpha;
 {self.ind(ind + 2)}return out;

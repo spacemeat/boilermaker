@@ -1,8 +1,10 @@
 from .. import utilities
 
-def getSearchPaths():
+def getSearchPaths(defsPath):
     quotedSearchPaths = []
     systemSearchPaths = []
+
+    quotedSearchPaths.append(defsPath)
 
     cp = utilities.doShellCommand('cpp -v /dev/null -o /dev/null')
     if cp.returncode == 0:
