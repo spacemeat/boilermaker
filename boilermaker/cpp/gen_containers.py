@@ -5,9 +5,9 @@ def genAll(self):
     if not self.dIs('computeTypes') :
         return ''
 
-    self._addInclude('mainHeaderIncludes', 'containersHeader')
+    # self._addInclude('mainHeaderIncludes', 'containersHeader')
 
-    self._addInclude('containersHeaderIncludeInline', 'containersSource')
+    # self._addInclude('containersHeaderIncludeInline', 'containersSource')
 
     if not self.dIs('deserializeFromHumon'):
         it = self.indent()
@@ -97,8 +97,8 @@ def genDeserializers(self, t, memo):
         not self.dIs('deserializeFromHumon')):
         return ''
 
-    self._addInclude('mainHeaderIncludes', 'containersHeader')
-    self._addInclude('containersHeaderIncludes', '<humon/humon.hpp>')
+    # self._addInclude('mainHeaderIncludes', 'containersHeader')
+    # self._addInclude('containersHeaderIncludes', '<humon/humon.hpp>')
     for _, memberObj in t.members.items():
         src = self.gen_containers._genDeserializer(self, t, memberObj.properties, memo)
 
@@ -216,7 +216,7 @@ struct hu::val<{declType}>
 {it}}}
 }};'''
     
-        self._appendToSection(f'{t.name}|typeDeserializerDefs', src)
+        self._appendToSection(f'{t.name}|containerDeserializerDefs', src)
 
 
 def genSerializers(self, t, memo):
@@ -224,8 +224,8 @@ def genSerializers(self, t, memo):
         not self.dIs('serializeToHumon')):
         return ''
 
-    self._addInclude('mainHeaderIncludes', 'containersHeader')
-    self._addInclude('containersHeaderIncludes', '<iostream>')
+    # self._addInclude('mainHeaderIncludes', 'containersHeader')
+    # self._addInclude('containersHeaderIncludes', '<iostream>')
 
     for _, memberObj in t.members.items():
         self.gen_containers._genSerializer(self, t, memberObj, memo)
@@ -236,7 +236,7 @@ def _genSerializer(self, t, m, memo):
 
     def recurse(phase, memo, typeDict):
         memberDeclType = self.makeNativeMemberType(typeDict)
-        print (memberDeclType)
+        #print (memberDeclType)
         if memberDeclType not in memo:
             memo[memberDeclType] = {phase: None}
         elif phase not in memo[memberDeclType]:
@@ -289,7 +289,7 @@ def _genSerializer(self, t, m, memo):
                 src += recurse(phase, memo, utilities.dictify(prop, 'type'))
 
         src += f'''
-{it}inline std::ostream & operator <<(std::ostream & out, {memberDeclType} const & obj) noexcept'''
+{it}std::ostream & operator <<(std::ostream & out, {memberDeclType} const & obj) noexcept'''
         if phase == 'classDecl':
             src += f';'
         elif phase == 'classDef':
@@ -301,10 +301,10 @@ def _genSerializer(self, t, m, memo):
         return src
     
     src = recurse('classDecl', memo, m.properties)
-    self._appendToSection(f'{t.name}|typeSerializerDecls', src)
+    self._appendToSection(f'{t.name}|containerSerializerDecls', src)
 
     src = recurse('classDef', memo, m.properties)
-    self._appendToSection(f'{t.name}|typeSerializerDefs', src)
+    self._appendToSection(f'{t.name}|containerSerializerDefs', src)
 
 
 def _genCsBody(self, typeDict):

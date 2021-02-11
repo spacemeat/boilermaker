@@ -12,7 +12,7 @@
     types: {
         couple: {
             a: string
-            b: int
+            bee: int
         }
 
         v_of_couples: {
@@ -26,17 +26,27 @@
 
     variants: {
         shortTest: {
+            outputForm: compiled
+
             headerDir: inc/boma
             inlineDir: inc/boma/inl
             sourceDir: src/boma
 
             namespace: shortTest
-            initFromDefault: true
-            deserializeFromHumon: true
-            serializeToHumon: true
-            copyable: false
-            comparable: true
-            diffable: false
+            deserializeFromHumon: true      // done
+            deserializeFromBinary: true     // .
+            defaultConstructible: true      // done
+            memberwiseConstructible: true   // done
+            virtualDestructor: true         // done
+            copyable: true                  // done
+            movable: true                   // done
+            getters: true                   // done
+            setters: true                   // done
+            privateMembers: true            // done
+            serializeToHumon: true          // done
+            serializeToBinary: true         // .
+            comparable: true                // .
+            diffable: true                  // .
         }
     }
 }

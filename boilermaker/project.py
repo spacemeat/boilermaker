@@ -1,4 +1,4 @@
-from . import utilities
+from . import utilities, ansi
 
 # TODO: Make this a plugin thing.
 from .enums import Enums as Enums
@@ -57,6 +57,9 @@ class Project:
 
 
     def run(self, op):
+        variantName = self.d('variant')
+        print (f'{ansi.dk_blue_fg}Performing {ansi.lt_blue_fg}{op}{ansi.dk_blue_fg} for project variant {ansi.lt_magenta_fg}{variantName}{ansi.dk_blue_fg}.{ansi.all_off}')
+
         if op == 'reportDefs':
             self.reportDefs()
         if op == 'reportEnums':
@@ -103,7 +106,7 @@ class Project:
 
     def reportEnums(self):
         for enumName, enumObject in self.everyEnum():
-            print (f'ENUM: {enumName}:')
+            print (f'Enum: {enumName}:')
             for k, v in enumObject.enumVals.items():
                 print (f'    {k} = ({v[0]}, {v[1]})')
         
@@ -118,6 +121,4 @@ class Project:
         
 
     def generateCode(self):
-        var = self.d('variant')
-        print (f'Generate code for {var}')
-
+        pass

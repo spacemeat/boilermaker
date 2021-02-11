@@ -2,6 +2,7 @@ from copy import deepcopy
 import os
 import sys
 from . import utilities
+from . import ansi
 
 
 # TODO: Make this a plugin thing. Nice info: https://realpython.com/python-import/
@@ -44,7 +45,7 @@ class DefsVariant:
         if variantName == '*':
             self.defsData = inherit(baseDefsData, {}, True)
         else:
-            print (f'''Folding base data: {defsName}|{variantName} = {defsName}|* + {defsName}|{variantName}''')
+            print (f'''{ansi.dk_blue_fg}Folding base data: {ansi.all_off}{defsName}|{variantName} = {defsName}|* + {defsName}|{variantName}''')
             self.defsData = inherit(baseDefsData, variantDefsData, True)
 
         self.defsData['variant'] = '|'.join([defsName, variantName])
@@ -104,7 +105,7 @@ class DefsFile:
 
 
     def resolve(self, variantName):
-        defsData = self.variants[variantName].defsData
+        defsData = deepcopy(self.variants[variantName].defsData)
         for inherited in defsData['inherit']:
             # make the inherited DefsFile
             inheritedDefsName, inheritedVariantName = DefsFile.getDefNameParts(inherited.lower())
@@ -114,7 +115,7 @@ class DefsFile:
             # recursive call to inherited def's resolve.
             inheritedData = inheritedDefs.resolve(inheritedVariantName)
 
-            print (f'Folding inherited variants: defsData = {inheritedDefsName}|{inheritedVariantName} + defsData')
+            print (f'{ansi.dk_blue_fg}Folding inherited variants: {ansi.all_off}defsData = {inheritedDefsName}|{inheritedVariantName} + defsData')
             defsData = inherit(inheritedData, defsData, False)
 
             defsData['tools'] = defsData.get('tools', '').lower()
@@ -170,9 +171,16 @@ def main():
     if defFile:
         defsFile = DefsFile.make('defs', os.path.realpath(defFile))
         if len(variantsRequested) == 0:
-            variantsRequested = defsFile.variants
+            if len(defsFile.variants) == 1:
+                variantsRequested = [list(defsFile.variants)[0]]
+            elif len(defsFile.variants) > 1:
+                variantsRequested = [list(defsFile.variants)[1]]
+            else:
+                # should never get here; '*' should always be available
+                raise RuntimeError('No useful variants were created.')
 
         for v in variantsRequested:
             p = makeProject(defsFile.resolve(v))
+            variantName = p.d('variant')
             for op in operations:
                 p.run(op)

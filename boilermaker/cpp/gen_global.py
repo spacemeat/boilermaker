@@ -6,9 +6,7 @@ def genPragma(self):
 def genTopComment(self):
     self._appendToSection('mainHeaderTopComment', self.d('headerTopComment'))
     self._appendToSection('inlineTopComment', self.d('inlineTopComment'))
-
-    if self.d('outputForm') == 'library':
-        self._appendToSection('sourceTopComment', self.d('sourceTopComment'))
+    self._appendToSection('sourceTopComment', self.d('sourceTopComment'))
 
 
 def genIncludes(self):

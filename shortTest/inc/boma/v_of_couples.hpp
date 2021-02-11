@@ -1,7 +1,4 @@
 #pragma once
-/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
-    Do not bother modifying this file, as your build process will overwrite
-    your changes. */
 
 #include <humon/humon.hpp>
 #include <vector>
@@ -20,13 +17,25 @@ namespace shortTest
     class v_of_couples
     {
     public:
+        v_of_couples();
+        v_of_couples(std::vector<couple> const & couples);
         v_of_couples(hu::Node node) noexcept;
+        v_of_couples(v_of_couples const & rhs) = default;
+        v_of_couples(v_of_couples const && rhs) = delete;
+        v_of_couples & operator =(v_of_couples const & rhs) = default;
+        v_of_couples & operator =(v_of_couples const && rhs) = delete;
+        virtual ~v_of_couples();
+        std::vector<couple>         v_of_couples::get_couples() &&      { return couples; }
+        std::vector<couple> const & v_of_couples::get_couples() const & { return couples; }
+        std::vector<couple>       & v_of_couples::get_couples() &       { return couples; }
+        void set_couples(std::vector<couple> const & new_couples) { couples = new_couples; }
+        void set_couples(std::vector<couple> && new_couples)      { using std::swap; swap(couples, new_couples); }
         friend std::ostream & operator <<(std::ostream & out, v_of_couples const & obj) noexcept;
     private:
         std::vector<couple> couples;
     }; // end class v_of_couples
 
-    inline std::ostream & operator <<(std::ostream & out, std::vector<couple> const & obj) noexcept;
+    std::ostream & operator <<(std::ostream & out, std::vector<couple> const & obj) noexcept;
 }
 
 template<>
@@ -51,4 +60,3 @@ struct hu::val<std::vector<shortTest::couple>>
         return rv;
     }
 };
-#include "inl/v_of_couples.inl.hpp"

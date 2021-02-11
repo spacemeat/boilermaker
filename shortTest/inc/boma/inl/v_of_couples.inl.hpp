@@ -5,7 +5,7 @@
 
 #include "../v_of_couples.hpp"
 
-namespace shortTest
+namespace boma
 {
 
     v_of_couples::v_of_couples(hu::Node node) noexcept
@@ -20,20 +20,4 @@ namespace shortTest
         out << '}';
         return out;
     }
-    inline std::ostream & operator <<(std::ostream & out, std::vector<couple> const & obj) noexcept
-    {
-        out << '[';
-        bool firstTime = true;
-        for (auto const & objmem : obj)
-        {
-            if (firstTime)
-                { firstTime = false; }
-            else
-                { out << ' '; }
-            out << objmem;
-        }
-        out << ']';
-        return out;
-    }
-
 }

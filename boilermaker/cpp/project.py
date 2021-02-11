@@ -18,10 +18,14 @@ class Project(BaseProject):
         self.defsData['headerToInl'] = os.path.relpath(self.d('inlineDir'), self.d('headerDir'))
         self.defsData['srcToHeader'] = os.path.relpath(self.d('headerDir'), self.d('sourceDir'))
         self.defsData['srcToInl'] = os.path.relpath(self.d('inlineDir'), self.d('sourceDir'))
+    
 
-        #self.defsData['headerToInl'] = utilities.makeRelativeDir(self.d('headerDir'), self.d('inlineDir'))
-        #self.defsData['srcToHeader'] = utilities.makeRelativeDir(self.d('sourceDir'), self.d('headerDir'))
-        #self.defsData['srcToInl'] = utilities.makeRelativeDir(self.d('sourceDir'), self.d('inlineDir'))
+    def const(self, type):
+        coast = self.d('constCoast', 'west')
+        if coast == 'east':
+            return f'const {type}'
+        else:
+            return f'{type} const'
     
 
     def _appendToSection(self, section, src):
@@ -141,7 +145,6 @@ class Project(BaseProject):
     def _getPath(self, kind, kindInfo, typeName = None):
         '''kind is like 'mainHeader' or 'typesSource' '''
 
-        if typeName == 'typesSource': breakpoint()
         sourcePath = kindInfo.get('sourcePath')
         if not sourcePath:
             raise RuntimeError(f'Bad value for {kind}/sourcePath: {sourcePath}')
@@ -153,65 +156,3 @@ class Project(BaseProject):
         sourcePath = self.replaceArgs(sourcePath, repl)
 
         return Path(sourcePath)
-
-        '''
-        path = [self.d('defsPath')]
-        if sourceType == 'header':
-            path.append(self.d('headerDir'))
-            if kind == 'mainHeader':
-                path.append(self.d('mainHeaderFile'))
-            if kind == 'enumHeader':
-                path.append(self.d('enumHeaderFile'))
-
-
-        elif sourceType == 'inline':
-            path.append(self.d('inlineDir'))
-        elif sourceType == 'source':
-            path.append(self.d('sourceDir'))
-        else:
-            raise RuntimeError(f'invalid sourceType: {sourceType}')
-
-
-        if self.d('outputForm') == 'headerOnly':
-            if   kind == 'mainHeader':
-                return Path(self.d('defsPath'), self.d('headerDir'), self.d('mainHeaderFile')).resolve()
-            elif kind == 'enumHeader':
-                return Path(self.d('defsPath'), self.d('inlineDir'), self.d('enumHeaderFile')).resolve()
-            elif kind == 'enumSource':
-                return Path(self.d('defsPath'), self.d('inlineDir'), self.d('enumInlineFile')).resolve()
-            elif (kind == 'headerOnly.enumHeader' or 
-                kind == 'headerOnly.enumSource' or 
-                kind == 'library.enumInlineSource'):
-                return Path(self.d('defsPath'), self.d('inlineDir'), self.d('enumHeaderFile')).resolve()
-            elif (kind == 'headerOnly.typeInlineSource' or 
-                kind == 'headerOnly.typeSource' or 
-                kind == 'library.typeInlineSource'):
-                return Path(self.d('defsPath'), self.d('inlineDir'), self.d('typeHeaderFile', typeLookup)).resolve()
-            elif (kind == 'headerOnly.containersInlineSource' or 
-                kind == 'headerOnly.containersSource' or 
-                kind == 'library.containersInlineSource'):
-                return Path(self.d('defsPath'), self.d('inlineDir'), self.d('containersHeaderFile')).resolve()
-        elif self.d('outputForm') == 'compiled':
-            if   kind == 'headerOnly.mainHeader':
-                return Path(self.d('defsPath'), self.d('headerDir'), self.d('mainHeaderFile')).resolve()
-            elif (kind == 'headerOnly.enumInlineSource' or 
-                kind == 'headerOnly.enumSource' or 
-                kind == 'library.enumInlineSource'):
-                return Path(self.d('defsPath'), self.d('inlineDir'), self.d('enumInlineHeaderFile')).resolve()
-            elif (kind == 'headerOnly.typeInlineSource' or 
-                kind == 'headerOnly.typeSource' or 
-                kind == 'library.typeInlineSource'):
-                return Path(self.d('defsPath'), self.d('inlineDir'), self.d('typeInlineHeaderFile', typeLookup)).resolve()
-            elif (kind == 'headerOnly.containersInlineSource' or 
-                kind == 'headerOnly.containersSource' or 
-                kind == 'library.containersInlineSource'):
-                return Path(self.d('defsPath'), self.d('inlineDir'), self.d('containersInlineHeaderFile')).resolve()
-            elif kind == 'library.enumSource':
-                return Path(self.d('defsPath'), self.d('sourceDir'), self.d('enumSourceFile')).resolve()
-            elif kind == 'library.typeSource':
-                return Path(self.d('defsPath'), self.d('sourceDir'), self.d('typeSourceFile', typeLookup)).resolve()
-            elif kind == 'library.containersSource':
-                return Path(self.d('defsPath'), self.d('sourceDir'), self.d('containersSourceFile')).resolve()
-        else:
-            raise RuntimeError(f'Invalid fileKind: {kind}')
-        '''

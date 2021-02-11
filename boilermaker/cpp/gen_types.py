@@ -14,20 +14,35 @@ def genAll(self):
         self.gen_types.genIncludesInline(self, t)
         self.gen_types.genForwardClassDecl(self, t)
         self.gen_types.genClassBegin(self, t)
-        self.gen_types.genClassEnd(self, t)
         self.gen_containers.genDeserializers(self, t, deserializeMemo)
         self.gen_containers.genSerializers(self, t, serializersMemo)
+        self.gen_types.genDefaultConstructor(self, t)
+        self.gen_types.genMemberwiseConstructor(self, t)
+        self.gen_types.genCopyConstructor(self, t)
+        self.gen_types.genMoveConstructor(self, t)
+        self.gen_types.genCopyAssignment(self, t)
+        self.gen_types.genMoveAssignment(self, t)
+        self.gen_types.genVirtualDestructor(self, t)
+        self.gen_types.genSwap(self, t)
+        self.gen_types.genGetters(self, t)
+        self.gen_types.genSetters(self, t)
         self.gen_types.genDeserializer(self, t)
         self.gen_types.genSerializer(self, t)
         self.gen_types.genMembers(self, t)
+        self.gen_types.genClassEnd(self, t)
         self.defsData['type'] = None
 
 
 def genIncludesInline(self, t):
     it = self.indent()
     self._addInclude(f'{t.name}|typeHeaderIncludeInline', f'{t.name}|typeSource')
-    self._addInclude(f'{t.name}|typeSourceLocalIncludes', f'{t.name}|typeHeader')
-    #self._addInclude(f'{t.name}|typeSourceLocalIncludes', 'containersSource')
+    if self.d('outputForm') == 'headerOnly':
+        self._addInclude(f'{t.name}|typeSourceLocalIncludes', f'{t.name}|typeHeader')
+    else:
+        # Source files include main header instead of their own type header. This allows
+        # the bits defined in one type depend on those in another type, preserving dependency
+        # order for those things memoized and defined only in one place.
+        self._addInclude(f'{t.name}|typeSourceLocalIncludes', f'mainHeader')
 
 
 #### this may go away
@@ -47,9 +62,8 @@ def genAllTypeForwardDecls(self):
 
 
 def genForwardClassDecl(self, t):
-    if (not self.dIs('computeTypes') or
-        (not self.dIs('serializeToHumon') and
-         not self.dIs('comparable'))):
+    if (not self.dIs('serializeToHumon') and
+        not self.dIs('comparable')):
         return ''
 
     it = self.indent()    
@@ -61,9 +75,6 @@ def genForwardClassDecl(self, t):
 
 
 def genClassBegin(self, t):
-    if (not self.dIs('computeTypes')):
-        return ''
-
     self._addInclude('mainHeaderIncludes', f'{t.name}|typeHeader')
     #self._addInclude('containersHeaderLocalIncludes', f'{t.name}|typeHeader')
 
@@ -80,8 +91,7 @@ def genClassBegin(self, t):
 
 
 def genDeserializer(self, t):
-    if (not self.dIs('computeTypes') or
-        not self.dIs('deserializeFromHumon')):
+    if (not self.dIs('deserializeFromHumon')):
         return
 
     self._addInclude(f'{t.name}|typeHeaderIncludes', '<humon/humon.hpp>')
@@ -140,8 +150,7 @@ struct hu::val<{typeDecl}>
 
 
 def genSerializer(self, t):
-    if (not self.dIs('computeTypes') or
-        not self.dIs('serializeToHumon')):
+    if (not self.dIs('serializeToHumon')):
         return ''
 
     it = self.indent()
@@ -152,7 +161,7 @@ def genSerializer(self, t):
 
     src = f'''
 {it}{it}friend std::ostream & operator <<(std::ostream & out, {t.name} const & obj) noexcept;'''
-    self._appendToSection(f'{t.name}|serialzierDecl', src)
+    self._appendToSection(f'{t.name}|serializerDecl', src)
 
     src = f'''
 
@@ -175,10 +184,305 @@ def genSerializer(self, t):
     self._appendToSection(f'{t.name}|serialzierDef', src)
 
 
-def genMembers(self, t):
-    if (not self.dIs('computeTypes')):
-        return ''
+def genDefaultConstructor(self, t):
+    if not self.dIs('defaultConstructible'):
+        return
 
+    it = self.indent()
+
+    src = f'''
+{it}{it}{t.name}();'''
+    self._appendToSection(f'{t.name}|defaultCtrDecl', src)
+
+    src = f'''
+
+{it}{t.name}::{t.name}()
+{it}{{ }}'''
+    self._appendToSection(f'{t.name}|defaultCtrDef', src)
+
+
+def genMemberwiseConstructor(self, t):
+    if not self.dIs('memberwiseConstructible'):
+        return
+    
+    if len(t.members) == 0:
+        return
+        
+    it = self.indent()
+
+    def foreachMemberName():
+        for memberName, m in t.members.items():
+            memberDecl = self.makeNativeMemberType(m.properties)
+            yield (memberName, memberDecl)
+    
+    signature = ', '.join([f'{self.const(md)} & {mn}' for mn, md in foreachMemberName()])
+    memberConstructors = ', '.join([f'{mn}({mn})' for mn, _ in foreachMemberName()])
+
+    src = f'''
+{it}{it}{t.name}({signature});'''
+    self._appendToSection(f'{t.name}|memberwiseCtrDecl', src)
+
+    src = f'''
+
+{it}{t.name}::{t.name}({signature})
+{it} : {memberConstructors}
+{it}{{ }}'''
+    self._appendToSection(f'{t.name}|memberwiseCtrDef', src)
+
+
+def genCopyConstructor(self, t):
+    it = self.indent()
+    typeDecl = self.makeNative(t.name)
+
+    defaultOrDelete = 'default' if self.dIs('copyable') else 'delete'
+    src = f'''
+{it}{it}{t.name}({self.const(typeDecl)} & rhs) = {defaultOrDelete};'''
+
+    self._appendToSection(f'{t.name}|copyCtrDecl', src)
+
+
+def genMoveConstructor(self, t):
+    it = self.indent()
+    typeDecl = self.makeNative(t.name)
+
+    implOrDelete = ' noexcept;' if self.dIs('movable') else ' = delete;'
+
+    src = f'''
+{it}{it}{t.name}({self.const(typeDecl)} && rhs){implOrDelete}'''
+
+    self._appendToSection(f'{t.name}|moveCtrDecl', src)
+
+    if self.dIs('movable'):
+
+        def foreachMemberName():
+            for memberName, m in t.members.items():
+                memberDecl = self.makeNativeMemberType(m.properties)
+                yield (memberName, memberDecl)
+        
+        memberConstructors = f'\n'.join([f'{it}{it}{mn} = swap({mn}, rhs.{mn});' for mn, _ in foreachMemberName()])
+
+        src = f'''
+
+{it}{t.name}({self.const(typeDecl)} && rhs) noexcept
+{it}{{
+{it}{it}using std::swap;
+{memberConstructors}
+{it}}}'''
+
+        self._appendToSection(f'{t.name}|moveCtrDef', src)
+
+
+def genCopyAssignment(self, t):
+    it = self.indent()
+    typeDecl = self.makeNative(t.name)
+
+    defaultOrDelete = 'default' if self.dIs('copyable') else 'delete'
+    src = f'''
+{it}{it}{typeDecl} & operator =({self.const(typeDecl)} & rhs) = {defaultOrDelete};'''
+
+    self._appendToSection(f'{t.name}|copyAssignDecl', src)
+
+
+def genMoveAssignment(self, t):
+    it = self.indent()
+    typeDecl = self.makeNative(t.name)
+
+    implOrDelete = ' noexcept;' if self.dIs('movable') else ' = delete;'
+
+    src = f'''
+{it}{it}{typeDecl} & operator =({self.const(typeDecl)} && rhs){implOrDelete}'''
+
+    self._appendToSection(f'{t.name}|moveAssignDecl', src)
+
+    if self.dIs('movable'):
+        def foreachMemberName():
+            for memberName, m in t.members.items():
+                memberDecl = self.makeNativeMemberType(m.properties)
+                yield (memberName, memberDecl)
+        
+        memberConstructors = f'\n'.join([f'{it}{it}swap({mn}, rhs.{mn});' for mn, _ in foreachMemberName()])
+
+        src = f'''
+
+{it}{typeDecl} & operator =({self.const(typeDecl)} && rhs) noexcept
+{it}{{
+{it}{it}using std::swap;
+{memberConstructors}
+{it}{it}return * this;
+{it}}}'''
+
+        self._appendToSection(f'{t.name}|moveAssignDef', src)
+
+
+def genVirtualDestructor(self, t):
+    if not self.dIs('virtualDestructor'):
+        return
+    
+    it = self.indent()
+
+    src = f'''
+{it}{it}virtual ~{t.name}();'''
+    self._appendToSection(f'{t.name}|destructorDecl', src)
+
+    src = f'''
+
+{it}virtual {t.name}::~{t.name}()
+{it}{{ }}'''
+    self._appendToSection(f'{t.name}|destructorDef', src)
+  
+
+def genSwap(self, t):
+    if not self.dIs('movable'):
+        return
+
+    it = self.indent()
+    typeDecl = self.makeNative(t.name)
+
+    def foreachMemberName():
+        for memberName, m in t.members.items():
+            memberDecl = self.makeNativeMemberType(m.properties)
+            yield (memberName, memberDecl)
+
+    memberAssignments = '\n'.join([f'{it}{it}swap(lhs.{mn}, rhs.{mn};' for mn, _ in foreachMemberName()])
+
+    src = f'''
+{it}void swap({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs) noexcept;'''
+    self._appendToSection(f'{t.name}|forwardDecls', src)
+
+    src = f'''
+{it}{it}friend void swap({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs) noexcept;'''
+    self._appendToSection(f'{t.name}|swapDecl', src)
+
+    src = f'''
+
+{it}void swap({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs) noexcept
+{it}{{
+{it}{it}using std::swap;
+{memberAssignments}
+{it}}}'''
+    self._appendToSection(f'{t.name}|swapDef', src)
+
+
+def genGetters(self, t):
+    it = self.indent()
+    typeDecl = self.makeNative(t.name)
+    inline = ''
+    if self.d('outputForm') == 'headerOnly' and not self.dIs('inlineGetters'):
+        inline = 'inline '
+    
+    def foreachMemberName():
+        for memberName, m in t.members.items():
+            memberDecl = self.makeNativeMemberType(m.properties)
+            yield (memberName, memberDecl)
+
+    maxMemberNameLen = 0
+    maxMemberDeclLen = 0
+    for memberName, memberDecl in foreachMemberName():
+        maxMemberNameLen = max(len(memberName), maxMemberNameLen)
+        maxMemberDeclLen = max(len(memberDecl), maxMemberDeclLen)
+    
+    for memberName, memberDecl in foreachMemberName():
+        namePad = maxMemberNameLen - len(memberName)
+        declPad = maxMemberDeclLen - len(memberDecl)
+        if self.dIs('inlineGetters'):
+            src = f'''
+{it}{it}{inline}{memberDecl}{' ' * declPad}         {t.name}::get_{memberName}() &&{' ' * namePad}      {{ return {memberName}; }}'''
+            if self.dIs('constGetters'):
+                src += f'''
+{it}{it}{inline}{self.const(memberDecl)}{' ' * declPad} & {t.name}::get_{memberName}() const &{' ' * namePad} {{ return {memberName}; }}'''
+            if self.dIs('nonConstGetters'):
+                src += f'''
+{it}{it}{inline}{memberDecl}{' ' * declPad}       & {t.name}::get_{memberName}() &{' ' * namePad}       {{ return {memberName}; }}'''
+        else:
+            src = f'''
+{it}{it}{inline}{memberDecl}{' ' * declPad}         {t.name}::get_{memberName}() &&;'''
+            if self.dIs('constGetters'):
+                src += f'''
+{it}{it}{inline}{self.const(memberDecl)}{' ' * declPad} & {t.name}::get_{memberName}() const &;'''
+            if self.dIs('nonConstGetters'):
+                src += f'''
+{it}{it}{inline}{memberDecl}{' ' * declPad}       & {t.name}::get_{memberName}() &;'''
+            
+        self._appendToSection(f'{t.name}|memberGettersDecl', src)
+
+        if not self.dIs('inlineGetters'):
+            src = f'''
+
+{it}{inline}{memberDecl}{' ' * declPad}         {t.name}::get_{memberName}() &&{' ' * namePad}      {{ return {memberName}; }}'''
+            if self.dIs('constGetters'):
+                src += f'''
+{it}{inline}{self.const(memberDecl)}{' ' * declPad} & {t.name}::get_{memberName}() const &{' ' * namePad} {{ return {memberName}; }}'''
+            if self.dIs('nonConstGetters'):
+                src += f'''
+{it}{inline}{memberDecl}{' ' * declPad}       & {t.name}::get_{memberName}() &{' ' * namePad}       {{ return {memberName}; }}'''
+
+            self._appendToSection(f'{t.name}|memberGettersDef', src)
+
+
+def genSetters(self, t):
+    it = self.indent()
+    typeDecl = self.makeNative(t.name)
+    inline = ''
+    if self.d('outputForm') == 'headerOnly' and not self.dIs('inlineSetters'):
+        inline = 'inline '
+    
+    def foreachMemberName():
+        for memberName, m in t.members.items():
+            memberDecl = self.makeNativeMemberType(m.properties)
+            yield (memberName, memberDecl)
+
+    maxMemberNameLen = 0
+    maxMemberDeclLen = 0
+    for memberName, memberDecl in foreachMemberName():
+        maxMemberNameLen = max(len(memberName), maxMemberNameLen)
+        maxMemberDeclLen = max(len(memberDecl), maxMemberDeclLen)
+    
+    for memberName, memberDecl in foreachMemberName():
+        namePad = maxMemberNameLen - len(memberName)
+        declPad = maxMemberDeclLen - len(memberDecl)
+        src = ''
+        if self.dIs('inlineSetters'):
+            if self.dIs('setByCopy'):
+                if self.dIs('movable'):
+                    src += f'''
+{it}{it}{inline}void {' ' * namePad}set_{memberName}({memberDecl} new_{memberName}){' ' * (namePad + declPad)}    {{ {memberName} = std::move(new_{memberName}); }}'''
+                else:
+                    src += f'''
+{it}{it}{inline}void {' ' * namePad}set_{memberName}({self.const(memberDecl)} & new_{memberName}){' ' * (namePad + declPad)} {{ {memberName} = new_{memberName}; }}'''
+            if self.dIs('setByMove'):
+                src += f'''
+{it}{it}{inline}void {' ' * namePad}set_{memberName}({memberDecl} && new_{memberName}){' ' * (namePad + declPad)}      {{ using std::swap; swap({memberName}, new_{memberName}); }}'''
+        else:
+            if self.dIs('setByCopy'):
+                if self.dIs('movable'):
+                    src += f'''
+{it}{it}{inline}void {' ' * namePad}set_{memberName}({memberDecl} new_{memberName});'''
+                else:
+                    src += f'''
+{it}{it}{inline}void {' ' * namePad}set_{memberName}({self.const(memberDecl)} & new_{memberName});'''
+            if self.dIs('setByMove'):
+                src += f'''
+{it}{it}{inline}void {' ' * namePad}set_{memberName}({memberDecl} && new_{memberName});'''
+
+        self._appendToSection(f'{t.name}|memberSettersDecl', src)
+
+        src = '\n'
+        if not self.dIs('inlineSetters'):
+            if self.dIs('setByCopy'):
+                if self.dIs('movable'):
+                    src += f'''
+{it}{inline}void {' ' * namePad}{t.name}::set_{memberName}({memberDecl} new_{memberName}){' ' * (namePad + declPad)}    {{ {memberName} = std::move(new_{memberName}); }}'''
+                else:
+                    src += f'''
+{it}{inline}void {' ' * namePad}{t.name}::set_{memberName}({self.const(memberDecl)} & new_{memberName}){' ' * (namePad + declPad)} {{ {memberName} = new_{memberName}; }}'''
+            if self.dIs('setByMove'):
+                src += f'''
+{it}{inline}void {' ' * namePad}{t.name}::set_{memberName}({memberDecl} && new_{memberName}){' ' * (namePad + declPad)}      {{ using std::swap; swap({memberName}, new_{memberName}); }}'''
+
+            self._appendToSection(f'{t.name}|memberSettersDef', src)
+
+
+def genMembers(self, t):
     it = self.indent()
     src = ''
 
@@ -192,7 +496,7 @@ def genMembers(self, t):
         src += f'''
 {it}{it}{typeDecl} {memberName};'''
 
-    self._appendToSection(f'{t.name}|serialzierDecl', src)
+    self._appendToSection(f'{t.name}|members', src)
 
 
 #### This may die
@@ -290,9 +594,6 @@ def _acquireIncludes(self, t, typeDict):
     
 
 def genClassEnd(self, t):
-    if (not self.dIs('computeTypes')):
-        return ''
-    
     it = self.indent()
     typeDecl = self.makeNative(t.name)
 

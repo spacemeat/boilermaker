@@ -1,7 +1,4 @@
 #pragma once
-/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
-    Do not bother modifying this file, as your build process will overwrite
-    your changes. */
 
 #include <humon/humon.hpp>
 #include "enums.h"
@@ -39,5 +36,3 @@ namespace shortTest
     inline std::ostream & operator <<(std::ostream & out, ::eAnimals obj);
     inline std::ostream & operator <<(std::ostream & out, ::eBugs obj);
 }
-
-#include "inl/enums.inl.hpp"
