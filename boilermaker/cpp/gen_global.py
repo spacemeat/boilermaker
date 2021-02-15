@@ -47,5 +47,3 @@ namespace hu
 }}
 '''
     self._appendToSection('namespaceClose', src)
-
-

@@ -45,8 +45,8 @@
             privateMembers: true            // done
             serializeToHumon: true          // done
             serializeToBinary: true         // .
-            comparable: true                // .
-            diffable: true                  // .
+            comparable: true                // done
+            diffable: true                  // done
         }
     }
 }

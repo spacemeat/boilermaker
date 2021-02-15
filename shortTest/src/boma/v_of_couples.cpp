@@ -19,17 +19,53 @@ namespace shortTest
     {
     }
 
-    virtual v_of_couples::~v_of_couples()
+    v_of_couples::v_of_couples(v_of_couples && rhs) noexcept
+    {
+        using std::swap;
+        swap(couples, rhs.couples);
+    }
+
+    v_of_couples & v_of_couples::operator =(v_of_couples && rhs) noexcept
+    {
+        using std::swap;
+        swap(couples, rhs.couples);
+        return * this;
+    }
+
+    v_of_couples::~v_of_couples()
     { }
 
-    std::ostream & operator <<(std::ostream & out, v_of_couples const & obj) noexcept
+    void swap(v_of_couples & lhs, v_of_couples & rhs) noexcept
+    {
+        using std::swap;
+        swap(lhs.couples, rhs.couples);
+    }
+
+    std::ostream & operator <<(std::ostream & out, v_of_couples const & obj)
     {
         out << '{';
         out << " couples: " << obj.couples;
         out << '}';
         return out;
     }
-    std::ostream & operator <<(std::ostream & out, std::vector<couple> const & obj) noexcept
+
+    bool operator ==(v_of_couples const & lhs, v_of_couples const & rhs)
+    {
+        return lhs.couples == rhs.couples;
+    }
+
+    bool operator !=(v_of_couples const & lhs, v_of_couples const & rhs)
+    {
+        return !(lhs == rhs);
+    }
+
+    Diff<v_of_couples>::Diff(v_of_couples const & lhs, v_of_couples const & rhs)
+    : memberDiffs((lhs.couples != rhs.couples) << static_cast<int>(Members::couples)),
+      couples_diffs(lhs.couples, rhs.couples)
+    {
+    }
+        
+    std::ostream & operator <<(std::ostream & out, std::vector<couple> const & obj)
     {
         out << '[';
         bool firstTime = true;

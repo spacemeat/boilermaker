@@ -9,12 +9,14 @@ class Project(BaseProject):
     from . import gen_global
     from . import gen_types
     from . import gen_containers
+    from . import gen_diffs
 
     def __init__(self, defsData):
         super().__init__(defsData)
         self.includes = {}
         self.sections = {}
-        
+        self.includeDiffTypes = {}
+
         self.defsData['headerToInl'] = os.path.relpath(self.d('inlineDir'), self.d('headerDir'))
         self.defsData['srcToHeader'] = os.path.relpath(self.d('headerDir'), self.d('sourceDir'))
         self.defsData['srcToInl'] = os.path.relpath(self.d('inlineDir'), self.d('sourceDir'))
@@ -97,11 +99,13 @@ class Project(BaseProject):
                 if (kind == 'typeHeader' or
                     kind == 'typeSource'):
                     for typeName, typeObj in self.types.items():
-                        #self.defsData['type'] = typeName
                         self.writeFile(kind, kindInfo, typeName)
-                        #self.defsData['type'] = None
+                elif kind == 'diffsHeader':
+                    if len(self.includeDiffTypes) > 0:
+                        self.writeFile(kind, kindInfo)
                 else:
                     self.writeFile(kind, kindInfo)
+
 
 
     def writeFile(self, kind, kindInfo, typeName = None):

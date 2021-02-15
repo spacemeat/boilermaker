@@ -1,33 +1,21 @@
 @{ app: boma, boma-version: 1.0.0 }
 {
-    platforms: {
-        c++: {
-            includeFiles: [
-                testCompare.hpp
-            ]
-            outputPaths: {
-                header: gen-cpp/inc/testCompare.hpp
-                source: 'gen-cpp/src/*.cpp'
-                inline: gen-cpp/inc/inl/_*.inl.hpp
-            }
-            settings: {
-                namespace: testCompare
-                const: east
-                noexcept: true
-                headerOnly: true
-                cavepersonCtrs: false
-            }
-            features: {
-                copyable: false
-                setters: false
-                setByMovers: false
-                getters: true
-                privateMembers: true
-            }
-        }
-    }
-
-    pods: {
+    inherit: c++|gnu
+    headerDir: gen-cpp/inc
+    inlineDir: gen-cpp/inc/inl
+    sourceDir: gen-cpp/src
+    namespace: testCompare
+    const: east
+    headerOnly: true
+    defaultConstructible: true
+    copyable: true
+    setters: false
+    setByMovers: false
+    getters: true
+    privateMembers: true
+    outputForm: compiled
+ 
+    types: {
         achievement: {
             titleId: int
             id: int

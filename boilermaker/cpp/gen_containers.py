@@ -136,7 +136,7 @@ struct hu::val<{declType}>
             numElems = int(typeArgs[1]['type'])
             src += f'''
 {it}{it}return {declType} {{
-{f",{endl}".join([f'{it}{it}{it}std::move(node / {i} % hu::val<{argDeclType}> {{}})' for i in range(0, numElems)])}
+{f",{endl}".join([f'{it}{it}{it}node / {i} % hu::val<{argDeclType}> {{}}' for i in range(0, numElems)])}
 {it}{it}}};'''
 
         elif baseType == 'pair':
@@ -144,16 +144,19 @@ struct hu::val<{declType}>
             ept1 = self.makeNativeMemberType(typeArgs[1], True)
             src += f'''
 {it}{it}return {declType} {{
-{it}{it}{it}std::move(hu::val<{ept0}>::extract(node / 0)),
-{it}{it}{it}std::move(hu::val<{ept1}>::extract(node / 1))
+{it}{it}{it}node / 0 % hu::val<{ept0}> {{ }},
+{it}{it}{it}node / 1 % hu::val<{ept1}> {{ }}
 {it}{it}}};'''
+            #{it}{it}{it}std::move(hu::val<{ept0}>::extract(node / 0)),
+            #{it}{it}{it}std::move(hu::val<{ept1}>::extract(node / 1))
 
         elif baseType == 'tuple':
             epts = [self.makeNativeMemberType(typeArg, True) for typeArg in typeArgs]
             src += f'''
 {it}{it}return {declType} {{
-{f',{endl}'.join([f"{it}{it}{it}std::move(hu::val<{epts[i]}>::extract(node / {i}))" for i in range(0, len(epts))])}
+{f',{endl}'.join([f"{it}{it}{it}node / {i} % hu::val<{epts[i]}> {{ }}" for i in range(0, len(epts))])}
 {it}{it}}};'''
+            #{f',{endl}'.join([f"{it}{it}{it}std::move(hu::val<{epts[i]}>::extract(node / {i}))" for i in range(0, len(epts))])}
 
         elif baseType == 'vector' or baseType == 'set' or baseType == 'unordered_set':
             elemPlatformType = self.makeNativeMemberType(typeArgs[0], True)
@@ -161,9 +164,10 @@ struct hu::val<{declType}>
 {it}{it}{declType} rv;
 {it}{it}for (size_t i = 0; i < node.numChildren(); ++i)
 {it}{it}{{
-{it}{it}{it}rv.emplace{'_back' if baseType == 'vector' else ''}(std::move(node / i % hu::val<{elemPlatformType}>{{}}));
+{it}{it}{it}rv.emplace{'_back' if baseType == 'vector' else ''}(node / i % hu::val<{elemPlatformType}>{{}});
 {it}{it}}}
 {it}{it}return rv;'''
+#{it}{it}{it}rv.emplace{'_back' if baseType == 'vector' else ''}(std::move(node / i % hu::val<{elemPlatformType}>{{}}));
 
         elif baseType == 'map' or baseType == 'unordered_map':
             eptkey = self.makeNativeMemberType(typeArgs[0], True)
@@ -289,7 +293,8 @@ def _genSerializer(self, t, m, memo):
                 src += recurse(phase, memo, utilities.dictify(prop, 'type'))
 
         src += f'''
-{it}std::ostream & operator <<(std::ostream & out, {memberDeclType} const & obj) noexcept'''
+        
+{it}std::ostream & operator <<(std::ostream & out, {memberDeclType} const & obj)'''
         if phase == 'classDecl':
             src += f';'
         elif phase == 'classDef':

@@ -28,6 +28,8 @@ def genAll(self):
         self.gen_types.genSetters(self, t)
         self.gen_types.genDeserializer(self, t)
         self.gen_types.genSerializer(self, t)
+        self.gen_types.genComparator(self, t)
+        self.gen_diffs.genTypeDiffer(self, t)
         self.gen_types.genMembers(self, t)
         self.gen_types.genClassEnd(self, t)
         self.defsData['type'] = None
@@ -156,16 +158,16 @@ def genSerializer(self, t):
     it = self.indent()
 
     src = f'''
-{it}std::ostream & operator <<(std::ostream & out, {t.name} const & obj) noexcept;'''
+{it}std::ostream & operator <<(std::ostream & out, {t.name} const & obj);'''
     self._appendToSection(f'{t.name}|forwardDecls', src)
 
     src = f'''
-{it}{it}friend std::ostream & operator <<(std::ostream & out, {t.name} const & obj) noexcept;'''
+{it}{it}friend std::ostream & operator <<(std::ostream & out, {t.name} const & obj);'''
     self._appendToSection(f'{t.name}|serializerDecl', src)
 
     src = f'''
 
-{it}std::ostream & operator <<(std::ostream & out, {t.name} const & obj) noexcept
+{it}std::ostream & operator <<(std::ostream & out, {t.name} const & obj)
 {it}{{
 {it}{it}out << '{{';'''
     for memberName, memberObj in t.members.items():
@@ -248,7 +250,7 @@ def genMoveConstructor(self, t):
     implOrDelete = ' noexcept;' if self.dIs('movable') else ' = delete;'
 
     src = f'''
-{it}{it}{t.name}({self.const(typeDecl)} && rhs){implOrDelete}'''
+{it}{it}{t.name}({typeDecl} && rhs){implOrDelete}'''
 
     self._appendToSection(f'{t.name}|moveCtrDecl', src)
 
@@ -259,11 +261,11 @@ def genMoveConstructor(self, t):
                 memberDecl = self.makeNativeMemberType(m.properties)
                 yield (memberName, memberDecl)
         
-        memberConstructors = f'\n'.join([f'{it}{it}{mn} = swap({mn}, rhs.{mn});' for mn, _ in foreachMemberName()])
+        memberConstructors = f'\n'.join([f'{it}{it}swap({mn}, rhs.{mn});' for mn, _ in foreachMemberName()])
 
         src = f'''
 
-{it}{t.name}({self.const(typeDecl)} && rhs) noexcept
+{it}{typeDecl}::{t.name}({typeDecl} && rhs) noexcept
 {it}{{
 {it}{it}using std::swap;
 {memberConstructors}
@@ -290,7 +292,7 @@ def genMoveAssignment(self, t):
     implOrDelete = ' noexcept;' if self.dIs('movable') else ' = delete;'
 
     src = f'''
-{it}{it}{typeDecl} & operator =({self.const(typeDecl)} && rhs){implOrDelete}'''
+{it}{it}{typeDecl} & operator =({typeDecl} && rhs){implOrDelete}'''
 
     self._appendToSection(f'{t.name}|moveAssignDecl', src)
 
@@ -304,7 +306,7 @@ def genMoveAssignment(self, t):
 
         src = f'''
 
-{it}{typeDecl} & operator =({self.const(typeDecl)} && rhs) noexcept
+{it}{typeDecl} & {typeDecl}::operator =({typeDecl} && rhs) noexcept
 {it}{{
 {it}{it}using std::swap;
 {memberConstructors}
@@ -326,7 +328,7 @@ def genVirtualDestructor(self, t):
 
     src = f'''
 
-{it}virtual {t.name}::~{t.name}()
+{it}{t.name}::~{t.name}()
 {it}{{ }}'''
     self._appendToSection(f'{t.name}|destructorDef', src)
   
@@ -338,24 +340,24 @@ def genSwap(self, t):
     it = self.indent()
     typeDecl = self.makeNative(t.name)
 
+    src = f'''
+{it}void swap({typeDecl} & lhs, {typeDecl} & rhs) noexcept;'''
+    self._appendToSection(f'{t.name}|forwardDecls', src)
+
+    src = f'''
+{it}{it}friend void swap({typeDecl} & lhs, {typeDecl} & rhs) noexcept;'''
+    self._appendToSection(f'{t.name}|swapDecl', src)
+
     def foreachMemberName():
         for memberName, m in t.members.items():
             memberDecl = self.makeNativeMemberType(m.properties)
             yield (memberName, memberDecl)
 
-    memberAssignments = '\n'.join([f'{it}{it}swap(lhs.{mn}, rhs.{mn};' for mn, _ in foreachMemberName()])
-
-    src = f'''
-{it}void swap({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs) noexcept;'''
-    self._appendToSection(f'{t.name}|forwardDecls', src)
-
-    src = f'''
-{it}{it}friend void swap({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs) noexcept;'''
-    self._appendToSection(f'{t.name}|swapDecl', src)
+    memberAssignments = '\n'.join([f'{it}{it}swap(lhs.{mn}, rhs.{mn});' for mn, _ in foreachMemberName()])
 
     src = f'''
 
-{it}void swap({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs) noexcept
+{it}void swap({typeDecl} & lhs, {typeDecl} & rhs) noexcept
 {it}{{
 {it}{it}using std::swap;
 {memberAssignments}
@@ -386,35 +388,35 @@ def genGetters(self, t):
         declPad = maxMemberDeclLen - len(memberDecl)
         if self.dIs('inlineGetters'):
             src = f'''
-{it}{it}{inline}{memberDecl}{' ' * declPad}         {t.name}::get_{memberName}() &&{' ' * namePad}      {{ return {memberName}; }}'''
+{it}{it}{inline}{memberDecl}{' ' * declPad}         get_{memberName}() &&{' ' * namePad}      {{ return {memberName}; }}'''
             if self.dIs('constGetters'):
                 src += f'''
-{it}{it}{inline}{self.const(memberDecl)}{' ' * declPad} & {t.name}::get_{memberName}() const &{' ' * namePad} {{ return {memberName}; }}'''
+{it}{it}{inline}{self.const(memberDecl)}{' ' * declPad} & get_{memberName}() const &{' ' * namePad} {{ return {memberName}; }}'''
             if self.dIs('nonConstGetters'):
                 src += f'''
-{it}{it}{inline}{memberDecl}{' ' * declPad}       & {t.name}::get_{memberName}() &{' ' * namePad}       {{ return {memberName}; }}'''
+{it}{it}{inline}{memberDecl}{' ' * declPad}       & get_{memberName}() &{' ' * namePad}       {{ return {memberName}; }}'''
         else:
             src = f'''
-{it}{it}{inline}{memberDecl}{' ' * declPad}         {t.name}::get_{memberName}() &&;'''
+{it}{it}{inline}{memberDecl}{' ' * declPad}         get_{memberName}() &&;'''
             if self.dIs('constGetters'):
                 src += f'''
-{it}{it}{inline}{self.const(memberDecl)}{' ' * declPad} & {t.name}::get_{memberName}() const &;'''
+{it}{it}{inline}{self.const(memberDecl)}{' ' * declPad} & get_{memberName}() const &;'''
             if self.dIs('nonConstGetters'):
                 src += f'''
-{it}{it}{inline}{memberDecl}{' ' * declPad}       & {t.name}::get_{memberName}() &;'''
+{it}{it}{inline}{memberDecl}{' ' * declPad}       & get_{memberName}() &;'''
             
         self._appendToSection(f'{t.name}|memberGettersDecl', src)
 
         if not self.dIs('inlineGetters'):
             src = f'''
 
-{it}{inline}{memberDecl}{' ' * declPad}         {t.name}::get_{memberName}() &&{' ' * namePad}      {{ return {memberName}; }}'''
+{it}{inline}{memberDecl}{' ' * declPad}         {typeDecl}::get_{memberName}() &&{' ' * namePad}      {{ return {memberName}; }}'''
             if self.dIs('constGetters'):
                 src += f'''
-{it}{inline}{self.const(memberDecl)}{' ' * declPad} & {t.name}::get_{memberName}() const &{' ' * namePad} {{ return {memberName}; }}'''
+{it}{inline}{self.const(memberDecl)}{' ' * declPad} & {typeDecl}::get_{memberName}() const &{' ' * namePad} {{ return {memberName}; }}'''
             if self.dIs('nonConstGetters'):
                 src += f'''
-{it}{inline}{memberDecl}{' ' * declPad}       & {t.name}::get_{memberName}() &{' ' * namePad}       {{ return {memberName}; }}'''
+{it}{inline}{memberDecl}{' ' * declPad}       & {typeDecl}::get_{memberName}() &{' ' * namePad}       {{ return {memberName}; }}'''
 
             self._appendToSection(f'{t.name}|memberGettersDef', src)
 
@@ -445,13 +447,13 @@ def genSetters(self, t):
             if self.dIs('setByCopy'):
                 if self.dIs('movable'):
                     src += f'''
-{it}{it}{inline}void {' ' * namePad}set_{memberName}({memberDecl} new_{memberName}){' ' * (namePad + declPad)}    {{ {memberName} = std::move(new_{memberName}); }}'''
+{it}{it}{inline}void {' ' * namePad}set_{memberName}({memberDecl} new_{memberName}){' ' * (namePad + declPad)}    {{ using std::swap; swap({memberName}, new_{memberName}); }}'''
                 else:
                     src += f'''
 {it}{it}{inline}void {' ' * namePad}set_{memberName}({self.const(memberDecl)} & new_{memberName}){' ' * (namePad + declPad)} {{ {memberName} = new_{memberName}; }}'''
             if self.dIs('setByMove'):
                 src += f'''
-{it}{it}{inline}void {' ' * namePad}set_{memberName}({memberDecl} && new_{memberName}){' ' * (namePad + declPad)}      {{ using std::swap; swap({memberName}, new_{memberName}); }}'''
+{it}{it}{inline}void {' ' * namePad}set_{memberName}({memberDecl} && new_{memberName}){' ' * (namePad + declPad)} {{ using std::swap; swap({memberName}, new_{memberName}); }}'''
         else:
             if self.dIs('setByCopy'):
                 if self.dIs('movable'):
@@ -471,15 +473,53 @@ def genSetters(self, t):
             if self.dIs('setByCopy'):
                 if self.dIs('movable'):
                     src += f'''
-{it}{inline}void {' ' * namePad}{t.name}::set_{memberName}({memberDecl} new_{memberName}){' ' * (namePad + declPad)}    {{ {memberName} = std::move(new_{memberName}); }}'''
+{it}{inline}void {' ' * namePad}{t.name}::set_{memberName}({memberDecl} new_{memberName}){' ' * (namePad + declPad)}    {{ using std::swap; swap({memberName}, new_{memberName}); }}'''
                 else:
                     src += f'''
 {it}{inline}void {' ' * namePad}{t.name}::set_{memberName}({self.const(memberDecl)} & new_{memberName}){' ' * (namePad + declPad)} {{ {memberName} = new_{memberName}; }}'''
             if self.dIs('setByMove'):
                 src += f'''
-{it}{inline}void {' ' * namePad}{t.name}::set_{memberName}({memberDecl} && new_{memberName}){' ' * (namePad + declPad)}      {{ using std::swap; swap({memberName}, new_{memberName}); }}'''
+{it}{inline}void {' ' * namePad}{t.name}::set_{memberName}({memberDecl} && new_{memberName}){' ' * (namePad + declPad)} {{ using std::swap; swap({memberName}, new_{memberName}); }}'''
 
             self._appendToSection(f'{t.name}|memberSettersDef', src)
+
+
+def genComparator(self, t):
+    if not self.dIs('comparable'):
+        return ''
+
+    it = self.indent()
+    typeDecl = self.makeNative(t.name)
+
+    src = f'''
+{it}bool operator ==({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs);
+{it}bool operator !=({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs);'''
+    self._appendToSection(f'{t.name}|forwardDecls', src)
+
+    src = f'''
+{it}{it}friend bool operator ==({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs);
+{it}{it}friend bool operator !=({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs);'''
+    self._appendToSection(f'{t.name}|comparatorDecl', src)
+
+    src = f'''
+
+{it}bool operator ==({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs)
+{it}{{
+{it}{it}return '''
+    if len(t.members) > 0:
+        src += f'''
+{it}{it}    && '''.join([f'lhs.{mn} == rhs.{mn}' for mn in t.members.keys()])
+    else:
+        src += 'true'
+    
+    src += f''';
+{it}}}
+
+{it}bool operator !=({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs)
+{it}{{
+{it}{it}return !(lhs == rhs);
+{it}}}'''
+    self._appendToSection(f'{t.name}|comparatorDef', src)
 
 
 def genMembers(self, t):
@@ -488,6 +528,7 @@ def genMembers(self, t):
 
     if self.dIs('privateMembers'):
         src += f'''
+
 {it}private:'''
 
     for memberName, m in t.members.items():
@@ -595,12 +636,9 @@ def _acquireIncludes(self, t, typeDict):
 
 def genClassEnd(self, t):
     it = self.indent()
-    typeDecl = self.makeNative(t.name)
 
     src = f'''
-{it}}}; // end class {typeDecl}
+{it}}};
 '''
 
     self._appendToSection(f'{t.name}|classEnd', src)
-
-

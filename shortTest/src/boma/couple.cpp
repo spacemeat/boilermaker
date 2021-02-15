@@ -20,15 +20,54 @@ namespace shortTest
     {
     }
 
-    virtual couple::~couple()
+    couple::couple(couple && rhs) noexcept
+    {
+        using std::swap;
+        swap(a, rhs.a);
+        swap(bee, rhs.bee);
+    }
+
+    couple & couple::operator =(couple && rhs) noexcept
+    {
+        using std::swap;
+        swap(a, rhs.a);
+        swap(bee, rhs.bee);
+        return * this;
+    }
+
+    couple::~couple()
     { }
 
-    std::ostream & operator <<(std::ostream & out, couple const & obj) noexcept
+    void swap(couple & lhs, couple & rhs) noexcept
+    {
+        using std::swap;
+        swap(lhs.a, rhs.a);
+        swap(lhs.bee, rhs.bee);
+    }
+
+    std::ostream & operator <<(std::ostream & out, couple const & obj)
     {
         out << '{';
         out << " a: " << obj.a;
         out << " bee: " << obj.bee;
         out << '}';
         return out;
+    }
+
+    bool operator ==(couple const & lhs, couple const & rhs)
+    {
+        return lhs.a == rhs.a
+            && lhs.bee == rhs.bee;
+    }
+
+    bool operator !=(couple const & lhs, couple const & rhs)
+    {
+        return !(lhs == rhs);
+    }
+
+    Diff<couple>::Diff(couple const & lhs, couple const & rhs)
+    : memberDiffs((lhs.a != rhs.a) << static_cast<int>(Members::a) |
+                  (lhs.bee != rhs.bee) << static_cast<int>(Members::bee))
+    {
     }
 }

@@ -1,5 +1,4 @@
 #include <iostream>
-#include "testCompare.hpp"
 #include "gen-cpp/inc/testCompare.hpp"
 
 int test()

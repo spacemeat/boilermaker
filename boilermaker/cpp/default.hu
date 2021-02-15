@@ -7,7 +7,6 @@
     computeTypes:   true
 
     const:          west
-    noexcept:       false
     outputForm:     headerOnly  // or compiled
     cavepersonCtrs: false
 
@@ -58,16 +57,17 @@
         }
     }
 
-    headerDir:      inc/boma
-    inlineDir:      inc/boma/inl
-    sourceDir:      src/boma
-    mainHeaderFile:             $<namespace>.hpp
+    headerDir:              inc/boma
+    inlineDir:              inc/boma/inl
+    sourceDir:              src/boma
+    mainHeaderFile:         $<namespace>.hpp
+    diffsHeaderFile:        diffs.hpp
     enumHeaderFile:         enums.hpp
     enumInlineFile:         enums.inl.hpp
     enumSourceFile:         enums.cpp
-    typeHeaderFile:             $<type>.hpp
-    typeInlineFile:             $<type>.inl.hpp
-    typeSourceFile:             $<type>.cpp
+    typeHeaderFile:         $<type>.hpp
+    typeInlineFile:         $<type>.inl.hpp
+    typeSourceFile:         $<type>.cpp
     containersHeaderFile:   containers.hpp
     containersInlineFile:   containers.inl.hpp
     containersSourceFile:   containers.cpp
@@ -198,6 +198,26 @@
                 ]
             }
 
+            diffsHeader: {
+                sourcePath: $<defsDir>/$<headerDir>/$<diffsHeaderFile>
+                sections: [
+                    pragma
+                    headerTopComment
+                    diffsHeaderIncludes
+                    namespaceOpen
+                    diffTemplateDecl
+                    diffTuple
+                    diffPair
+                    diffArray
+                    diffVector
+                    diffSet
+                    diffUnorderedSet
+                    diffMap
+                    diffUnorderedMap
+                    namespaceClose
+                ]
+            }
+
             enumHeader: {
                 sourcePath: $<defsDir>/$<headerDir>/$<enumHeaderFile>
                 sections: [
@@ -238,6 +258,7 @@
                     $<type>|containerDifferDecl
                     $<type>|forwardClassDecl
                     $<type>|forwardDecls
+                    $<type>|differDecl
                     $<type>|classBegin
                     $<type>|defaultCtrDecl
                     $<type>|memberwiseCtrDecl
@@ -252,7 +273,7 @@
                     $<type>|memberSettersDecl
                     $<type>|serializerDecl
                     $<type>|comparatorDecl
-                    $<type>|differDecl
+                    $<type>|diffFriendDecls
                     $<type>|members
                     $<type>|classEnd
                     $<type>|typeSerializerDecls
