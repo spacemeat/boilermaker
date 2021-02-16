@@ -3,8 +3,8 @@
 #include <bitset>
 #include <vector>
 #include <tuple>
-#include <utility>
 #include <array>
+#include <utility>
 
 namespace shortTest
 {

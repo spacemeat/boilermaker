@@ -102,13 +102,13 @@ def genDeserializer(self, t):
     typeDecl = self.makeNative(t.name)
 
     src = f'''
-{it}{it}{t.name}(hu::Node node) noexcept'''
+{it}{it}{t.name}(hu::Node node)'''
 
     self._appendToSection(f'{t.name}|humonCtrDecl', src + ';')
 
     src = f'''
 
-{it}{t.name}::{t.name}(hu::Node node) noexcept
+{it}{t.name}::{t.name}(hu::Node node)
 '''
     firstMember = True
     for memberName, m in t.members.items():

@@ -51,15 +51,16 @@ namespace shortTest
         int                 get_bee() &&      { return bee; }
         int const         & get_bee() const & { return bee; }
         int               & get_bee() &       { return bee; }
-        void   set_a(std::string new_a)      { a = std::move(new_a); }
-        void   set_a(std::string && new_a)        { using std::swap; swap(a, new_a); }
-        void set_bee(int new_bee)            { bee = std::move(new_bee); }
-        void set_bee(int && new_bee)              { using std::swap; swap(bee, new_bee); }
+        void   set_a(std::string new_a)      { using std::swap; swap(a, new_a); }
+        void   set_a(std::string && new_a)   { using std::swap; swap(a, new_a); }
+        void set_bee(int new_bee)            { using std::swap; swap(bee, new_bee); }
+        void set_bee(int && new_bee)         { using std::swap; swap(bee, new_bee); }
         friend std::ostream & operator <<(std::ostream & out, couple const & obj);
         friend bool operator ==(couple const & lhs, couple const & rhs);
         friend bool operator !=(couple const & lhs, couple const & rhs);
     friend Diff<couple>::Diff();
     friend Diff<couple>::Diff(couple const & lhs, couple const & rhs);
+
     private:
         std::string a;
         int bee;

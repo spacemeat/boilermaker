@@ -49,13 +49,14 @@ namespace shortTest
         std::vector<couple>         get_couples() &&      { return couples; }
         std::vector<couple> const & get_couples() const & { return couples; }
         std::vector<couple>       & get_couples() &       { return couples; }
-        void set_couples(std::vector<couple> new_couples)    { couples = std::move(new_couples); }
-        void set_couples(std::vector<couple> && new_couples)      { using std::swap; swap(couples, new_couples); }
+        void set_couples(std::vector<couple> new_couples)    { using std::swap; swap(couples, new_couples); }
+        void set_couples(std::vector<couple> && new_couples) { using std::swap; swap(couples, new_couples); }
         friend std::ostream & operator <<(std::ostream & out, v_of_couples const & obj);
         friend bool operator ==(v_of_couples const & lhs, v_of_couples const & rhs);
         friend bool operator !=(v_of_couples const & lhs, v_of_couples const & rhs);
     friend Diff<v_of_couples>::Diff();
     friend Diff<v_of_couples>::Diff(v_of_couples const & lhs, v_of_couples const & rhs);
+
     private:
         std::vector<couple> couples;
     };
@@ -81,7 +82,7 @@ struct hu::val<std::vector<shortTest::couple>>
         std::vector<shortTest::couple> rv;
         for (size_t i = 0; i < node.numChildren(); ++i)
         {
-            rv.emplace_back(std::move(node / i % hu::val<shortTest::couple>{}));
+            rv.emplace_back(node / i % hu::val<shortTest::couple>{});
         }
         return rv;
     }

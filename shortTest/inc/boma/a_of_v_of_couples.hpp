@@ -50,13 +50,14 @@ namespace shortTest
         std::array<std::vector<couple>, 4>         get_coupleses() &&      { return coupleses; }
         std::array<std::vector<couple>, 4> const & get_coupleses() const & { return coupleses; }
         std::array<std::vector<couple>, 4>       & get_coupleses() &       { return coupleses; }
-        void set_coupleses(std::array<std::vector<couple>, 4> new_coupleses)    { coupleses = std::move(new_coupleses); }
-        void set_coupleses(std::array<std::vector<couple>, 4> && new_coupleses)      { using std::swap; swap(coupleses, new_coupleses); }
+        void set_coupleses(std::array<std::vector<couple>, 4> new_coupleses)    { using std::swap; swap(coupleses, new_coupleses); }
+        void set_coupleses(std::array<std::vector<couple>, 4> && new_coupleses) { using std::swap; swap(coupleses, new_coupleses); }
         friend std::ostream & operator <<(std::ostream & out, a_of_v_of_couples const & obj);
         friend bool operator ==(a_of_v_of_couples const & lhs, a_of_v_of_couples const & rhs);
         friend bool operator !=(a_of_v_of_couples const & lhs, a_of_v_of_couples const & rhs);
     friend Diff<a_of_v_of_couples>::Diff();
     friend Diff<a_of_v_of_couples>::Diff(a_of_v_of_couples const & lhs, a_of_v_of_couples const & rhs);
+
     private:
         std::array<std::vector<couple>, 4> coupleses;
     };
@@ -80,10 +81,10 @@ struct hu::val<std::array<std::vector<shortTest::couple>, 4>>
     static inline std::array<std::vector<shortTest::couple>, 4> extract(hu::Node const & node) noexcept
     {
         return std::array<std::vector<shortTest::couple>, 4> {
-            std::move(node / 0 % hu::val<std::vector<shortTest::couple>> {}),
-            std::move(node / 1 % hu::val<std::vector<shortTest::couple>> {}),
-            std::move(node / 2 % hu::val<std::vector<shortTest::couple>> {}),
-            std::move(node / 3 % hu::val<std::vector<shortTest::couple>> {})
+            node / 0 % hu::val<std::vector<shortTest::couple>> {},
+            node / 1 % hu::val<std::vector<shortTest::couple>> {},
+            node / 2 % hu::val<std::vector<shortTest::couple>> {},
+            node / 3 % hu::val<std::vector<shortTest::couple>> {}
         };
     }
 };

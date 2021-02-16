@@ -8,17 +8,17 @@ int main(int argc, char ** argv)
 
     auto hu = R"(
 {
-    coup: {a: foo, b: 3}
+    coup: {a: foo, bee: 3}
     vacoup: {
         coupleses: [
             [
-                { a: bar, b: 4 }
-                { a: baa, b: 5 }
+                { a: bar, bee: 4 }
+                { a: baa, bee: 5 }
             ]
             []
             [
-                { a: sna, b: 6 }
-                { a: flu, b: 7 }
+                { a: sna, bee: 6 }
+                { a: flu, bee: 7 }
             ]
             []
         ]
