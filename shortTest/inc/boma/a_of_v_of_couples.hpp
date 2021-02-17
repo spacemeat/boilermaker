@@ -40,7 +40,7 @@ namespace shortTest
     public:
         a_of_v_of_couples();
         a_of_v_of_couples(std::array<std::vector<couple>, 4> const & coupleses);
-        a_of_v_of_couples(hu::Node node) noexcept;
+        a_of_v_of_couples(hu::Node node);
         a_of_v_of_couples(a_of_v_of_couples const & rhs) = default;
         a_of_v_of_couples(a_of_v_of_couples && rhs) noexcept;
         a_of_v_of_couples & operator =(a_of_v_of_couples const & rhs) = default;
@@ -69,7 +69,7 @@ namespace shortTest
 template<>
 struct hu::val<shortTest::a_of_v_of_couples>
 {
-    inline shortTest::a_of_v_of_couples extract(hu::Node const & node) noexcept
+    inline shortTest::a_of_v_of_couples extract(hu::Node const & node)
     {
         return shortTest::a_of_v_of_couples(node);
     }
@@ -78,7 +78,7 @@ struct hu::val<shortTest::a_of_v_of_couples>
 template <>
 struct hu::val<std::array<std::vector<shortTest::couple>, 4>>
 {
-    static inline std::array<std::vector<shortTest::couple>, 4> extract(hu::Node const & node) noexcept
+    static inline std::array<std::vector<shortTest::couple>, 4> extract(hu::Node const & node)
     {
         return std::array<std::vector<shortTest::couple>, 4> {
             node / 0 % hu::val<std::vector<shortTest::couple>> {},

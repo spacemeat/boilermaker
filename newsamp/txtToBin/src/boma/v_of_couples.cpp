@@ -2,9 +2,9 @@
     Do not bother modifying this file, as your build process will overwrite
     your changes. */
 
-#include "../../inc/boma/shortTest.hpp"
+#include "../../inc/boma/txtToBin.hpp"
 
-namespace shortTest
+namespace txtToBin
 {
 
     v_of_couples::v_of_couples()

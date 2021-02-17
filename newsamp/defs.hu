@@ -6,7 +6,6 @@
             source: [<vulkan/vulkan.h>]
             languageVersion: c|gnu17
             platform: vulkan
-            attributes: {}
         }
     ]
     types: {
@@ -51,9 +50,10 @@
                                                         of: [string_view, int]
                                                     }
                                                 ]
+                                                isLess: "return lhs.begin()->second < rhs.begin()->second;"
                                             } {
                                                 type: unordered_set
-                                                of: [string_view, int]
+                                                of: string_view
                                             }
                                         ]
                                     }
@@ -73,13 +73,21 @@
             sourceDir: txtToBin/src/boma
 
             namespace: txtToBin
-            initFromDefault: true
-            deserializeFromHumon: true
-            copyable: false
-            serializeToHumon: true
-            serializeToBinary: true
-            comparable: true
-            diffable: false
+            outputForm: compiled
+            deserializeFromHumon: true      // done
+            deserializeFromBinary: true     // .
+            defaultConstructible: true      // done
+            memberwiseConstructible: true   // done
+            virtualDestructor: true         // done
+            copyable: true                  // done
+            movable: true                   // done
+            getters: true                   // done
+            setters: true                   // done
+            privateMembers: true            // done
+            serializeToHumon: true          // done
+            serializeToBinary: true         // .
+            comparable: true                // done
+            diffable: true                  // done
         }
         app: {
             namespace: app

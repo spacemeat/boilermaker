@@ -38,7 +38,7 @@ namespace shortTest
     public:
         couple();
         couple(std::string const & a, int const & bee);
-        couple(hu::Node node) noexcept;
+        couple(hu::Node node);
         couple(couple const & rhs) = default;
         couple(couple && rhs) noexcept;
         couple & operator =(couple const & rhs) = default;
@@ -71,7 +71,7 @@ namespace shortTest
 template<>
 struct hu::val<shortTest::couple>
 {
-    inline shortTest::couple extract(hu::Node const & node) noexcept
+    inline shortTest::couple extract(hu::Node const & node)
     {
         return shortTest::couple(node);
     }

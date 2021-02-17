@@ -16,6 +16,7 @@ def genAll(self):
         self.gen_types.genClassBegin(self, t)
         self.gen_containers.genDeserializers(self, t, deserializeMemo)
         self.gen_containers.genSerializers(self, t, serializersMemo)
+        self.gen_containers.genIsLessStructs(self, t)
         self.gen_types.genDefaultConstructor(self, t)
         self.gen_types.genMemberwiseConstructor(self, t)
         self.gen_types.genCopyConstructor(self, t)
@@ -133,7 +134,7 @@ def genDeserializer(self, t):
 {it}template<>
 {it}struct hu::val<{typeDecl}>
 {it}{{
-{it}{it}static inline {typeDecl} extract(hu::Node const & node) noexcept;
+{it}{it}static inline {typeDecl} extract(hu::Node const & node);
 {it}}};'''
 
     self._appendToSection(f'{t.name}|typeDeserializerDecl', src)
@@ -142,7 +143,7 @@ def genDeserializer(self, t):
 template<>
 struct hu::val<{typeDecl}>
 {{
-{it}inline {typeDecl} extract(hu::Node const & node) noexcept
+{it}inline {typeDecl} extract(hu::Node const & node)
 {it}{{
 {it}{it}return {typeDecl}(node);
 {it}}}

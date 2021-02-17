@@ -112,12 +112,14 @@ class Project:
         
 
     def reportTypes(self):
-        for typeName, typeData in self.types.items():
-            print (f'Type: {typeName}')
-            for k, v, in typeData.members.items():
-                print (f'    member: {k}')
-                for kp, vp, in v.properties.items():
-                    print (f'        property: {kp} = {vp}')
+        for typeName, t in self.types.items():
+            print (t)
+        #for typeName, typeData in self.types.items():
+        #    print (f'Type: {typeName}')
+        #    for k, v, in typeData.members.items():
+        #        print (f'    member: {k}')
+        #        for kp, vp, in v.properties.items():
+        #            print (f'        property: {kp} = {vp}')
         
 
     def generateCode(self):

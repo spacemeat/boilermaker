@@ -33,6 +33,6 @@ struct hu::val<::eBugs>
 
 namespace shortTest
 {
-    inline std::ostream & operator <<(std::ostream & out, ::eAnimals obj);
-    inline std::ostream & operator <<(std::ostream & out, ::eBugs obj);
+    std::ostream & operator <<(std::ostream & out, ::eAnimals obj);
+    std::ostream & operator <<(std::ostream & out, ::eBugs obj);
 }

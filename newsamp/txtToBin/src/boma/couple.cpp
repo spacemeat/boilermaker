@@ -2,21 +2,21 @@
     Do not bother modifying this file, as your build process will overwrite
     your changes. */
 
-#include "../../inc/boma/shortTest.hpp"
+#include "../../inc/boma/txtToBin.hpp"
 
-namespace shortTest
+namespace txtToBin
 {
 
     couple::couple()
     { }
 
-    couple::couple(std::string const & a, int const & bee)
-     : a(a), bee(bee)
+    couple::couple(std::string const & a, ::VkResult const & b)
+     : a(a), b(b)
     { }
 
     couple::couple(hu::Node node)
     : a(node / "a" % hu::val<std::string>{}), 
-      bee(node / "bee" % hu::val<int>{})
+      b(node / "b" % hu::val<::VkResult>{})
     {
     }
 
@@ -24,14 +24,14 @@ namespace shortTest
     {
         using std::swap;
         swap(a, rhs.a);
-        swap(bee, rhs.bee);
+        swap(b, rhs.b);
     }
 
     couple & couple::operator =(couple && rhs) noexcept
     {
         using std::swap;
         swap(a, rhs.a);
-        swap(bee, rhs.bee);
+        swap(b, rhs.b);
         return * this;
     }
 
@@ -42,14 +42,14 @@ namespace shortTest
     {
         using std::swap;
         swap(lhs.a, rhs.a);
-        swap(lhs.bee, rhs.bee);
+        swap(lhs.b, rhs.b);
     }
 
     std::ostream & operator <<(std::ostream & out, couple const & obj)
     {
         out << '{';
         out << " a: " << obj.a;
-        out << " bee: " << obj.bee;
+        out << " b: " << obj.b;
         out << '}';
         return out;
     }
@@ -57,7 +57,7 @@ namespace shortTest
     bool operator ==(couple const & lhs, couple const & rhs)
     {
         return lhs.a == rhs.a
-            && lhs.bee == rhs.bee;
+            && lhs.b == rhs.b;
     }
 
     bool operator !=(couple const & lhs, couple const & rhs)
@@ -67,7 +67,7 @@ namespace shortTest
 
     Diff<couple>::Diff(couple const & lhs, couple const & rhs)
     : memberDiffs((lhs.a != rhs.a) << static_cast<int>(Members::a) |
-                  (lhs.bee != rhs.bee) << static_cast<int>(Members::bee))
+                  (lhs.b != rhs.b) << static_cast<int>(Members::b))
     {
     }
 }

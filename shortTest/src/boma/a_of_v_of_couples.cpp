@@ -14,7 +14,7 @@ namespace shortTest
      : coupleses(coupleses)
     { }
 
-    a_of_v_of_couples::a_of_v_of_couples(hu::Node node) noexcept
+    a_of_v_of_couples::a_of_v_of_couples(hu::Node node)
     : coupleses(node / "coupleses" % hu::val<std::array<std::vector<couple>, 4>>{})
     {
     }

@@ -128,7 +128,7 @@ def _genDeserializer(self, t, mProps, memo):
 template <>
 struct hu::val<{declType}>
 {{
-{it}static inline {declType} extract(hu::Node const & node) noexcept
+{it}static inline {declType} extract(hu::Node const & node)
 {it}{{'''
       
         if baseType == 'array':
@@ -321,7 +321,7 @@ def _genCsBody(self, typeDict):
     if baseType == 'array':
         src += f"""
 {it}{it}out << '[';"""
-        for i in range(0, int(typeDict['of'][1])):
+        for i in range(0, int(typeDict['of'][1]['type'])):
             if i > 0:
                 src += f"""
 {it}{it}out << ' ';"""
@@ -407,3 +407,40 @@ def _genCsBody(self, typeDict):
 {it}{it}else '''
             src += f'''if (auto p = std::get_if<{chDecl}>(& obj); p) {{ out << *p << " @type: {chAlias}"; }}'''
     return src
+
+
+def genIsLessStructs(self, t):
+    def visit(properties):
+        name = properties['fullName']
+        lessCode = properties.get('isLess')
+        if lessCode:
+            self.gen_containers._genIsLessStruct(self, t, name, properties)
+
+        for ofo in properties.get('of', []):
+            visit(ofo)
+
+    for memberName, m in t.members.items():
+        visit(m.properties)
+
+
+def _genIsLessStruct(self, t, name, properties):
+    it = self.indent()
+    lessCode = properties.get('isLess')
+    subtypeDecl = ''
+    stype = properties.get('type')
+    if stype == 'set' or stype == 'map':
+        subtypeDecl = self.makeNativeSubtype(properties['of'][0])
+
+    #subtypeDecl = self.makeNativeSubtype(properties)
+    print (f'@@@@@@@ {name}: {subtypeDecl}: {lessCode}')
+    src = f'''
+
+{it}struct IsLess_{name}
+{it}{{
+{it}{it}bool operator()({self.const(subtypeDecl)} & lhs, {self.const(subtypeDecl)} & rhs) const
+{it}{it}{{
+{it}{it}{it}{lessCode}
+{it}{it}}}
+{it}}};'''
+    self._appendToSection(f'{t.name}|isLessCode', src)
+

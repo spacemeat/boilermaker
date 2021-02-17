@@ -9,7 +9,7 @@ namespace shortTest
 {
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::eAnimals obj)
+    std::ostream & operator <<(std::ostream & out, ::eAnimals obj)
     {
         using enumIntType = std::underlying_type<::eAnimals>::type;
         switch (obj)
@@ -25,7 +25,7 @@ namespace shortTest
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::eBugs obj)
+    std::ostream & operator <<(std::ostream & out, ::eBugs obj)
     {
         using enumIntType = std::underlying_type<::eBugs>::type;
         switch (obj)

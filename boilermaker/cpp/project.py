@@ -52,23 +52,29 @@ class Project(BaseProject):
         elif useNamespace and bomaName in self.types:
             bomaName = f'{self.d("namespace")}::{bomaName}'
         return bomaName.replace('.', '::')
+    
+
+    def makeNativeSubtype(self, properties, useNamespace=False):
+        builtType = self.makeNative(properties['type'], useNamespace)
+        of = properties.get('of')
+        if of:
+            builtType += '<'
+            if type(of) is list:
+                builtType += ', '.join([self.makeNativeSubtype(utilities.dictify(ch, 'type'), useNamespace) for ch in of])
+            elif type(of) is dict:
+                builtType += self.makeNativeSubtype(of, useNamespace)
+            else:
+                builtType += self.makeNative(of, useNamespace)
+            if properties['type'] == 'set' or properties['type'] == 'map':
+                if 'isLess' in properties:
+                    ns = f'{self.d("namespace")}::' if useNamespace else ''
+                    builtType += f', {ns}IsLess_{properties["fullName"]}'
+            builtType += '>'
+        return builtType
 
 
     def makeNativeMemberType(self, properties, useNamespace=False):
-        def recurse(properties):
-            builtType = self.makeNative(properties['type'], useNamespace)
-            of = properties.get('of')
-            if of:
-                builtType += '<'
-                if type(of) is list:
-                    builtType += ', '.join([recurse(utilities.dictify(ch, 'type')) for ch in of])
-                elif type(of) is dict:
-                    builtType += recurse(of)
-                else:
-                    builtType += self.makeNative(of, useNamespace)
-                builtType += '>'
-            return builtType
-        return recurse(utilities.dictify(properties, 'type'))
+        return self.makeNativeSubtype(utilities.dictify(properties, 'type'), useNamespace)
 
 
     def generateCode(self):

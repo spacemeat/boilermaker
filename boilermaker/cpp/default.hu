@@ -258,6 +258,7 @@
                     $<type>|containerDifferDecl
                     $<type>|forwardClassDecl
                     $<type>|forwardDecls
+                    $<type>|isLessCode
                     $<type>|differDecl
                     $<type>|classBegin
                     $<type>|defaultCtrDecl

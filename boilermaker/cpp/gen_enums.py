@@ -111,7 +111,7 @@ def _genSerializer(self, enumName, enum):
 
     # defs
     src = f'''
-{it}inline std::ostream & operator <<(std::ostream & out, {enumType} obj);'''
+{it}std::ostream & operator <<(std::ostream & out, {enumType} obj);'''
 
     self._appendToSection('enumSerializerDecls', src)
 
@@ -119,7 +119,7 @@ def _genSerializer(self, enumName, enum):
     src = f'''
 
 
-{it}inline std::ostream & operator <<(std::ostream & out, {enumType} obj)
+{it}std::ostream & operator <<(std::ostream & out, {enumType} obj)
 {it}{{
 {it}{it}using enumIntType = std::underlying_type<{enumType}>::type;'''
     if enum.flags:

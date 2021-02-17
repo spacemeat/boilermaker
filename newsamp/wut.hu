@@ -1,0 +1,35 @@
+{
+    whaa: { huh: [ 
+        [ 
+            [ @type: pair
+                sv, s
+            ]
+            [ @type: tuple
+                100, 200, 300.0
+            ]
+            { @type: map
+                fna: 0 snu: 1 freep: 2
+            }
+            { @type: unordered_map
+                plip: 3 quoz: 4 yurk: 5
+            }
+        ]
+
+        [ 
+            [ @type: set
+                { boz: 6 tim: 7 plu: 8 }
+                { ruv: 9 wurt: 10 mun: 11 }
+                { shap: 12 hunz: 13 squih: 14 }
+            ]
+            [ @type: unordered_set
+                sv, s
+            ]
+            [ @type: unordered_set
+                su, su, sudio
+            ]
+            [ @type: unordered_set
+                snuu snuu snuudio
+            ]
+        ]
+    ] }
+}

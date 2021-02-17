@@ -1,16 +1,15 @@
-#pragma once
 /*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
     Do not bother modifying this file, as your build process will overwrite
     your changes. */
 
 #include <iostream>
-#include "../enums.hpp"
+#include "../../inc/boma/enums.hpp"
 
 namespace txtToBin
 {
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkResult obj)
+    std::ostream & operator <<(std::ostream & out, ::VkResult obj)
     {
         using enumIntType = std::underlying_type<::VkResult>::type;
         switch (obj)
@@ -61,7 +60,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkStructureType obj)
+    std::ostream & operator <<(std::ostream & out, ::VkStructureType obj)
     {
         using enumIntType = std::underlying_type<::VkStructureType>::type;
         switch (obj)
@@ -545,7 +544,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkImageLayout obj)
+    std::ostream & operator <<(std::ostream & out, ::VkImageLayout obj)
     {
         using enumIntType = std::underlying_type<::VkImageLayout>::type;
         switch (obj)
@@ -577,7 +576,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkObjectType obj)
+    std::ostream & operator <<(std::ostream & out, ::VkObjectType obj)
     {
         using enumIntType = std::underlying_type<::VkObjectType>::type;
         switch (obj)
@@ -631,7 +630,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkVendorId obj)
+    std::ostream & operator <<(std::ostream & out, ::VkVendorId obj)
     {
         using enumIntType = std::underlying_type<::VkVendorId>::type;
         switch (obj)
@@ -649,7 +648,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPipelineCacheHeaderVersion obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPipelineCacheHeaderVersion obj)
     {
         using enumIntType = std::underlying_type<::VkPipelineCacheHeaderVersion>::type;
         switch (obj)
@@ -663,7 +662,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSystemAllocationScope obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSystemAllocationScope obj)
     {
         using enumIntType = std::underlying_type<::VkSystemAllocationScope>::type;
         switch (obj)
@@ -681,7 +680,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkInternalAllocationType obj)
+    std::ostream & operator <<(std::ostream & out, ::VkInternalAllocationType obj)
     {
         using enumIntType = std::underlying_type<::VkInternalAllocationType>::type;
         switch (obj)
@@ -695,7 +694,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkFormat obj)
+    std::ostream & operator <<(std::ostream & out, ::VkFormat obj)
     {
         using enumIntType = std::underlying_type<::VkFormat>::type;
         switch (obj)
@@ -951,7 +950,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkImageTiling obj)
+    std::ostream & operator <<(std::ostream & out, ::VkImageTiling obj)
     {
         using enumIntType = std::underlying_type<::VkImageTiling>::type;
         switch (obj)
@@ -967,7 +966,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkImageType obj)
+    std::ostream & operator <<(std::ostream & out, ::VkImageType obj)
     {
         using enumIntType = std::underlying_type<::VkImageType>::type;
         switch (obj)
@@ -983,7 +982,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPhysicalDeviceType obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPhysicalDeviceType obj)
     {
         using enumIntType = std::underlying_type<::VkPhysicalDeviceType>::type;
         switch (obj)
@@ -1001,7 +1000,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkQueryType obj)
+    std::ostream & operator <<(std::ostream & out, ::VkQueryType obj)
     {
         using enumIntType = std::underlying_type<::VkQueryType>::type;
         switch (obj)
@@ -1023,7 +1022,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSharingMode obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSharingMode obj)
     {
         using enumIntType = std::underlying_type<::VkSharingMode>::type;
         switch (obj)
@@ -1038,7 +1037,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkComponentSwizzle obj)
+    std::ostream & operator <<(std::ostream & out, ::VkComponentSwizzle obj)
     {
         using enumIntType = std::underlying_type<::VkComponentSwizzle>::type;
         switch (obj)
@@ -1058,7 +1057,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkImageViewType obj)
+    std::ostream & operator <<(std::ostream & out, ::VkImageViewType obj)
     {
         using enumIntType = std::underlying_type<::VkImageViewType>::type;
         switch (obj)
@@ -1078,7 +1077,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkBlendFactor obj)
+    std::ostream & operator <<(std::ostream & out, ::VkBlendFactor obj)
     {
         using enumIntType = std::underlying_type<::VkBlendFactor>::type;
         switch (obj)
@@ -1110,7 +1109,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkBlendOp obj)
+    std::ostream & operator <<(std::ostream & out, ::VkBlendOp obj)
     {
         using enumIntType = std::underlying_type<::VkBlendOp>::type;
         switch (obj)
@@ -1174,7 +1173,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkCompareOp obj)
+    std::ostream & operator <<(std::ostream & out, ::VkCompareOp obj)
     {
         using enumIntType = std::underlying_type<::VkCompareOp>::type;
         switch (obj)
@@ -1195,7 +1194,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDynamicState obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDynamicState obj)
     {
         using enumIntType = std::underlying_type<::VkDynamicState>::type;
         switch (obj)
@@ -1238,7 +1237,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkFrontFace obj)
+    std::ostream & operator <<(std::ostream & out, ::VkFrontFace obj)
     {
         using enumIntType = std::underlying_type<::VkFrontFace>::type;
         switch (obj)
@@ -1253,7 +1252,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkVertexInputRate obj)
+    std::ostream & operator <<(std::ostream & out, ::VkVertexInputRate obj)
     {
         using enumIntType = std::underlying_type<::VkVertexInputRate>::type;
         switch (obj)
@@ -1268,7 +1267,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPrimitiveTopology obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPrimitiveTopology obj)
     {
         using enumIntType = std::underlying_type<::VkPrimitiveTopology>::type;
         switch (obj)
@@ -1292,7 +1291,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPolygonMode obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPolygonMode obj)
     {
         using enumIntType = std::underlying_type<::VkPolygonMode>::type;
         switch (obj)
@@ -1309,7 +1308,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkStencilOp obj)
+    std::ostream & operator <<(std::ostream & out, ::VkStencilOp obj)
     {
         using enumIntType = std::underlying_type<::VkStencilOp>::type;
         switch (obj)
@@ -1330,7 +1329,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkLogicOp obj)
+    std::ostream & operator <<(std::ostream & out, ::VkLogicOp obj)
     {
         using enumIntType = std::underlying_type<::VkLogicOp>::type;
         switch (obj)
@@ -1359,7 +1358,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkBorderColor obj)
+    std::ostream & operator <<(std::ostream & out, ::VkBorderColor obj)
     {
         using enumIntType = std::underlying_type<::VkBorderColor>::type;
         switch (obj)
@@ -1380,7 +1379,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkFilter obj)
+    std::ostream & operator <<(std::ostream & out, ::VkFilter obj)
     {
         using enumIntType = std::underlying_type<::VkFilter>::type;
         switch (obj)
@@ -1396,7 +1395,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSamplerAddressMode obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSamplerAddressMode obj)
     {
         using enumIntType = std::underlying_type<::VkSamplerAddressMode>::type;
         switch (obj)
@@ -1414,7 +1413,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSamplerMipmapMode obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSamplerMipmapMode obj)
     {
         using enumIntType = std::underlying_type<::VkSamplerMipmapMode>::type;
         switch (obj)
@@ -1429,7 +1428,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDescriptorType obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDescriptorType obj)
     {
         using enumIntType = std::underlying_type<::VkDescriptorType>::type;
         switch (obj)
@@ -1456,7 +1455,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkAttachmentLoadOp obj)
+    std::ostream & operator <<(std::ostream & out, ::VkAttachmentLoadOp obj)
     {
         using enumIntType = std::underlying_type<::VkAttachmentLoadOp>::type;
         switch (obj)
@@ -1472,7 +1471,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkAttachmentStoreOp obj)
+    std::ostream & operator <<(std::ostream & out, ::VkAttachmentStoreOp obj)
     {
         using enumIntType = std::underlying_type<::VkAttachmentStoreOp>::type;
         switch (obj)
@@ -1488,7 +1487,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPipelineBindPoint obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPipelineBindPoint obj)
     {
         using enumIntType = std::underlying_type<::VkPipelineBindPoint>::type;
         switch (obj)
@@ -1504,7 +1503,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkCommandBufferLevel obj)
+    std::ostream & operator <<(std::ostream & out, ::VkCommandBufferLevel obj)
     {
         using enumIntType = std::underlying_type<::VkCommandBufferLevel>::type;
         switch (obj)
@@ -1519,7 +1518,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkIndexType obj)
+    std::ostream & operator <<(std::ostream & out, ::VkIndexType obj)
     {
         using enumIntType = std::underlying_type<::VkIndexType>::type;
         switch (obj)
@@ -1536,7 +1535,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSubpassContents obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSubpassContents obj)
     {
         using enumIntType = std::underlying_type<::VkSubpassContents>::type;
         switch (obj)
@@ -1551,7 +1550,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkAccessFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkAccessFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkAccessFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -1795,7 +1794,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkImageAspectFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkImageAspectFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkImageAspectFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -1903,7 +1902,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkFormatFeatureFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkFormatFeatureFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkFormatFeatureFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -2139,7 +2138,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkImageCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkImageCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkImageCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -2279,7 +2278,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSampleCountFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSampleCountFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkSampleCountFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -2355,7 +2354,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkImageUsageFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkImageUsageFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkImageUsageFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -2455,7 +2454,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkMemoryHeapFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkMemoryHeapFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkMemoryHeapFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -2491,7 +2490,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkMemoryPropertyFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkMemoryPropertyFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkMemoryPropertyFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -2575,7 +2574,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkQueueFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkQueueFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkQueueFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -2635,7 +2634,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDeviceQueueCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDeviceQueueCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkDeviceQueueCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -2663,7 +2662,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPipelineStageFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPipelineStageFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkPipelineStageFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -2891,7 +2890,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSparseMemoryBindFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSparseMemoryBindFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkSparseMemoryBindFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -2919,7 +2918,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSparseImageFormatFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSparseImageFormatFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkSparseImageFormatFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -2963,7 +2962,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkFenceCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkFenceCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkFenceCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -2991,7 +2990,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkQueryPipelineStatisticFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkQueryPipelineStatisticFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkQueryPipelineStatisticFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3099,7 +3098,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkQueryResultFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkQueryResultFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkQueryResultFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3151,7 +3150,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkBufferCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkBufferCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkBufferCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3211,7 +3210,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkBufferUsageFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkBufferUsageFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkBufferUsageFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3359,7 +3358,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkImageViewCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkImageViewCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkImageViewCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3395,7 +3394,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkShaderModuleCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkShaderModuleCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkShaderModuleCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3415,7 +3414,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPipelineCacheCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPipelineCacheCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkPipelineCacheCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3443,7 +3442,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkColorComponentFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkColorComponentFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkColorComponentFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3495,7 +3494,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPipelineCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPipelineCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkPipelineCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3667,7 +3666,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPipelineShaderStageCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPipelineShaderStageCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkPipelineShaderStageCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3703,7 +3702,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkShaderStageFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkShaderStageFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkShaderStageFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3843,7 +3842,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkCullModeFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkCullModeFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkCullModeFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3895,7 +3894,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSamplerCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSamplerCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkSamplerCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3931,7 +3930,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDescriptorPoolCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDescriptorPoolCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkDescriptorPoolCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -3967,7 +3966,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDescriptorSetLayoutCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDescriptorSetLayoutCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkDescriptorSetLayoutCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4003,7 +4002,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkAttachmentDescriptionFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkAttachmentDescriptionFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkAttachmentDescriptionFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4031,7 +4030,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDependencyFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDependencyFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkDependencyFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4075,7 +4074,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkFramebufferCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkFramebufferCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkFramebufferCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4103,7 +4102,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkRenderPassCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkRenderPassCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkRenderPassCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4131,7 +4130,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSubpassDescriptionFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSubpassDescriptionFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkSubpassDescriptionFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4183,7 +4182,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkCommandPoolCreateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkCommandPoolCreateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkCommandPoolCreateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4227,7 +4226,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkCommandPoolResetFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkCommandPoolResetFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkCommandPoolResetFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4255,7 +4254,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkCommandBufferUsageFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkCommandBufferUsageFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkCommandBufferUsageFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4299,7 +4298,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkQueryControlFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkQueryControlFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkQueryControlFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4327,7 +4326,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkCommandBufferResetFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkCommandBufferResetFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkCommandBufferResetFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4355,7 +4354,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkStencilFaceFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkStencilFaceFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkStencilFaceFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4399,7 +4398,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPointClippingBehavior obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPointClippingBehavior obj)
     {
         using enumIntType = std::underlying_type<::VkPointClippingBehavior>::type;
         switch (obj)
@@ -4414,7 +4413,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkTessellationDomainOrigin obj)
+    std::ostream & operator <<(std::ostream & out, ::VkTessellationDomainOrigin obj)
     {
         using enumIntType = std::underlying_type<::VkTessellationDomainOrigin>::type;
         switch (obj)
@@ -4429,7 +4428,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSamplerYcbcrModelConversion obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSamplerYcbcrModelConversion obj)
     {
         using enumIntType = std::underlying_type<::VkSamplerYcbcrModelConversion>::type;
         switch (obj)
@@ -4447,7 +4446,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSamplerYcbcrRange obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSamplerYcbcrRange obj)
     {
         using enumIntType = std::underlying_type<::VkSamplerYcbcrRange>::type;
         switch (obj)
@@ -4462,7 +4461,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkChromaLocation obj)
+    std::ostream & operator <<(std::ostream & out, ::VkChromaLocation obj)
     {
         using enumIntType = std::underlying_type<::VkChromaLocation>::type;
         switch (obj)
@@ -4477,7 +4476,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDescriptorUpdateTemplateType obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDescriptorUpdateTemplateType obj)
     {
         using enumIntType = std::underlying_type<::VkDescriptorUpdateTemplateType>::type;
         switch (obj)
@@ -4492,7 +4491,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSubgroupFeatureFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSubgroupFeatureFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkSubgroupFeatureFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4584,7 +4583,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPeerMemoryFeatureFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPeerMemoryFeatureFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkPeerMemoryFeatureFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4636,7 +4635,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkMemoryAllocateFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkMemoryAllocateFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkMemoryAllocateFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4680,7 +4679,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkExternalMemoryHandleTypeFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkExternalMemoryHandleTypeFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkExternalMemoryHandleTypeFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4788,7 +4787,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkExternalMemoryFeatureFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkExternalMemoryFeatureFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkExternalMemoryFeatureFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4832,7 +4831,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkExternalFenceHandleTypeFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkExternalFenceHandleTypeFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkExternalFenceHandleTypeFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4884,7 +4883,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkExternalFenceFeatureFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkExternalFenceFeatureFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkExternalFenceFeatureFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4920,7 +4919,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkFenceImportFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkFenceImportFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkFenceImportFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4948,7 +4947,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSemaphoreImportFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSemaphoreImportFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkSemaphoreImportFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -4976,7 +4975,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkExternalSemaphoreHandleTypeFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkExternalSemaphoreHandleTypeFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkExternalSemaphoreHandleTypeFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5036,7 +5035,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkExternalSemaphoreFeatureFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkExternalSemaphoreFeatureFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkExternalSemaphoreFeatureFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5072,7 +5071,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDriverId obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDriverId obj)
     {
         using enumIntType = std::underlying_type<::VkDriverId>::type;
         switch (obj)
@@ -5099,7 +5098,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkShaderFloatControlsIndependence obj)
+    std::ostream & operator <<(std::ostream & out, ::VkShaderFloatControlsIndependence obj)
     {
         using enumIntType = std::underlying_type<::VkShaderFloatControlsIndependence>::type;
         switch (obj)
@@ -5115,7 +5114,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSamplerReductionMode obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSamplerReductionMode obj)
     {
         using enumIntType = std::underlying_type<::VkSamplerReductionMode>::type;
         switch (obj)
@@ -5131,7 +5130,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSemaphoreType obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSemaphoreType obj)
     {
         using enumIntType = std::underlying_type<::VkSemaphoreType>::type;
         switch (obj)
@@ -5146,7 +5145,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkResolveModeFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkResolveModeFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkResolveModeFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5206,7 +5205,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDescriptorBindingFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDescriptorBindingFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkDescriptorBindingFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5258,7 +5257,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSemaphoreWaitFlagBits obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSemaphoreWaitFlagBits obj)
     {
         using enumIntType = std::underlying_type<::VkSemaphoreWaitFlagBits>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5286,7 +5285,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPresentModeKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPresentModeKHR obj)
     {
         using enumIntType = std::underlying_type<::VkPresentModeKHR>::type;
         switch (obj)
@@ -5305,7 +5304,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkColorSpaceKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkColorSpaceKHR obj)
     {
         using enumIntType = std::underlying_type<::VkColorSpaceKHR>::type;
         switch (obj)
@@ -5334,7 +5333,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSurfaceTransformFlagBitsKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSurfaceTransformFlagBitsKHR obj)
     {
         using enumIntType = std::underlying_type<::VkSurfaceTransformFlagBitsKHR>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5426,7 +5425,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkCompositeAlphaFlagBitsKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkCompositeAlphaFlagBitsKHR obj)
     {
         using enumIntType = std::underlying_type<::VkCompositeAlphaFlagBitsKHR>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5478,7 +5477,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSwapchainCreateFlagBitsKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSwapchainCreateFlagBitsKHR obj)
     {
         using enumIntType = std::underlying_type<::VkSwapchainCreateFlagBitsKHR>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5522,7 +5521,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDeviceGroupPresentModeFlagBitsKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDeviceGroupPresentModeFlagBitsKHR obj)
     {
         using enumIntType = std::underlying_type<::VkDeviceGroupPresentModeFlagBitsKHR>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5574,7 +5573,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDisplayPlaneAlphaFlagBitsKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDisplayPlaneAlphaFlagBitsKHR obj)
     {
         using enumIntType = std::underlying_type<::VkDisplayPlaneAlphaFlagBitsKHR>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5626,7 +5625,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPerformanceCounterUnitKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPerformanceCounterUnitKHR obj)
     {
         using enumIntType = std::underlying_type<::VkPerformanceCounterUnitKHR>::type;
         switch (obj)
@@ -5650,7 +5649,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPerformanceCounterScopeKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPerformanceCounterScopeKHR obj)
     {
         using enumIntType = std::underlying_type<::VkPerformanceCounterScopeKHR>::type;
         switch (obj)
@@ -5666,7 +5665,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPerformanceCounterStorageKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPerformanceCounterStorageKHR obj)
     {
         using enumIntType = std::underlying_type<::VkPerformanceCounterStorageKHR>::type;
         switch (obj)
@@ -5685,7 +5684,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPerformanceCounterDescriptionFlagBitsKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPerformanceCounterDescriptionFlagBitsKHR obj)
     {
         using enumIntType = std::underlying_type<::VkPerformanceCounterDescriptionFlagBitsKHR>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5721,7 +5720,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkAcquireProfilingLockFlagBitsKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkAcquireProfilingLockFlagBitsKHR obj)
     {
         using enumIntType = std::underlying_type<::VkAcquireProfilingLockFlagBitsKHR>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5741,7 +5740,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkFragmentShadingRateCombinerOpKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkFragmentShadingRateCombinerOpKHR obj)
     {
         using enumIntType = std::underlying_type<::VkFragmentShadingRateCombinerOpKHR>::type;
         switch (obj)
@@ -5759,7 +5758,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPipelineExecutableStatisticFormatKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPipelineExecutableStatisticFormatKHR obj)
     {
         using enumIntType = std::underlying_type<::VkPipelineExecutableStatisticFormatKHR>::type;
         switch (obj)
@@ -5776,7 +5775,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDebugReportObjectTypeEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDebugReportObjectTypeEXT obj)
     {
         using enumIntType = std::underlying_type<::VkDebugReportObjectTypeEXT>::type;
         switch (obj)
@@ -5825,7 +5824,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDebugReportFlagBitsEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDebugReportFlagBitsEXT obj)
     {
         using enumIntType = std::underlying_type<::VkDebugReportFlagBitsEXT>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5885,7 +5884,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkRasterizationOrderAMD obj)
+    std::ostream & operator <<(std::ostream & out, ::VkRasterizationOrderAMD obj)
     {
         using enumIntType = std::underlying_type<::VkRasterizationOrderAMD>::type;
         switch (obj)
@@ -5900,7 +5899,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkShaderInfoTypeAMD obj)
+    std::ostream & operator <<(std::ostream & out, ::VkShaderInfoTypeAMD obj)
     {
         using enumIntType = std::underlying_type<::VkShaderInfoTypeAMD>::type;
         switch (obj)
@@ -5916,7 +5915,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkExternalMemoryHandleTypeFlagBitsNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkExternalMemoryHandleTypeFlagBitsNV obj)
     {
         using enumIntType = std::underlying_type<::VkExternalMemoryHandleTypeFlagBitsNV>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -5968,7 +5967,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkExternalMemoryFeatureFlagBitsNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkExternalMemoryFeatureFlagBitsNV obj)
     {
         using enumIntType = std::underlying_type<::VkExternalMemoryFeatureFlagBitsNV>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -6012,7 +6011,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkValidationCheckEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkValidationCheckEXT obj)
     {
         using enumIntType = std::underlying_type<::VkValidationCheckEXT>::type;
         switch (obj)
@@ -6027,7 +6026,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkConditionalRenderingFlagBitsEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkConditionalRenderingFlagBitsEXT obj)
     {
         using enumIntType = std::underlying_type<::VkConditionalRenderingFlagBitsEXT>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -6055,7 +6054,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkSurfaceCounterFlagBitsEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkSurfaceCounterFlagBitsEXT obj)
     {
         using enumIntType = std::underlying_type<::VkSurfaceCounterFlagBitsEXT>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -6083,7 +6082,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDisplayPowerStateEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDisplayPowerStateEXT obj)
     {
         using enumIntType = std::underlying_type<::VkDisplayPowerStateEXT>::type;
         switch (obj)
@@ -6099,7 +6098,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDeviceEventTypeEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDeviceEventTypeEXT obj)
     {
         using enumIntType = std::underlying_type<::VkDeviceEventTypeEXT>::type;
         switch (obj)
@@ -6113,7 +6112,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDisplayEventTypeEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDisplayEventTypeEXT obj)
     {
         using enumIntType = std::underlying_type<::VkDisplayEventTypeEXT>::type;
         switch (obj)
@@ -6127,7 +6126,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkViewportCoordinateSwizzleNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkViewportCoordinateSwizzleNV obj)
     {
         using enumIntType = std::underlying_type<::VkViewportCoordinateSwizzleNV>::type;
         switch (obj)
@@ -6148,7 +6147,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDiscardRectangleModeEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDiscardRectangleModeEXT obj)
     {
         using enumIntType = std::underlying_type<::VkDiscardRectangleModeEXT>::type;
         switch (obj)
@@ -6163,7 +6162,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkConservativeRasterizationModeEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkConservativeRasterizationModeEXT obj)
     {
         using enumIntType = std::underlying_type<::VkConservativeRasterizationModeEXT>::type;
         switch (obj)
@@ -6179,7 +6178,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDebugUtilsMessageSeverityFlagBitsEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDebugUtilsMessageSeverityFlagBitsEXT obj)
     {
         using enumIntType = std::underlying_type<::VkDebugUtilsMessageSeverityFlagBitsEXT>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -6231,7 +6230,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDebugUtilsMessageTypeFlagBitsEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDebugUtilsMessageTypeFlagBitsEXT obj)
     {
         using enumIntType = std::underlying_type<::VkDebugUtilsMessageTypeFlagBitsEXT>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -6275,7 +6274,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkBlendOverlapEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkBlendOverlapEXT obj)
     {
         using enumIntType = std::underlying_type<::VkBlendOverlapEXT>::type;
         switch (obj)
@@ -6291,7 +6290,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkCoverageModulationModeNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkCoverageModulationModeNV obj)
     {
         using enumIntType = std::underlying_type<::VkCoverageModulationModeNV>::type;
         switch (obj)
@@ -6308,7 +6307,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkValidationCacheHeaderVersionEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkValidationCacheHeaderVersionEXT obj)
     {
         using enumIntType = std::underlying_type<::VkValidationCacheHeaderVersionEXT>::type;
         switch (obj)
@@ -6322,7 +6321,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkShadingRatePaletteEntryNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkShadingRatePaletteEntryNV obj)
     {
         using enumIntType = std::underlying_type<::VkShadingRatePaletteEntryNV>::type;
         switch (obj)
@@ -6347,7 +6346,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkCoarseSampleOrderTypeNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkCoarseSampleOrderTypeNV obj)
     {
         using enumIntType = std::underlying_type<::VkCoarseSampleOrderTypeNV>::type;
         switch (obj)
@@ -6364,7 +6363,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkRayTracingShaderGroupTypeKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkRayTracingShaderGroupTypeKHR obj)
     {
         using enumIntType = std::underlying_type<::VkRayTracingShaderGroupTypeKHR>::type;
         switch (obj)
@@ -6380,7 +6379,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkGeometryTypeKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkGeometryTypeKHR obj)
     {
         using enumIntType = std::underlying_type<::VkGeometryTypeKHR>::type;
         switch (obj)
@@ -6396,7 +6395,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkAccelerationStructureTypeKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkAccelerationStructureTypeKHR obj)
     {
         using enumIntType = std::underlying_type<::VkAccelerationStructureTypeKHR>::type;
         switch (obj)
@@ -6412,7 +6411,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkCopyAccelerationStructureModeKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkCopyAccelerationStructureModeKHR obj)
     {
         using enumIntType = std::underlying_type<::VkCopyAccelerationStructureModeKHR>::type;
         switch (obj)
@@ -6429,7 +6428,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkAccelerationStructureMemoryRequirementsTypeNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkAccelerationStructureMemoryRequirementsTypeNV obj)
     {
         using enumIntType = std::underlying_type<::VkAccelerationStructureMemoryRequirementsTypeNV>::type;
         switch (obj)
@@ -6445,7 +6444,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkGeometryFlagBitsKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkGeometryFlagBitsKHR obj)
     {
         using enumIntType = std::underlying_type<::VkGeometryFlagBitsKHR>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -6481,7 +6480,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkGeometryInstanceFlagBitsKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkGeometryInstanceFlagBitsKHR obj)
     {
         using enumIntType = std::underlying_type<::VkGeometryInstanceFlagBitsKHR>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -6533,7 +6532,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkBuildAccelerationStructureFlagBitsKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkBuildAccelerationStructureFlagBitsKHR obj)
     {
         using enumIntType = std::underlying_type<::VkBuildAccelerationStructureFlagBitsKHR>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -6593,7 +6592,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkQueueGlobalPriorityEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkQueueGlobalPriorityEXT obj)
     {
         using enumIntType = std::underlying_type<::VkQueueGlobalPriorityEXT>::type;
         switch (obj)
@@ -6610,7 +6609,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPipelineCompilerControlFlagBitsAMD obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPipelineCompilerControlFlagBitsAMD obj)
     {
         using enumIntType = std::underlying_type<::VkPipelineCompilerControlFlagBitsAMD>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -6630,7 +6629,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkTimeDomainEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkTimeDomainEXT obj)
     {
         using enumIntType = std::underlying_type<::VkTimeDomainEXT>::type;
         switch (obj)
@@ -6647,7 +6646,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkMemoryOverallocationBehaviorAMD obj)
+    std::ostream & operator <<(std::ostream & out, ::VkMemoryOverallocationBehaviorAMD obj)
     {
         using enumIntType = std::underlying_type<::VkMemoryOverallocationBehaviorAMD>::type;
         switch (obj)
@@ -6663,7 +6662,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPipelineCreationFeedbackFlagBitsEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPipelineCreationFeedbackFlagBitsEXT obj)
     {
         using enumIntType = std::underlying_type<::VkPipelineCreationFeedbackFlagBitsEXT>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -6707,7 +6706,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPerformanceConfigurationTypeINTEL obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPerformanceConfigurationTypeINTEL obj)
     {
         using enumIntType = std::underlying_type<::VkPerformanceConfigurationTypeINTEL>::type;
         switch (obj)
@@ -6721,7 +6720,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkQueryPoolSamplingModeINTEL obj)
+    std::ostream & operator <<(std::ostream & out, ::VkQueryPoolSamplingModeINTEL obj)
     {
         using enumIntType = std::underlying_type<::VkQueryPoolSamplingModeINTEL>::type;
         switch (obj)
@@ -6735,7 +6734,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPerformanceOverrideTypeINTEL obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPerformanceOverrideTypeINTEL obj)
     {
         using enumIntType = std::underlying_type<::VkPerformanceOverrideTypeINTEL>::type;
         switch (obj)
@@ -6750,7 +6749,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPerformanceParameterTypeINTEL obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPerformanceParameterTypeINTEL obj)
     {
         using enumIntType = std::underlying_type<::VkPerformanceParameterTypeINTEL>::type;
         switch (obj)
@@ -6765,7 +6764,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPerformanceValueTypeINTEL obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPerformanceValueTypeINTEL obj)
     {
         using enumIntType = std::underlying_type<::VkPerformanceValueTypeINTEL>::type;
         switch (obj)
@@ -6783,7 +6782,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkShaderCorePropertiesFlagBitsAMD obj)
+    std::ostream & operator <<(std::ostream & out, ::VkShaderCorePropertiesFlagBitsAMD obj)
     {
         using enumIntType = std::underlying_type<::VkShaderCorePropertiesFlagBitsAMD>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -6803,7 +6802,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkToolPurposeFlagBitsEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkToolPurposeFlagBitsEXT obj)
     {
         using enumIntType = std::underlying_type<::VkToolPurposeFlagBitsEXT>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -6879,7 +6878,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkValidationFeatureEnableEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkValidationFeatureEnableEXT obj)
     {
         using enumIntType = std::underlying_type<::VkValidationFeatureEnableEXT>::type;
         switch (obj)
@@ -6897,7 +6896,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkValidationFeatureDisableEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkValidationFeatureDisableEXT obj)
     {
         using enumIntType = std::underlying_type<::VkValidationFeatureDisableEXT>::type;
         switch (obj)
@@ -6917,7 +6916,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkComponentTypeNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkComponentTypeNV obj)
     {
         using enumIntType = std::underlying_type<::VkComponentTypeNV>::type;
         switch (obj)
@@ -6941,7 +6940,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkScopeNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkScopeNV obj)
     {
         using enumIntType = std::underlying_type<::VkScopeNV>::type;
         switch (obj)
@@ -6958,7 +6957,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkCoverageReductionModeNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkCoverageReductionModeNV obj)
     {
         using enumIntType = std::underlying_type<::VkCoverageReductionModeNV>::type;
         switch (obj)
@@ -6973,7 +6972,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkLineRasterizationModeEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkLineRasterizationModeEXT obj)
     {
         using enumIntType = std::underlying_type<::VkLineRasterizationModeEXT>::type;
         switch (obj)
@@ -6990,7 +6989,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkIndirectCommandsTokenTypeNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkIndirectCommandsTokenTypeNV obj)
     {
         using enumIntType = std::underlying_type<::VkIndirectCommandsTokenTypeNV>::type;
         switch (obj)
@@ -7011,7 +7010,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkIndirectStateFlagBitsNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkIndirectStateFlagBitsNV obj)
     {
         using enumIntType = std::underlying_type<::VkIndirectStateFlagBitsNV>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -7039,7 +7038,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkIndirectCommandsLayoutUsageFlagBitsNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkIndirectCommandsLayoutUsageFlagBitsNV obj)
     {
         using enumIntType = std::underlying_type<::VkIndirectCommandsLayoutUsageFlagBitsNV>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -7083,7 +7082,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDeviceMemoryReportEventTypeEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDeviceMemoryReportEventTypeEXT obj)
     {
         using enumIntType = std::underlying_type<::VkDeviceMemoryReportEventTypeEXT>::type;
         switch (obj)
@@ -7101,7 +7100,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkPrivateDataSlotCreateFlagBitsEXT obj)
+    std::ostream & operator <<(std::ostream & out, ::VkPrivateDataSlotCreateFlagBitsEXT obj)
     {
         using enumIntType = std::underlying_type<::VkPrivateDataSlotCreateFlagBitsEXT>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -7121,7 +7120,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkDeviceDiagnosticsConfigFlagBitsNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkDeviceDiagnosticsConfigFlagBitsNV obj)
     {
         using enumIntType = std::underlying_type<::VkDeviceDiagnosticsConfigFlagBitsNV>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -7165,7 +7164,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkFragmentShadingRateTypeNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkFragmentShadingRateTypeNV obj)
     {
         using enumIntType = std::underlying_type<::VkFragmentShadingRateTypeNV>::type;
         switch (obj)
@@ -7180,7 +7179,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkFragmentShadingRateNV obj)
+    std::ostream & operator <<(std::ostream & out, ::VkFragmentShadingRateNV obj)
     {
         using enumIntType = std::underlying_type<::VkFragmentShadingRateNV>::type;
         switch (obj)
@@ -7205,7 +7204,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkBuildAccelerationStructureModeKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkBuildAccelerationStructureModeKHR obj)
     {
         using enumIntType = std::underlying_type<::VkBuildAccelerationStructureModeKHR>::type;
         switch (obj)
@@ -7220,7 +7219,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkAccelerationStructureBuildTypeKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkAccelerationStructureBuildTypeKHR obj)
     {
         using enumIntType = std::underlying_type<::VkAccelerationStructureBuildTypeKHR>::type;
         switch (obj)
@@ -7236,7 +7235,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkAccelerationStructureCompatibilityKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkAccelerationStructureCompatibilityKHR obj)
     {
         using enumIntType = std::underlying_type<::VkAccelerationStructureCompatibilityKHR>::type;
         switch (obj)
@@ -7251,7 +7250,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkAccelerationStructureCreateFlagBitsKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkAccelerationStructureCreateFlagBitsKHR obj)
     {
         using enumIntType = std::underlying_type<::VkAccelerationStructureCreateFlagBitsKHR>::type;
         enumIntType bits = static_cast<enumIntType>(obj);
@@ -7279,7 +7278,7 @@ namespace txtToBin
     }
 
 
-    inline std::ostream & operator <<(std::ostream & out, ::VkShaderGroupShaderKHR obj)
+    std::ostream & operator <<(std::ostream & out, ::VkShaderGroupShaderKHR obj)
     {
         using enumIntType = std::underlying_type<::VkShaderGroupShaderKHR>::type;
         switch (obj)
