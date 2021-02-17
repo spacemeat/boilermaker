@@ -54,6 +54,16 @@
                                             } {
                                                 type: unordered_set
                                                 of: string_view
+                                            } {
+                                                alias: setOfMaps
+                                                type: set
+                                                of: [ {
+                                                        type: map
+                                                        of: [float, int]
+                                                        isLess: "return lhs < rhs;"
+                                                    }
+                                                ]
+                                                isLess: "return lhs.begin()->second < rhs.begin()->second;"
                                             }
                                         ]
                                     }

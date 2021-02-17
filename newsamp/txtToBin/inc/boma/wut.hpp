@@ -37,6 +37,22 @@ namespace txtToBin
         }
     };
 
+    struct IsLess_wut_huh_0_0_0_0_6_0
+    {
+        bool operator()(float const & lhs, float const & rhs) const
+        {
+            return lhs < rhs;
+        }
+    };
+
+    struct IsLess_wut_huh_0_0_0_0_6
+    {
+        bool operator()(std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0> const & lhs, std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0> const & rhs) const
+        {
+            return lhs.begin()->second < rhs.begin()->second;
+        }
+    };
+
     template<>
     struct Diff<wut>
     {
@@ -50,14 +66,14 @@ namespace txtToBin
         Diff(wut const & lhs, wut const & rhs);
 
         std::bitset<static_cast<std::size_t>(Members::numMembers)> memberDiffs;
-        Diff<std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>>> huh_diffs;
+        Diff<std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4>>> huh_diffs;
     };
 
     class wut
     {
     public:
         wut();
-        wut(std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>> const & huh);
+        wut(std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4>> const & huh);
         wut(hu::Node node);
         wut(wut const & rhs) = default;
         wut(wut && rhs) noexcept;
@@ -65,11 +81,11 @@ namespace txtToBin
         wut & operator =(wut && rhs) noexcept;
         virtual ~wut();
         friend void swap(wut & lhs, wut & rhs) noexcept;
-        std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>>         get_huh() &&      { return huh; }
-        std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>> const & get_huh() const & { return huh; }
-        std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>>       & get_huh() &       { return huh; }
-        void set_huh(std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>> new_huh)    { using std::swap; swap(huh, new_huh); }
-        void set_huh(std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>> && new_huh) { using std::swap; swap(huh, new_huh); }
+        std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4>>         get_huh() &&      { return huh; }
+        std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4>> const & get_huh() const & { return huh; }
+        std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4>>       & get_huh() &       { return huh; }
+        void set_huh(std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4>> new_huh)    { using std::swap; swap(huh, new_huh); }
+        void set_huh(std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4>> && new_huh) { using std::swap; swap(huh, new_huh); }
         friend std::ostream & operator <<(std::ostream & out, wut const & obj);
         friend bool operator ==(wut const & lhs, wut const & rhs);
         friend bool operator !=(wut const & lhs, wut const & rhs);
@@ -77,7 +93,7 @@ namespace txtToBin
     friend Diff<wut>::Diff(wut const & lhs, wut const & rhs);
 
     private:
-        std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>> huh;
+        std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4>> huh;
     };
 
         
@@ -93,13 +109,17 @@ namespace txtToBin
         
     std::ostream & operator <<(std::ostream & out, std::unordered_set<std::string_view> const & obj);
         
-    std::ostream & operator <<(std::ostream & out, std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>> const & obj);
+    std::ostream & operator <<(std::ostream & out, std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0> const & obj);
         
-    std::ostream & operator <<(std::ostream & out, std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>> const & obj);
+    std::ostream & operator <<(std::ostream & out, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6> const & obj);
         
-    std::ostream & operator <<(std::ostream & out, std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4> const & obj);
+    std::ostream & operator <<(std::ostream & out, std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>> const & obj);
         
-    std::ostream & operator <<(std::ostream & out, std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>> const & obj);
+    std::ostream & operator <<(std::ostream & out, std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>> const & obj);
+        
+    std::ostream & operator <<(std::ostream & out, std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4> const & obj);
+        
+    std::ostream & operator <<(std::ostream & out, std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4>> const & obj);
 }
 
 template<>
@@ -197,9 +217,39 @@ struct hu::val<std::unordered_set<std::string_view>>
 };
 
 template <>
-struct hu::val<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>
+struct hu::val<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>>
 {
-    static inline std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>> extract(hu::Node const & node)
+    static inline std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0> extract(hu::Node const & node)
+    {
+        std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0> rv;
+        for (size_t i = 0; i < node.numChildren(); ++i)
+        {
+            hu::Node elemNode = node / i;
+            rv.emplace(std::move(hu::val<float>::extract(elemNode.key().str())),
+                       std::move(elemNode % hu::val<int>{}));
+        }
+        return rv;
+    }
+};
+
+template <>
+struct hu::val<std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>
+{
+    static inline std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6> extract(hu::Node const & node)
+    {
+        std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6> rv;
+        for (size_t i = 0; i < node.numChildren(); ++i)
+        {
+            rv.emplace(node / i % hu::val<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>>{});
+        }
+        return rv;
+    }
+};
+
+template <>
+struct hu::val<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>
+{
+    static inline std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>> extract(hu::Node const & node)
     {
         Token tok = node.annotation("type");
         if (! tok)
@@ -217,47 +267,49 @@ struct hu::val<std::variant<std::pair<std::string_view, std::string>, std::tuple
             { return node % hu::val<std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>>{}; }
         if (tokStr == "unordered_set")
             { return node % hu::val<std::unordered_set<std::string_view>>{}; }
+        if (tokStr == "setOfMaps")
+            { return node % hu::val<std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>{}; }
         throw std::runtime_error("Variant could not be initialized.");
     }
 };
 
 template <>
-struct hu::val<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>>
+struct hu::val<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>>
 {
-    static inline std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>> extract(hu::Node const & node)
+    static inline std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>> extract(hu::Node const & node)
     {
         if (! node)
             { return {}; }
         else if (node.kind() == NodeKind::value && node.value().str() == "_")
             { return {}; }
         else
-            { return node % hu::val<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>{}; }
+            { return node % hu::val<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>{}; }
     }
 };
 
 template <>
-struct hu::val<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>>
+struct hu::val<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>, 4>>
 {
-    static inline std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4> extract(hu::Node const & node)
+    static inline std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>, 4> extract(hu::Node const & node)
     {
-        return std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4> {
-            node / 0 % hu::val<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>> {},
-            node / 1 % hu::val<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>> {},
-            node / 2 % hu::val<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>> {},
-            node / 3 % hu::val<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>> {}
+        return std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>, 4> {
+            node / 0 % hu::val<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>> {},
+            node / 1 % hu::val<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>> {},
+            node / 2 % hu::val<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>> {},
+            node / 3 % hu::val<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>> {}
         };
     }
 };
 
 template <>
-struct hu::val<std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>>>
+struct hu::val<std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>, 4>>>
 {
-    static inline std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>> extract(hu::Node const & node)
+    static inline std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>, 4>> extract(hu::Node const & node)
     {
-        std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>> rv;
+        std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>, 4>> rv;
         for (size_t i = 0; i < node.numChildren(); ++i)
         {
-            rv.emplace_back(node / i % hu::val<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>>{});
+            rv.emplace_back(node / i % hu::val<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, txtToBin::IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, txtToBin::IsLess_wut_huh_0_0_0_0_6_0>, txtToBin::IsLess_wut_huh_0_0_0_0_6>>>, 4>>{});
         }
         return rv;
     }

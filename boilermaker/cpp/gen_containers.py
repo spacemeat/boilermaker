@@ -412,12 +412,14 @@ def _genCsBody(self, typeDict):
 def genIsLessStructs(self, t):
     def visit(properties):
         name = properties['fullName']
+
+        for ofo in properties.get('of', []):
+            visit(ofo)
+
         lessCode = properties.get('isLess')
         if lessCode:
             self.gen_containers._genIsLessStruct(self, t, name, properties)
 
-        for ofo in properties.get('of', []):
-            visit(ofo)
 
     for memberName, m in t.members.items():
         visit(m.properties)

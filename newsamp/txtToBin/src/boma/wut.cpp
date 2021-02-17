@@ -10,12 +10,12 @@ namespace txtToBin
     wut::wut()
     { }
 
-    wut::wut(std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>> const & huh)
+    wut::wut(std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4>> const & huh)
      : huh(huh)
     { }
 
     wut::wut(hu::Node node)
-    : huh(node / "huh" % hu::val<std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>>>{})
+    : huh(node / "huh" % hu::val<std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4>>>{})
     {
     }
 
@@ -157,7 +157,41 @@ namespace txtToBin
     }
 
         
-    std::ostream & operator <<(std::ostream & out, std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>> const & obj)
+    std::ostream & operator <<(std::ostream & out, std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0> const & obj)
+    {
+        out << '{';
+        bool firstTime = true;
+        for (auto & elem : obj)
+        {
+            if (firstTime)
+                { firstTime = false; }
+            else
+                { out << ' '; }
+            out << elem.first << ": " << elem.second;
+        }
+        out << '}';
+        return out;
+    }
+
+        
+    std::ostream & operator <<(std::ostream & out, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6> const & obj)
+    {
+        out << '[';
+        bool firstTime = true;
+        for (auto const & objmem : obj)
+        {
+            if (firstTime)
+                { firstTime = false; }
+            else
+                { out << ' '; }
+            out << objmem;
+        }
+        out << ']';
+        return out;
+    }
+
+        
+    std::ostream & operator <<(std::ostream & out, std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>> const & obj)
     {
         if (auto p = std::get_if<std::pair<std::string_view, std::string>>(& obj); p) { out << *p << " @type: None"; }
         if (auto p = std::get_if<std::tuple<std::size_t, int, double>>(& obj); p) { out << *p << " @type: None"; }
@@ -165,11 +199,12 @@ namespace txtToBin
         if (auto p = std::get_if<std::unordered_map<std::string_view, int>>(& obj); p) { out << *p << " @type: None"; }
         if (auto p = std::get_if<std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>>(& obj); p) { out << *p << " @type: None"; }
         if (auto p = std::get_if<std::unordered_set<std::string_view>>(& obj); p) { out << *p << " @type: None"; }
+        if (auto p = std::get_if<std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>(& obj); p) { out << *p << " @type: setOfMaps"; }
         return out;
     }
 
         
-    std::ostream & operator <<(std::ostream & out, std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>> const & obj)
+    std::ostream & operator <<(std::ostream & out, std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>> const & obj)
     {
     if (obj.has_value())
         { out << * obj; }
@@ -179,7 +214,7 @@ namespace txtToBin
     }
 
         
-    std::ostream & operator <<(std::ostream & out, std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4> const & obj)
+    std::ostream & operator <<(std::ostream & out, std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4> const & obj)
     {
         out << '[';
         out << obj[0];
@@ -194,7 +229,7 @@ namespace txtToBin
     }
 
         
-    std::ostream & operator <<(std::ostream & out, std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>>>, 4>> const & obj)
+    std::ostream & operator <<(std::ostream & out, std::vector<std::array<std::optional<std::variant<std::pair<std::string_view, std::string>, std::tuple<std::size_t, int, double>, std::map<std::string_view, int>, std::unordered_map<std::string_view, int>, std::set<std::unordered_map<std::string_view, int>, IsLess_wut_huh_0_0_0_0_4>, std::unordered_set<std::string_view>, std::set<std::map<float, int, IsLess_wut_huh_0_0_0_0_6_0>, IsLess_wut_huh_0_0_0_0_6>>>, 4>> const & obj)
     {
         out << '[';
         bool firstTime = true;
