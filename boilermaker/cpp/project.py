@@ -16,6 +16,8 @@ class Project(BaseProject):
         self.includes = {}
         self.sections = {}
         self.includeDiffTypes = {}
+        self.containersSerializerTypes = {}
+        self.containersVariantTypeNames = {}
 
         self.defsData['headerToInl'] = os.path.relpath(self.d('inlineDir'), self.d('headerDir'))
         self.defsData['srcToHeader'] = os.path.relpath(self.d('headerDir'), self.d('sourceDir'))
@@ -83,7 +85,7 @@ class Project(BaseProject):
         self.gen_enums.genDeserializers(self)
         self.gen_enums.genSerializers(self)
         self.gen_types.genAll(self)
-        self.gen_containers.genAll(self)
+#        self.gen_containers.genAll(self)
 
         # we're doing globals last, since any other gen_ can add to includes.
         self.gen_global.genNamespaces(self)
@@ -94,7 +96,20 @@ class Project(BaseProject):
         self.writeCode()
 
 
+    def removeAllFiles(self, direc):
+        d = Path(self.d('defsDir'), direc)
+        if d.is_dir():
+            for f in os.listdir(d):
+                if Path(f).is_file():
+                    os.unlink(f)
+
+
     def writeCode(self):
+        # clean any files in the target directories
+        self.removeAllFiles(self.d('headerDir'))
+        self.removeAllFiles(self.d('inlineDir'))
+        self.removeAllFiles(self.d('sourceDir'))
+
         # spit out the contents
         output = self.defsData.get('output', {})
         for outputForm, kinds in output.items():
@@ -119,13 +134,10 @@ class Project(BaseProject):
         path = self._getPath(kind, kindInfo, typeName)
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        #if typeName: breakpoint()
         with open(path, 'wt') as f:
             for section in kindInfo.get('sections', []):
                 # replace $<type> in section names
                 section = self.replaceArgs(section, {'type': typeName})
-                #if section == 'wut|stdForwardDecls':
-                #    breakpoint()
 
                 includeKinds = self.includes.get(section)
                 if includeKinds:

@@ -1,0 +1,48 @@
+@{ app: boma, boma-version: 0.0.4 }
+{
+    inherit: c++|gnu
+    enums: [{
+            tools: gnu
+            source: [enums.h]
+            languageVersion: c|gnu17
+            platform: vulkan
+            attributes: {}
+        }
+    ]
+    types: {
+        couple: {
+            a: string
+            bee: int
+        }
+
+        v_of_couples: {
+            couples: { type: vector of: couple }
+        }
+
+        a_of_v_of_couples: {
+            coupleses: { type: array of: [{ type: vector of: couple }, 4] }
+        }
+    }
+
+    variants: {
+        shortTest: {
+            outputForm: compiled
+
+            namespace: shortTest
+            deserializeFromHumon: true      // done
+            deserializeFromBinary: true     // .
+            defaultConstructible: true      // done
+            memberwiseConstructible: true   // done
+            virtualDestructor: true         // done
+            copyable: true                  // done
+            movable: true                   // done
+            getters: true                   // done
+            setters: true                   // done
+            privateMembers: true            // done
+            serializeToHumon: true          // done
+            serializeToBinary: true         // .
+            comparable: true                // done
+            diffable: true                  // done
+        }
+    }
+}

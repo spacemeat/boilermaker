@@ -1,0 +1,115 @@
+@{ app: boma, boma-version: 0.0.4 }
+{
+    inherit: c++|gnu
+    enums: [{
+            tools: gnu
+            source: [<vulkan/vulkan.h>]
+            languageVersion: c|gnu17
+            platform: vulkan
+        }
+    ]
+    types: {
+        couple: {
+            a: string
+            b: .VkResult
+        }
+
+        v_of_couples: {
+            couples: { type: vector of: couple }
+        }
+
+        v_of_a_of_couples: {
+            coupleses: { type: vector of: { type: array of: [couple, 4] } }
+        }
+
+        wut: {
+            huh: { 
+                type: vector 
+                of: [ {
+                        type: array
+                        of: [ {
+                                type: optional
+                                of: [ {
+                                        type: variant
+                                        of: [ {
+                                                type: pair
+                                                of: [string_view, string]
+                                            } {
+                                                type: tuple
+                                                of: [size_t, int, double]
+                                            } {
+                                                type: map
+                                                of: [string_view, int]
+                                            } {
+                                                type: unordered_map
+                                                of: [string_view, int]
+                                            } {
+                                                type: set
+                                                of: [ {
+                                                        type: unordered_map
+                                                        of: [string_view, int]
+                                                    }
+                                                ]
+                                                isLess: "return lhs.begin()->second < rhs.begin()->second;"
+                                            } {
+                                                type: unordered_set
+                                                of: string_view
+                                            } {
+                                                alias: setOfMaps
+                                                type: set
+                                                of: [ {
+                                                        type: map
+                                                        of: [float, int]
+                                                        isLess: "return lhs < rhs;"
+                                                    }
+                                                ]
+                                                isLess: "return lhs.begin()->second < rhs.begin()->second;"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }, 4
+                        ]
+                    }
+                ]
+            }
+        }
+    }
+    
+    variants: {
+        txtToBin: {
+            headerDir: gen-cpp/txtToBin/inc/boma
+            inlineDir: gen-cpp/txtToBin/inc/boma/inl
+            sourceDir: gen-cpp/txtToBin/src/boma
+
+            namespace: txtToBin
+            outputForm: compiled
+            deserializeFromHumon: true      // done
+            deserializeFromBinary: true     // .
+            defaultConstructible: true      // done
+            memberwiseConstructible: true   // done
+            virtualDestructor: true         // done
+            copyable: true                  // done
+            movable: true                   // done
+            getters: true                   // done
+            setters: true                   // done
+            privateMembers: true            // done
+            serializeToHumon: true          // done
+            serializeToBinary: true         // .
+            comparable: true                // done
+            diffable: true                  // done
+        }
+        app: {
+            headerDir: gen-cpp/app/inc/boma
+            inlineDir: gen-cpp/app/inc/boma/inl
+            sourceDir: gen-cpp/app/src/boma
+
+            namespace: app
+            initFromDefault: true
+            deserializeFromBinary: true
+            copyable: true
+            comparable: true
+            diffable: true
+        }
+    }
+}

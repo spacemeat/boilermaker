@@ -143,7 +143,7 @@ def genDeserializer(self, t):
 template<>
 struct hu::val<{typeDecl}>
 {{
-{it}inline {typeDecl} extract(hu::Node const & node)
+{it}static inline {typeDecl} extract(hu::Node const & node)
 {it}{{
 {it}{it}return {typeDecl}(node);
 {it}}}

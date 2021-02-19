@@ -57,9 +57,9 @@
         }
     }
 
-    headerDir:              inc/boma
-    inlineDir:              inc/boma/inl
-    sourceDir:              src/boma
+    headerDir:              gen-cpp/inc/boma
+    inlineDir:              gen-cpp/inc/boma/inl
+    sourceDir:              gen-cpp/src/boma
     mainHeaderFile:         $<namespace>.hpp
     diffsHeaderFile:        diffs.hpp
     enumHeaderFile:         enums.hpp
@@ -206,9 +206,9 @@
                     diffsHeaderIncludes
                     namespaceOpen
                     diffTemplateDecl
-                    diffTuple
-                    diffPair
                     diffArray
+                    diffPair
+                    diffTuple
                     diffVector
                     diffSet
                     diffUnorderedSet
@@ -239,6 +239,29 @@
                     enumSourceIncludes
                     namespaceOpen
                     enumSerializerDefs
+                    namespaceClose
+                ]
+            }
+
+            containersHeader: {
+                sourcePath: $<defsDir>/$<headerDir>/$<containersHeaderFile>
+                sections: [
+                    pragma
+                    headerTopComment
+                    containersIncludes
+                    namespaceOpen
+                    isLessCode
+                    containerSerializer_variantTypeNames
+                    containerSerializer_array
+                    containerSerializer_pair
+                    containerSerializer_tuple
+                    containerSerializer_vector
+                    containerSerializer_set
+                    containerSerializer_unordered_set
+                    containerSerializer_map
+                    containerSerializer_unordered_map
+                    containerSerializer_optional
+                    containerSerializer_variant
                     namespaceClose
                 ]
             }

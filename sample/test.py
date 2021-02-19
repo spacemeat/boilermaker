@@ -1,2 +1,0 @@
-from boilermaker import boma
-

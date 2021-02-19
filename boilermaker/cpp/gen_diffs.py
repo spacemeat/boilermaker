@@ -14,7 +14,6 @@ def genTypeDiffer(self, t):
             yield (memberName, memberDecl)
     
     def foreachStdMemberName():
-        #breakpoint()
         for memberName, m in t.members.items():
             if m.properties['type'] in ['array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
                 memberDecl = self.makeNativeMemberType(m.properties)
@@ -112,6 +111,73 @@ def genDiffTemplate(self):
 ''')
 
 
+def genDiff_array(self):
+    if not self.dIs('diffable'):
+        return
+
+    if 'array' in self.includeDiffTypes:
+        return
+    self.includeDiffTypes['array'] = None
+
+    it = self.indent()
+
+    self._addInclude('diffsHeaderIncludes', '<array>')
+    self._addInclude('diffsHeaderIncludes', '<vector>')
+    self._addInclude('diffsHeaderIncludes', '<utility>')
+
+    self._appendToSection('diffArray', f'''
+
+
+{it}template <class T, std::size_t Size>
+{it}struct Diff<std::array<T, Size>>
+{it}{{
+{it}{it}Diff() {{ }}
+
+{it}{it}Diff(std::array<T, Size> const & lhs, std::array<T, Size> const & rhs)
+{it}{it}{{
+{it}{it}{it}for (std::size_t i = 0; i < lhs.size(); ++i)
+{it}{it}{it}{{
+{it}{it}{it}{it}if (lhs[i] != rhs[i])
+{it}{it}{it}{it}{{
+{it}{it}{it}{it}{it}elementDiffs.emplace_back(i, Diff<T> {{ lhs[i], rhs[i] }});
+{it}{it}{it}{it}}}
+{it}{it}{it}}}
+{it}{it}}}
+
+{it}{it}std::vector<std::pair<std::size_t, Diff<T>>> elementDiffs;
+{it}}};''')
+
+
+def genDiff_pair(self):
+    if not self.dIs('diffable'):
+        return
+
+    if 'pair' in self.includeDiffTypes:
+        return
+    self.includeDiffTypes['pair'] = None
+
+    self._addInclude('diffsHeaderIncludes', '<utility>')
+
+    it = self.indent()
+
+    self._appendToSection('diffPair', f'''
+
+
+{it}template <class TF, class TS>
+{it}struct Diff<std::pair<TF, TS>>
+{it}{{
+{it}{it}Diff() {{ }}
+
+{it}{it}Diff(std::pair<TF, TS> const & lhs, std::pair<TF, TS> const & rhs)
+{it}{it}: memberDiffs((lhs.first != rhs.first) << 0 | (lhs.second != rhs.second) << 1),
+{it}{it}  diffObjects(Diff<TF>(lhs.first, rhs.first), Diff<TS>(lhs.second, rhs.second))
+{it}{it}{{ }}
+
+{it}{it}std::bitset<2> memberDiffs;
+{it}{it}std::pair<Diff<TF>, Diff<TS>> diffObjects;
+{it}}};''')
+
+
 def genDiff_tuple(self):
     if not self.dIs('diffable'):
         return
@@ -165,74 +231,6 @@ def genDiff_tuple(self):
 
 {it}{it}std::bitset<sizeof...(Args)> memberDiffs;
 {it}{it}std::tuple<Diff<Args>...> diffObjects;
-{it}}};''')
-
-
-def genDiff_pair(self):
-    if not self.dIs('diffable'):
-        return
-
-    if 'pair' in self.includeDiffTypes:
-        return
-    self.includeDiffTypes['pair'] = None
-
-    self._addInclude('diffsHeaderIncludes', '<utility>')
-
-    it = self.indent()
-
-    self._appendToSection('diffPair', f'''
-
-
-{it}template <class TF, class TS>
-{it}struct Diff<std::pair<TF, TS>>
-{it}{{
-{it}{it}Diff() {{ }}
-
-{it}{it}Diff(std::pair<TF, TS> const & lhs, std::pair<TF, TS> const & rhs)
-{it}{it}: memberDiffs((lhs.first != rhs.first) << 0 | (lhs.second != rhs.second) << 1),
-{it}{it}  diffObjects(Diff<TF>(lhs.first, rhs.first), Diff<TS>(lhs.second, rhs.second))
-{it}{it}{{ }}
-
-{it}{it}std::bitset<2> memberDiffs;
-{it}{it}std::pair<Diff<TF>, Diff<TS>> diffObjects;
-{it}}};''')
-
-
-
-def genDiff_array(self):
-    if not self.dIs('diffable'):
-        return
-
-    if 'array' in self.includeDiffTypes:
-        return
-    self.includeDiffTypes['array'] = None
-
-    it = self.indent()
-
-    self._addInclude('diffsHeaderIncludes', '<array>')
-    self._addInclude('diffsHeaderIncludes', '<vector>')
-    self._addInclude('diffsHeaderIncludes', '<utility>')
-
-    self._appendToSection('diffArray', f'''
-
-
-{it}template <class T, std::size_t Size>
-{it}struct Diff<std::array<T, Size>>
-{it}{{
-{it}{it}Diff() {{ }}
-
-{it}{it}Diff(std::array<T, Size> const & lhs, std::array<T, Size> const & rhs)
-{it}{it}{{
-{it}{it}{it}for (std::size_t i = 0; i < lhs.size(); ++i)
-{it}{it}{it}{{
-{it}{it}{it}{it}if (lhs[i] != rhs[i])
-{it}{it}{it}{it}{{
-{it}{it}{it}{it}{it}elementDiffs.emplace_back(i, Diff<T> {{ lhs[i], rhs[i] }});
-{it}{it}{it}{it}}}
-{it}{it}{it}}}
-{it}{it}}}
-
-{it}{it}std::vector<std::pair<std::size_t, Diff<T>>> elementDiffs;
 {it}}};''')
 
 

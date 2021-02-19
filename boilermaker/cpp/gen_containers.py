@@ -1,104 +1,13 @@
 from .. import utilities
-
-
-def genAll(self):
-    if not self.dIs('computeTypes') :
-        return ''
-
-    # self._addInclude('mainHeaderIncludes', 'containersHeader')
-
-    # self._addInclude('containersHeaderIncludeInline', 'containersSource')
-
-    if not self.dIs('deserializeFromHumon'):
-        it = self.indent()
-        self._appendToSection('containersStdForwardDecls', f'''
-{it}class ofstream;''')
-
-    forwardDeclsMemo = {}
-    deserializersMemo = {}
-    serializersMemo = {}
-    for typeName, t in self.types.items():
-        self.defsData['type'] = typeName
-        self.gen_containers.genAllForwardDecls(self, t, forwardDeclsMemo)
-        #self.gen_containers.genDeserializers(self, t, deserializersMemo)
-        #self.gen_containers.genSerializers(self, t, serializersMemo)
-        self.defsData['type'] = None
-
-
-def genAllForwardDecls(self, t, memo):
-    for _, memberObj in t.members.items():
-        self.gen_containers._genForwardDecls(self, t, memberObj, memo)
-
-
-def _genForwardDecls(self, t, m, memo):
-    it = self.indent()
-
-    def recurse(memo, typeDict):
-        baseType = typeDict['type']
-
-        if baseType not in memo:
-            memo[baseType] = None
-
-            if baseType == 'size_t':
-                self._appendToSection('containersStdForwardDecls', f'''
-{it}class size_t;''')
-            elif baseType == 'string':
-                self._appendToSection('containersStdForwardDecls', f'''
-{it}class string;''')
-            elif baseType == 'string_view':
-                self._appendToSection('containersStdForwardDecls', f'''
-{it}class string_view;''')
-            
-            # #include the inl for a StructType
-            elif baseType in self.types:
-                pass # self._addInclude(f'containersSourceLocalIncludes', f'{baseType}|typeHeader')
-
-            elif baseType == 'array':
-                self._appendToSection('containersStdForwardDecls', f'''
-{it}template <class T, size_t N> class array;''')
-            elif baseType == 'pair':
-                self._appendToSection('containersStdForwardDecls', f'''
-{it}template <class T1, class T2> class pair;''')
-            elif baseType == 'tuple':
-                self._appendToSection('containersStdForwardDecls', f'''
-{it}template <class... Types> class tuple;''')
-            elif baseType == 'vector':
-                self._appendToSection('containersStdForwardDecls', f'''
-{it}template <class T, class Allocator = std::allocator<T>> class vector;''')
-            elif baseType == 'set':
-                self._appendToSection('containersStdForwardDecls', f'''
-{it}template <class Key, class Compare = std::less<Key>, class Allocator = std::allocator<Key>> class set;''')
-            elif baseType == 'unordered_set':
-                self._appendToSection('containersStdForwardDecls', f'''
-{it}template <class Key, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>, class Allocator = std::allocator<Key>> class unordered_set;''')
-            elif baseType == 'map':
-                self._appendToSection('containersStdForwardDecls', f'''
-{it}template <class Key, class T, class Compare = std::less<Key>, class Allocator = std::allocator<Key>> class map;''')
-            elif baseType == 'unordered_map':
-                self._appendToSection('containersStdForwardDecls', f'''
-{it}template <class Key, class T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>, class Allocator = std::allocator<Key>> class unordered_map;''')
-            elif baseType == 'optional':
-                self._appendToSection('containersStdForwardDecls', f'''
-{it}template <class T> class optional;''')
-            elif baseType == 'variant':
-                self._appendToSection('containersStdForwardDecls', f'''
-{it}template <class... Types> class variant;''')
-
-        ofProps = typeDict.get('of')
-        if ofProps:
-            for prop in utilities.listify(ofProps):
-                recurse(memo, utilities.dictify(prop, 'type'))
-    
-    recurse(memo, m.properties)
-
+from functools import reduce
 
 def genDeserializers(self, t, memo):
     if (not self.dIs('computeTypes') or
         not self.dIs('deserializeFromHumon')):
         return ''
+    
+    self._addInclude(f'{t.name}|typeHeaderLocalIncludes', 'containersHeader')
 
-    # self._addInclude('mainHeaderIncludes', 'containersHeader')
-    # self._addInclude('containersHeaderIncludes', '<humon/humon.hpp>')
     for _, memberObj in t.members.items():
         src = self.gen_containers._genDeserializer(self, t, memberObj.properties, memo)
 
@@ -110,13 +19,13 @@ def _genDeserializer(self, t, mProps, memo):
 
     self._addInclude(f'{t.name}|typeHeaderIncludes', '<humon/humon.hpp>')
 
-    declType = self.makeNativeMemberType(mProps, True) # mpt
+    declType = self.makeNativeMemberType(mProps, True)
 
     if declType in memo:
         return
     memo[declType] = None
 
-    baseType = mProps['type'] # mbt
+    baseType = mProps['type']
     if baseType in ['array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
         typeArgs = [utilities.dictify(a, 'type') for a in utilities.listify(mProps['of'])]
 
@@ -147,8 +56,6 @@ struct hu::val<{declType}>
 {it}{it}{it}node / 0 % hu::val<{ept0}> {{ }},
 {it}{it}{it}node / 1 % hu::val<{ept1}> {{ }}
 {it}{it}}};'''
-            #{it}{it}{it}std::move(hu::val<{ept0}>::extract(node / 0)),
-            #{it}{it}{it}std::move(hu::val<{ept1}>::extract(node / 1))
 
         elif baseType == 'tuple':
             epts = [self.makeNativeMemberType(typeArg, True) for typeArg in typeArgs]
@@ -156,7 +63,6 @@ struct hu::val<{declType}>
 {it}{it}return {declType} {{
 {f',{endl}'.join([f"{it}{it}{it}node / {i} % hu::val<{epts[i]}> {{ }}" for i in range(0, len(epts))])}
 {it}{it}}};'''
-            #{f',{endl}'.join([f"{it}{it}{it}std::move(hu::val<{epts[i]}>::extract(node / {i}))" for i in range(0, len(epts))])}
 
         elif baseType == 'vector' or baseType == 'set' or baseType == 'unordered_set':
             elemPlatformType = self.makeNativeMemberType(typeArgs[0], True)
@@ -167,7 +73,6 @@ struct hu::val<{declType}>
 {it}{it}{it}rv.emplace{'_back' if baseType == 'vector' else ''}(node / i % hu::val<{elemPlatformType}>{{}});
 {it}{it}}}
 {it}{it}return rv;'''
-#{it}{it}{it}rv.emplace{'_back' if baseType == 'vector' else ''}(std::move(node / i % hu::val<{elemPlatformType}>{{}}));
 
         elif baseType == 'map' or baseType == 'unordered_map':
             eptkey = self.makeNativeMemberType(typeArgs[0], True)
@@ -228,9 +133,6 @@ def genSerializers(self, t, memo):
         not self.dIs('serializeToHumon')):
         return ''
 
-    # self._addInclude('mainHeaderIncludes', 'containersHeader')
-    # self._addInclude('containersHeaderIncludes', '<iostream>')
-
     for _, memberObj in t.members.items():
         self.gen_containers._genSerializer(self, t, memberObj, memo)
 
@@ -240,7 +142,6 @@ def _genSerializer(self, t, m, memo):
 
     def recurse(phase, memo, typeDict):
         memberDeclType = self.makeNativeMemberType(typeDict)
-        #print (memberDeclType)
         if memberDeclType not in memo:
             memo[memberDeclType] = {phase: None}
         elif phase not in memo[memberDeclType]:
@@ -286,127 +187,338 @@ def _genSerializer(self, t, m, memo):
         elif baseType == 'variant':
             self._addInclude(f'{t.name}|typeHeaderIncludes', '<variant>')
 
-        src = ''
         ofProps = typeDict.get('of')
         if ofProps:
             for prop in utilities.listify(ofProps):
-                src += recurse(phase, memo, utilities.dictify(prop, 'type'))
+                recurse(phase, memo, utilities.dictify(prop, 'type'))
 
-        src += f'''
-        
-{it}std::ostream & operator <<(std::ostream & out, {memberDeclType} const & obj)'''
-        if phase == 'classDecl':
-            src += f';'
-        elif phase == 'classDef':
-            src += f'''
-{it}{{{self.gen_containers._genCsBody(self, typeDict)}
-{it}{it}return out;
-{it}}}
-'''
-        return src
+        self.gen_containers._genCsBody(self, typeDict)
+
+        return
     
-    src = recurse('classDecl', memo, m.properties)
-    self._appendToSection(f'{t.name}|containerSerializerDecls', src)
-
     src = recurse('classDef', memo, m.properties)
-    self._appendToSection(f'{t.name}|containerSerializerDefs', src)
 
 
 def _genCsBody(self, typeDict):
-    it = self.indent()
-
-    src = ''
-
     baseType = typeDict['type']
     if baseType == 'array':
-        src += f"""
-{it}{it}out << '[';"""
-        for i in range(0, int(typeDict['of'][1]['type'])):
-            if i > 0:
-                src += f"""
-{it}{it}out << ' ';"""
-            src += f"""
-{it}{it}out << obj[{i}];"""
-        src += f"""
-{it}{it}out << ']';"""
-
+        self.gen_containers.genSerializer_array(self)
     elif baseType == 'pair':
-        src += f"""
-{it}{it}out << '[';
-{it}{it}out << std::get<0>(obj);
-{it}{it}out << ' ';
-{it}{it}out << std::get<1>(obj);
-{it}{it}out << ']';"""
-
+        self.gen_containers.genSerializer_pair(self)
     elif baseType == 'tuple':
-        mbtas = [self.makeNativeMemberType(ch) for ch in utilities.listify(typeDict['of'])]
-        src += f"""
-{it}{it}out << '[';"""
-        first = True
-        for i in range(0, len(mbtas)):
-            mbtan = mbtas[i]
-            if not first:
-                src += f"""
-{it}{it}out << ' ';"""
-            else:
-                first = False
-            src += f"""
-{it}{it}out << std::get<{i}>(obj);"""
-        src += f"""
-{it}{it}out << ']';"""
-
-    elif baseType == 'vector' or baseType == 'set' or baseType == 'unordered_set':
-        src += f"""
-{it}{it}out << '[';
-{it}{it}bool firstTime = true;
-{it}{it}for (auto const & objmem : obj)
-{it}{it}{{
-{it}{it}{it}if (firstTime)
-{it}{it}{it}{it}{{ firstTime = false; }}
-{it}{it}{it}else
-{it}{it}{it}{it}{{ out << ' '; }}
-{it}{it}{it}out << objmem;
-{it}{it}}}
-{it}{it}out << ']';"""
-
-    elif baseType == 'map' or baseType == 'unordered_map':
-        if utilities.listify(typeDict['of'][0]) == 'optional':
-            raise RuntimeError('a map or unordered_map key cannot be optional.')
-        src += f"""
-{it}{it}out << '{{';
-{it}{it}bool firstTime = true;
-{it}{it}for (auto & elem : obj)
-{it}{it}{{
-{it}{it}{it}if (firstTime)
-{it}{it}{it}{it}{{ firstTime = false; }}
-{it}{it}{it}else
-{it}{it}{it}{it}{{ out << ' '; }}
-{it}{it}{it}out << elem.first << ": " << elem.second;
-{it}{it}}}
-{it}{it}out << '}}';"""
-
+        self.gen_containers.genSerializer_tuple(self)
+    elif baseType == 'vector':
+        self.gen_containers.genSerializer_vector(self)
+    elif baseType == 'set':
+        self.gen_containers.genSerializer_set(self)
+    elif baseType == 'unordered_set':
+        self.gen_containers.genSerializer_unordered_set(self)
+    elif baseType == 'map':
+        self.gen_containers.genSerializer_map(self)
+    elif baseType == 'unordered_map':
+        self.gen_containers.genSerializer_unordered_map(self)
     elif baseType == 'optional':
-        src += f"""
-{it}if (obj.has_value())
-{it}{it}{{ out << * obj; }}
-{it}else
-{it}{it}{{ out << '_'; }}"""
-
+        self.gen_containers.genSerializer_optional(self)
     elif baseType == 'variant':
-        subTypes = utilities.listify(typeDict['of'])
-        firstTime = True
-        for subType in subTypes:
-            chDecl = self.makeNativeMemberType(utilities.dictify(subType, 'type'))
-            chAlias = subType.get('alias')         
-            if firstTime:
-                firstTIme = False
-                src += f'''
-{it}{it}'''
-            else:
-                src += f'''
-{it}{it}else '''
-            src += f'''if (auto p = std::get_if<{chDecl}>(& obj); p) {{ out << *p << " @type: {chAlias}"; }}'''
-    return src
+        self.gen_containers.genSerializer_variant(self)
+        self.gen_containers.genVariantTypeNames(self, typeDict)
+
+
+def genVariantTypeNames(self, typeDict):
+    typeDecl = self.makeNativeSubtype(typeDict)
+    if typeDecl in self.containersVariantTypeNames:
+        return
+    
+    if len(self.containersVariantTypeNames) == 0:
+        self.gen_containers.genVariantTypeNamesTemplate(self)
+    
+    self.containersVariantTypeNames[typeDecl] = None
+
+    it = self.indent()
+
+    subTypes = []
+    for subDict in typeDict.get('of', []):
+        subType = subDict.get('alias')
+        if not subType:
+            subType = subDict['type']
+        subTypes.append(subType)
+
+    src = f'''
+
+{it}template <>
+{it}struct VariantTypeNames<{typeDecl}>
+{it}{{
+{it}{it}static constexpr char const * names[] = {{ {', '.join([f'"{st}"' for st in subTypes])} }};
+{it}{it}static constexpr std::size_t size = {len(subTypes)};
+{it}}};'''
+    self._appendToSection(f'containerSerializer_variantTypeNames', src)
+
+
+def genVariantTypeNamesTemplate(self):
+    it = self.indent()
+
+    src = f'''
+
+{it}template <class T>
+{it}struct VariantTypeNames
+{it}{{
+{it}{it}static constexpr char const * names[] = {{ }};
+{it}{it}static constexpr std::size_t size = 0;
+{it}}};'''
+    self._appendToSection(f'containerSerializer_variantTypeNames', src)
+
+
+def genSerializer_array(self):
+    if 'array' in self.containersSerializerTypes:
+        return
+    self.containersSerializerTypes['array'] = None
+
+    it = self.indent()
+
+    self._addInclude('containersIncludes', '<iostream>')
+    self._addInclude('containersIncludes', '<array>')
+
+    self._appendToSection('containerSerializer_array', f'''
+
+{it}template <class T, unsigned long N>
+{it}std::ostream & operator << (std::ostream & out, std::array<T, N> const & obj)
+{it}{{
+{it}{it}out << "[ ";
+{it}{it}for (std::size_t i = 0; i < N; ++i)
+{it}{it}{{
+{it}{it}{it}out << obj[i] << " ";
+{it}{it}}}
+{it}{it}out << "]";
+
+{it}{it}return out;
+{it}}}''')
+
+
+def genSerializer_pair(self):
+    if 'pair' in self.containersSerializerTypes:
+        return
+    self.containersSerializerTypes['pair'] = None
+
+    it = self.indent()
+
+    self._addInclude('containersIncludes', '<iostream>')
+    self._addInclude('containersIncludes', '<utility>')
+
+    self._appendToSection('containerSerializer_pair', f'''
+
+{it}template <class T0, class T1>
+{it}std::ostream & operator << (std::ostream & out, std::pair<T0, T1> const & obj)
+{it}{{
+{it}{it}out << '[' << std::get<0>(obj) << ' ' << std::get<1>(obj) << ']';
+
+{it}{it}return out;
+{it}}}''')
+
+
+def genSerializer_tuple(self):
+    if 'tuple' in self.containersSerializerTypes:
+        return
+    self.containersSerializerTypes['tuple'] = None
+
+    it = self.indent()
+
+    self._addInclude('containersIncludes', '<iostream>')
+    self._addInclude('containersIncludes', '<tuple>')
+
+    self._appendToSection('containerSerializer_tuple', f'''
+
+{it}template <class... Ts>
+{it}std::ostream & operator << (std::ostream & out, std::tuple<Ts...> const & obj)
+{it}{{
+{it}{it}out << "[ ";
+{it}{it}apply(
+{it}{it}{it}[](auto &&... args)
+{it}{it}{it}{it}{{ ((std::cout << args << ' '), ...); }},
+{it}{it}{it}obj);
+{it}{it}out << "]";
+
+{it}{it}return out;
+{it}}}''')
+
+
+def genSerializer_vector(self):
+    if 'vector' in self.containersSerializerTypes:
+        return
+    self.containersSerializerTypes['vector'] = None
+
+    it = self.indent()
+
+    self._addInclude('containersIncludes', '<iostream>')
+    self._addInclude('containersIncludes', '<vector>')
+
+    self._appendToSection('containerSerializer_vector', f'''
+
+{it}template <class T>
+{it}std::ostream & operator << (std::ostream & out, std::vector<T> const & obj)
+{it}{{
+{it}{it}out << "[ ";
+{it}{it}for (auto const & elem : obj)
+{it}{it}{{
+{it}{it}{it}out << elem << ' ';
+{it}{it}}}
+{it}{it}out << ']';
+
+{it}{it}return out;
+{it}}}''')
+
+
+def genSerializer_set(self):
+    if 'set' in self.containersSerializerTypes:
+        return
+    self.containersSerializerTypes['set'] = None
+
+    it = self.indent()
+
+    self._addInclude('containersIncludes', '<iostream>')
+    self._addInclude('containersIncludes', '<set>')
+
+    self._appendToSection('containerSerializer_set', f'''
+
+{it}template <class T, class L>
+{it}std::ostream & operator << (std::ostream & out, std::set<T, L> const & obj)
+{it}{{
+{it}{it}out << "[ ";
+{it}{it}for (auto const & elem : obj)
+{it}{it}{{
+{it}{it}{it}out << elem << ' ';
+{it}{it}}}
+{it}{it}out << ']';
+
+{it}{it}return out;
+{it}}}''')
+
+
+def genSerializer_unordered_set(self):
+    if 'unordered_set' in self.containersSerializerTypes:
+        return
+    self.containersSerializerTypes['unordered_set'] = None
+
+    it = self.indent()
+
+    self._addInclude('containersIncludes', '<iostream>')
+    self._addInclude('containersIncludes', '<unordered_set>')
+
+    self._appendToSection('containerSerializer_unordered_set', f'''
+
+{it}template <class T, class H>
+{it}std::ostream & operator << (std::ostream & out, std::unordered_set<T, H> const & obj)
+{it}{{
+{it}{it}out << "[ ";
+{it}{it}for (auto const & elem : obj)
+{it}{it}{{
+{it}{it}{it}out << elem << ' ';
+{it}{it}}}
+{it}{it}out << ']';
+
+{it}{it}return out;
+{it}}}''')
+
+
+def genSerializer_map(self):
+    if 'map' in self.containersSerializerTypes:
+        return
+    self.containersSerializerTypes['map'] = None
+
+    it = self.indent()
+
+    self._addInclude('containersIncludes', '<iostream>')
+    self._addInclude('containersIncludes', '<map>')
+
+    self._appendToSection('containerSerializer_map', f'''
+
+{it}template <class K, class T, class L>
+{it}std::ostream & operator << (std::ostream & out, std::map<K, T, L> const & obj)
+{it}{{
+{it}{it}out << "{{ ";
+{it}{it}for (auto const & elem : obj)
+{it}{it}{{
+{it}{it}{it}out << elem.first << ": " << elem.second << ' ';
+{it}{it}}}
+{it}{it}out << '}}';
+
+{it}{it}return out;
+{it}}}''')
+
+
+def genSerializer_unordered_map(self):
+    if 'unordered_map' in self.containersSerializerTypes:
+        return
+    self.containersSerializerTypes['unordered_map'] = None
+
+    it = self.indent()
+
+    self._addInclude('containersIncludes', '<iostream>')
+    self._addInclude('containersIncludes', '<unordered_map>')
+
+    self._appendToSection('containerSerializer_unordered_map', f'''
+
+{it}template <class K, class T, class H>
+{it}std::ostream & operator << (std::ostream & out, std::unordered_map<K, T, H> const & obj)
+{it}{{
+{it}{it}out << "{{ ";
+{it}{it}for (auto const & elem : obj)
+{it}{it}{{
+{it}{it}{it}out << elem.first << ": " << elem.second << ' ';
+{it}{it}}}
+{it}{it}out << '}}';
+
+{it}{it}return out;
+{it}}}''')
+
+
+def genSerializer_optional(self):
+    if 'optional' in self.containersSerializerTypes:
+        return
+    self.containersSerializerTypes['optional'] = None
+
+    it = self.indent()
+
+    self._addInclude('containersIncludes', '<iostream>')
+    self._addInclude('containersIncludes', '<optional>')
+
+    self._appendToSection('containerSerializer_optional', f'''
+
+{it}template <class T>
+{it}std::ostream & operator << (std::ostream & out, std::optional<T> const & obj)
+{it}{{
+{it}{it}if (obj.has_value())
+{it}{it}{it}{{ out << * obj; }}
+{it}{it}else
+{it}{it}{it}{{ out << '_'; }}
+
+{it}{it}return out;
+{it}}}''')
+
+
+def genSerializer_variant(self):
+    if 'variant' in self.containersSerializerTypes:
+        return
+    self.containersSerializerTypes['variant'] = None
+
+    it = self.indent()
+
+    self._addInclude('containersIncludes', '<iostream>')
+    self._addInclude('containersIncludes', '<variant>')
+
+    self._appendToSection('containerSerializer_variant', f'''
+
+{it}template <class... Ts>
+{it}std::ostream & operator << (std::ostream & out, std::variant<Ts...> const & obj)
+{it}{{
+{it}{it}constexpr auto const names =  VariantTypeNames<std::variant<Ts...>>::names;
+{it}{it}
+{it}{it}std::visit(
+{it}{it}{it}[&](auto && o) 
+{it}{it}{it}{it}{{ out << o << " @type: " << names[obj.index()] << " /* " << obj.index() << " */"; }},
+{it}{it}{it}obj);
+
+{it}{it}return out;
+{it}}}''')
 
 
 def genIsLessStructs(self, t):
@@ -433,7 +545,6 @@ def _genIsLessStruct(self, t, name, properties):
     if stype == 'set' or stype == 'map':
         subtypeDecl = self.makeNativeSubtype(properties['of'][0])
 
-    #subtypeDecl = self.makeNativeSubtype(properties)
     print (f'@@@@@@@ {name}: {subtypeDecl}: {lessCode}')
     src = f'''
 
@@ -444,5 +555,5 @@ def _genIsLessStruct(self, t, name, properties):
 {it}{it}{it}{lessCode}
 {it}{it}}}
 {it}}};'''
-    self._appendToSection(f'{t.name}|isLessCode', src)
+    self._appendToSection('isLessCode', src)
 

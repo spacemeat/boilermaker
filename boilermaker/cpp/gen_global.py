@@ -19,8 +19,6 @@ def genIncludes(self):
         src = ''
         for includeFile, section in includes.items():
             src += f'#include {includeFile}\n'
-        #self._appendToFile(src, kind, 'includes')
-        breakpoint()
         self._appendToSection(section, src)
 
 
