@@ -43,8 +43,7 @@
     setByCopy: true
     setByMove: true   // requires movable
     privateMembers: true
-    serializeToHumon: true
-    serializeToBinary: false
+    serializeTo: [humon, binary]
     comparable: true
     diffable: true  // requires comparable
 
@@ -251,6 +250,7 @@
                     containersIncludes
                     namespaceOpen
                     isLessCode
+                    serializerFormatWrappers
                     containerSerializer_variantTypeNames
                     containerSerializer_array
                     containerSerializer_pair

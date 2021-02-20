@@ -93,11 +93,44 @@ def genClassBegin(self, t):
     self._appendToSection(f'{t.name}|classBegin', src)
 
 
+def genSerializerFormatWrappers(self, format):
+    '''format looks like 'Binary' or 'Humon'. It just names the selector template.'''
+
+    if len(self.serializerFormatWrappers) == 0:
+        src = f'''
+{it}template <class T>
+{it}struct SFS
+{it}{{
+{it}SFS(T const & t) : obj(t)  {{ }}
+{it}T const & operator *() const {{ return obj; }}
+{it}T const * operator ->() const {{ return & obj; }}
+{it}T const & obj;
+{it}}};'''
+        self._appendToSection('serializerFormatWrappers', src)
+
+    src = f'''
+
+{it}template <class T>
+{it}struct {format} : public SFS<T>
+{it}{{
+{it}{it}{format}(T const & t) : SFS<T>(t)  {{ }}
+{it}}};'''
+    self._appendToSection('serializerFormatWrappers', src)
+
+
 def genDeserializer(self, t):
     if (not self.dIs('deserializeFromHumon')):
         return
 
     self._addInclude(f'{t.name}|typeHeaderIncludes', '<humon/humon.hpp>')
+
+    
+    #---
+    if len(self.deserializerFormats) == 0:
+
+    self.deserializerFormats.append()
+    #---
+
 
     it = self.indent()
     typeDecl = self.makeNative(t.name)
@@ -153,32 +186,41 @@ struct hu::val<{typeDecl}>
 
 
 def genSerializer(self, t):
-    if (not self.dIs('serializeToHumon')):
-        return ''
+    fmts = self.d('serializeTo')
+    if (not fmts):
+        return
 
+    for fmt in fmts:
+        if fmt.tolower() == 'humon':
+            genSerializerToHumon(self, t):
+        elif fmt.tolower() == 'binary':
+            genSerializerToHumon(self, t):
+
+
+def genSerializerToHumon(self, t):
     it = self.indent()
 
     src = f'''
-{it}std::ostream & operator <<(std::ostream & out, {t.name} const & obj);'''
+{it}std::ostream & operator <<(std::ostream & out, HumonFormat<{t.name}> const & obj);'''
     self._appendToSection(f'{t.name}|forwardDecls', src)
 
     src = f'''
-{it}{it}friend std::ostream & operator <<(std::ostream & out, {t.name} const & obj);'''
+{it}{it}friend std::ostream & operator <<(std::ostream & out, HumonFormat<{t.name}> const & obj);'''
     self._appendToSection(f'{t.name}|serializerDecl', src)
 
     src = f'''
 
-{it}std::ostream & operator <<(std::ostream & out, {t.name} const & obj)
+{it}std::ostream & operator <<(std::ostream & out, HumonFormat<{t.name}> const & obj)
 {it}{{
 {it}{it}out << '{{';'''
     for memberName, memberObj in t.members.items():
         typeDecl = self.makeNativeMemberType(memberObj.properties)
         if memberObj.properties['type'] == 'optional':
             src += f'''
-{it}{it}if (obj.{memberName}.has_value()) {{ out << " {memberName}: " << obj.{memberName}; }}'''
+{it}{it}if (obj.{memberName}.has_value()) {{ out << " HumonFormat({memberName}): " << obj.{memberName}; }}'''
         else:
             src += f'''
-{it}{it}out << " {memberName}: " << obj.{memberName};'''
+{it}{it}out << " {memberName}: " << HumonFormat(obj.{memberName});'''
     src += f'''
 {it}{it}out << '}}';
 {it}{it}return out;

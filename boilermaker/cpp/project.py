@@ -9,6 +9,8 @@ class Project(BaseProject):
     from . import gen_global
     from . import gen_types
     from . import gen_containers
+    from . import gen_containersSerializeToHumon
+    from . import gen_containersSerializeToBinary
     from . import gen_diffs
 
     def __init__(self, defsData):
@@ -16,6 +18,7 @@ class Project(BaseProject):
         self.includes = {}
         self.sections = {}
         self.includeDiffTypes = {}
+        self.serializerFormatWrappers = {}
         self.containersSerializerTypes = {}
         self.containersVariantTypeNames = {}
 
@@ -126,7 +129,6 @@ class Project(BaseProject):
                         self.writeFile(kind, kindInfo)
                 else:
                     self.writeFile(kind, kindInfo)
-
 
 
     def writeFile(self, kind, kindInfo, typeName = None):
