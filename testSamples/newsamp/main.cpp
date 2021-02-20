@@ -33,7 +33,7 @@ int testEnums()
 
 int testWut(string_view dir)
 {
-    string path = string(dir) + string("/newsamp/wut.hu");
+    string path = string(dir) + string("/testSamples/newsamp/wut.hu");
     cout << "path = " << path << '\n';
     auto res = hu::Trove::fromFile(path);
     if (auto t = get_if<hu::Trove>(&res))

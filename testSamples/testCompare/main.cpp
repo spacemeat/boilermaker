@@ -1,9 +1,21 @@
 #include <iostream>
+#include <string>
 #include "gen-cpp/inc/testCompare.hpp"
+#include <unistd.h>
+
+
+std::string get_current_dir()
+{
+   char buff[FILENAME_MAX];
+   getcwd(buff, FILENAME_MAX);
+   return std::string(buff);
+}
+
 
 int test()
 {
-    auto desRes = hu::Trove::fromFile("testCompare/testCompare0.hu");
+    std::string path = std::string(get_current_dir()) + std::string("/testSamples/testCompare/testCompare0.hu");
+    auto desRes = hu::Trove::fromFile(path);
     if (auto error = std::get_if<hu::ErrorCode>(& desRes))
     {
         std::cerr << "Error loading the token stream testCompare0.hu: " << to_string(* error) << "\n";
@@ -15,7 +27,8 @@ int test()
     auto node = trove0 / "testRoot";
     auto t0 = node % hu::val<testCompare::testRoot>{};    
 
-    desRes = hu::Trove::fromFile("testCompare/testCompare1.hu");
+    path = std::string(get_current_dir()) + std::string("/testSamples/testCompare/testCompare1.hu");
+    desRes = hu::Trove::fromFile(path);
     if (auto error = std::get_if<hu::ErrorCode>(& desRes))
     {
         std::cerr << "Error loading the token stream testCompare1.hu: " << to_string(* error) << "\n";
