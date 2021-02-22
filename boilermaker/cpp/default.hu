@@ -248,10 +248,21 @@
                     pragma
                     headerTopComment
                     containersIncludes
+                    containersLocalIncludes
                     namespaceOpen
-                    isLessCode
-                    serializerFormatWrappers
+                    isLessDecl
                     containerSerializer_variantTypeNames
+                    serializerFormatWrappersDecl
+                    containerDeserializer_array
+                    containerDeserializer_pair
+                    containerDeserializer_tuple
+                    containerDeserializer_vector
+                    containerDeserializer_set
+                    containerDeserializer_unordered_set
+                    containerDeserializer_map
+                    containerDeserializer_unordered_map
+                    containerDeserializer_optional
+                    containerDeserializer_variant
                     containerSerializer_array
                     containerSerializer_pair
                     containerSerializer_tuple
@@ -262,6 +273,19 @@
                     containerSerializer_unordered_map
                     containerSerializer_optional
                     containerSerializer_variant
+                    namespaceClose
+                ]
+            }
+
+            containersSource: {
+                sourcePath: $<defsDir>/$<sourceDir>/$<containersSourceFile>
+                sections: [
+                    sourceComment
+                    containersSourceIncludes
+                    containersSourceLocalIncludes
+                    namespaceOpen
+                    isLessDef
+                    serializerFormatWrappersDef
                     namespaceClose
                 ]
             }

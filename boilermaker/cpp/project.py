@@ -52,7 +52,7 @@ class Project(BaseProject):
     
 
     def makeNative(self, bomaName, useNamespace=False):
-        if bomaName in ['size_t', 'string', 'string_view', 'array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
+        if bomaName in ['less', 'monostate', 'size_t', 'string', 'string_view', 'array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
             return 'std::' + bomaName
         elif useNamespace and bomaName in self.types:
             bomaName = f'{self.d("namespace")}::{bomaName}'
@@ -88,7 +88,7 @@ class Project(BaseProject):
         self.gen_enums.genDeserializers(self)
         self.gen_enums.genSerializers(self)
         self.gen_types.genAll(self)
-#        self.gen_containers.genAll(self)
+        self.gen_containers.genBuiltInSerializers(self)
 
         # we're doing globals last, since any other gen_ can add to includes.
         self.gen_global.genNamespaces(self)

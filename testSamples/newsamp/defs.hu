@@ -47,10 +47,10 @@
                                                 type: set
                                                 of: [ {
                                                         type: unordered_map
-                                                        of: [string_view, int]
+                                                        of: [int, couple]
                                                     }
                                                 ]
-                                                isLess: "return lhs.begin()->second < rhs.begin()->second;"
+                                                isLess: "return lhs.begin()->second.get_a() < rhs.begin()->second..get_a();"
                                             } {
                                                 type: unordered_set
                                                 of: string_view

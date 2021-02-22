@@ -133,10 +133,44 @@ def genSerializers(self, t, memo):
         not self.dIs('serializeToHumon')):
         return ''
 
+    fmts = self.d('serializeTo')
+    if (not fmts):
+        return
+    
     for _, memberObj in t.members.items():
         self.gen_containers._genSerializer(self, t, memberObj, memo)
 
 
+def genBuiltInSerializers(self):
+    self.gen_containers.genFormatSelector(self)
+
+    for fmt in self.d('serializeTo'):
+        if fmt.lower() == 'humon':
+            self.gen_containersSerializeToHumon.gen_builtIn(self)
+        if fmt.lower() == 'binary':
+            self.gen_containersSerializeToBinary.gen_builtIn(self)
+
+
+def genFormatSelector(self):
+    it = self.indent()
+    src = f'''
+
+{it}template <class T>
+{it}struct SerializedFormat
+{it}{{
+{it}{it}SerializedFormat({self.const('T')} & obj)
+{it}{it}: obj(obj)
+{it}{it}{{ }}
+
+{it}{it}T const & operator *() const
+{it}{it}{it}{{ return obj; }}
+
+{it}{it}T const * operator ->() const
+{it}{it}{it}{{ return & obj; }}
+
+{it}{it}{self.const('T')} & obj;
+{it}}};'''
+    self._appendToSection('serializerFormatWrappersDecl', src)
 
 
 def _genSerializer(self, t, m, memo):
@@ -154,40 +188,40 @@ def _genSerializer(self, t, m, memo):
         baseType = typeDict['type']
 
         if baseType == 'size_t':
-            self._addInclude(f'{t.name}|typeHeaderIncludes', '<cstddef>')
+            self._addInclude(f'containersIncludes', '<cstddef>')
         elif baseType == 'string':
-            self._addInclude(f'{t.name}|typeHeaderIncludes', '<string>')
+            self._addInclude(f'containersIncludes', '<string>')
         elif baseType == 'string_view':
-            self._addInclude(f'{t.name}|typeHeaderIncludes', '<string_view>')
+            self._addInclude(f'containersIncludes', '<string_view>')
         
         # #include the inl for a StructType
-        elif baseType in self.types:
-            self._addInclude(f'{t.name}|typeHeaderLocalIncludes', f'{baseType}|typeHeader')
+        #elif baseType in self.types:
+        #    self._addInclude(f'containersLocalIncludes', f'{baseType}|typeHeader')
 
         # go until we are at a leaf node (no 'of' subtypes)
         if baseType not in ['array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
             return ''
 
         if baseType == 'array':
-            self._addInclude(f'{t.name}|typeHeaderIncludes', '<array>')
+            self._addInclude(f'containersIncludes', '<array>')
         elif baseType == 'pair':
-            self._addInclude(f'{t.name}|typeHeaderIncludes', '<utility>')
+            self._addInclude(f'containersIncludes', '<utility>')
         elif baseType == 'tuple':
-            self._addInclude(f'{t.name}|typeHeaderIncludes', '<tuple>')
+            self._addInclude(f'containersIncludes', '<tuple>')
         elif baseType == 'vector':
-            self._addInclude(f'{t.name}|typeHeaderIncludes', '<vector>')
+            self._addInclude(f'containersIncludes', '<vector>')
         elif baseType == 'set':
-            self._addInclude(f'{t.name}|typeHeaderIncludes', '<set>')
+            self._addInclude(f'containersIncludes', '<set>')
         elif baseType == 'unordered_set':
-            self._addInclude(f'{t.name}|typeHeaderIncludes', '<unordered_set>')
+            self._addInclude(f'containersIncludes', '<unordered_set>')
         elif baseType == 'map':
-            self._addInclude(f'{t.name}|typeHeaderIncludes', '<map>')
+            self._addInclude(f'containersIncludes', '<map>')
         elif baseType == 'unordered_map':
-            self._addInclude(f'{t.name}|typeHeaderIncludes', '<unordered_map>')
+            self._addInclude(f'containersIncludes', '<unordered_map>')
         elif baseType == 'optional':
-            self._addInclude(f'{t.name}|typeHeaderIncludes', '<optional>')
+            self._addInclude(f'containersIncludes', '<optional>')
         elif baseType == 'variant':
-            self._addInclude(f'{t.name}|typeHeaderIncludes', '<variant>')
+            self._addInclude(f'containersIncludes', '<variant>')
 
         ofProps = typeDict.get('of')
         if ofProps:
@@ -209,94 +243,50 @@ def _genCsBody(self, typeDict):
     baseType = typeDict['type']
 
     for fmt in fmts:
-        if fmt.tolower() == 'humon':
+        if fmt.lower() == 'humon':
             if baseType == 'array':
-                self.gen_containers.genSerializerToHumon_array(self)
+                self.gen_containersSerializeToHumon.gen_array(self)
             elif baseType == 'pair':
-                self.gen_containers.genSerializerToHumon_pair(self)
+                self.gen_containersSerializeToHumon.gen_pair(self)
             elif baseType == 'tuple':
-                self.gen_containers.genSerializerToHumon_tuple(self)
+                self.gen_containersSerializeToHumon.gen_tuple(self)
             elif baseType == 'vector':
-                self.gen_containers.genSerializerToHumon_vector(self)
+                self.gen_containersSerializeToHumon.gen_vector(self)
             elif baseType == 'set':
-                self.gen_containers.genSerializerToHumon_set(self)
+                self.gen_containersSerializeToHumon.gen_set(self)
             elif baseType == 'unordered_set':
-                self.gen_containers.genSerializerToHumon_unordered_set(self)
+                self.gen_containersSerializeToHumon.gen_unordered_set(self)
             elif baseType == 'map':
-                self.gen_containers.genSerializerToHumon_map(self)
+                self.gen_containersSerializeToHumon.gen_map(self)
             elif baseType == 'unordered_map':
-                self.gen_containers.genSerializerToHumon_unordered_map(self)
+                self.gen_containersSerializeToHumon.gen_unordered_map(self)
             elif baseType == 'optional':
-                self.gen_containers.genSerializerToHumon_optional(self)
+                self.gen_containersSerializeToHumon.gen_optional(self)
             elif baseType == 'variant':
-                self.gen_containers.genSerializerToHumon_variant(self)
-                self.gen_containers.genVariantTypeNames(self, typeDict)
+                self.gen_containersSerializeToHumon.gen_variant(self)
+                self.gen_containersSerializeToHumon.genVariantTypeNames(self, typeDict)
 
-        elif fmt.tolower() == 'binary':
+        elif fmt.lower() == 'binary':
             if baseType == 'array':
-                self.gen_containers.genSerializerToBinary_array(self)
+                self.gen_containersSerializeToBinary.gen_array(self)
             elif baseType == 'pair':
-                self.gen_containers.genSerializerToBinary_pair(self)
+                self.gen_containersSerializeToBinary.gen_pair(self)
             elif baseType == 'tuple':
-                self.gen_containers.genSerializerToBinary_tuple(self)
+                self.gen_containersSerializeToBinary.gen_tuple(self)
             elif baseType == 'vector':
-                self.gen_containers.genSerializerToBinary_vector(self)
+                self.gen_containersSerializeToBinary.gen_vector(self)
             elif baseType == 'set':
-                self.gen_containers.genSerializerToBinary_set(self)
+                self.gen_containersSerializeToBinary.gen_set(self)
             elif baseType == 'unordered_set':
-                self.gen_containers.genSerializerToBinary_unordered_set(self)
+                self.gen_containersSerializeToBinary.gen_unordered_set(self)
             elif baseType == 'map':
-                self.gen_containers.genSerializerToBinary_map(self)
+                self.gen_containersSerializeToBinary.gen_map(self)
             elif baseType == 'unordered_map':
-                self.gen_containers.genSerializerToBinary_unordered_map(self)
+                self.gen_containersSerializeToBinary.gen_unordered_map(self)
             elif baseType == 'optional':
-                self.gen_containers.genSerializerToBinary_optional(self)
+                self.gen_containersSerializeToBinary.gen_optional(self)
             elif baseType == 'variant':
-                self.gen_containers.genSerializerToBinary_variant(self)
-
-
-def genVariantTypeNames(self, typeDict):
-    typeDecl = self.makeNativeSubtype(typeDict)
-    if typeDecl in self.containersVariantTypeNames:
-        return
-    
-    if len(self.containersVariantTypeNames) == 0:
-        self.gen_containers.genVariantTypeNamesTemplate(self)
-    
-    self.containersVariantTypeNames[typeDecl] = None
-
-    it = self.indent()
-
-    subTypes = []
-    for subDict in typeDict.get('of', []):
-        subType = subDict.get('alias')
-        if not subType:
-            subType = subDict['type']
-        subTypes.append(subType)
-
-    src = f'''
-
-{it}template <>
-{it}struct VariantTypeNames<{typeDecl}>
-{it}{{
-{it}{it}static constexpr char const * names[] = {{ {', '.join([f'"{st}"' for st in subTypes])} }};
-{it}{it}static constexpr std::size_t size = {len(subTypes)};
-{it}}};'''
-    self._appendToSection(f'containerSerializer_variantTypeNames', src)
-
-
-def genVariantTypeNamesTemplate(self):
-    it = self.indent()
-
-    src = f'''
-
-{it}template <class T>
-{it}struct VariantTypeNames
-{it}{{
-{it}{it}static constexpr char const * names[] = {{ }};
-{it}{it}static constexpr std::size_t size = 0;
-{it}}};'''
-    self._appendToSection(f'containerSerializer_variantTypeNames', src)
+                self.gen_containersSerializeToBinary.gen_variant(self)
 
 
 def genIsLessStructs(self, t):
@@ -323,15 +313,18 @@ def _genIsLessStruct(self, t, name, properties):
     if stype == 'set' or stype == 'map':
         subtypeDecl = self.makeNativeSubtype(properties['of'][0])
 
-    print (f'@@@@@@@ {name}: {subtypeDecl}: {lessCode}')
     src = f'''
 
 {it}struct IsLess_{name}
 {it}{{
-{it}{it}bool operator()({self.const(subtypeDecl)} & lhs, {self.const(subtypeDecl)} & rhs) const
-{it}{it}{{
-{it}{it}{it}{lessCode}
-{it}{it}}}
+{it}{it}bool operator()({self.const(subtypeDecl)} & lhs, {self.const(subtypeDecl)} & rhs) const;
 {it}}};'''
-    self._appendToSection('isLessCode', src)
+    self._appendToSection('isLessDecl', src)
 
+    src = f'''
+
+{it}bool IsLess_{name}::operator()({self.const(subtypeDecl)} & lhs, {self.const(subtypeDecl)} & rhs) const
+{it}{{
+{it}{it}{lessCode}
+{it}}}'''
+    self._appendToSection('isLessDef', src)

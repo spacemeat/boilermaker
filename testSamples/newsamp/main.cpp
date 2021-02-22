@@ -66,7 +66,7 @@ int testWut(string_view dir)
         {
             for (auto const & [k, v]: e)
             {
-                cout << "set->umap entry: " << k << ": " << v << '\n';
+                cout << "set->umap entry: " << k << ": " << HumonFormat(v) << '\n';
             }
         }
 
@@ -87,9 +87,28 @@ int testWut(string_view dir)
                 cout << "set->map entry: " << k << ": " << v << '\n';
             }
         }
+
+        return 0;
     }
 
-    return 0;
+    return 1;
+}
+
+int testPrintingWut(string_view dir)
+{
+    string path = string(dir) + string("/testSamples/newsamp/wut.hu");
+    cout << "path = " << path << '\n';
+    auto res = hu::Trove::fromFile(path);
+    if (auto t = get_if<hu::Trove>(&res))
+    {
+        auto whaa = t->root() / "whaa" % hu::val<txtToBin::wut> {};
+
+        cout << HumonFormat(whaa);
+
+        return 0;
+    }
+
+    return 1;
 }
 
 string get_current_dir()
@@ -114,5 +133,10 @@ int main(int argc, char ** argv)
     ret = testWut(path);
     if (ret)
         { return ret; }
+    
+    ret = testPrintingWut(path);
+    if (ret)
+        { return ret; }
+
     return 0;
 }

@@ -2,55 +2,42 @@ def gen_builtIn(self):
     self._addInclude('containersIncludes', '<iostream>')
     it = self.indent()
 
-    src = f'''
-
-{it}template <class T>
-{it}struct HumonFormat : public SerializedFormat<T>
-{it}{{
-{it}{it}HumonFormat(T const & t)
-{it}{it}: SerializedFormat<T>(t)
-{it}{it}{{ }}
-{it}}};
-
-{it}template <class T>
-{it}std::ostream & operator << (std::ostream & out, HumonFormat<T> const & obj)
-{it}{{
-{it}{it}out << * obj;
-
-{it}{it}return out;
-{it}}}'''
-    self._appendToSection('serializerFormatWrappersDecl', src)
-
 
 def gen_array(self):
-    if 'humon|array' in self.containersSerializerTypes:
+    if 'humon|array' in self.containersDeserializerTypes:
         return
-    self.containersSerializerTypes['humon|array'] = None
+    self.containersDeserializerTypes['humon|array'] = None
 
     it = self.indent()
 
     self._addInclude('containersIncludes', '<array>')
 
-    self._appendToSection('containerSerializer_array', f'''
+    self._appendToSection('containerDerializer_array', f'''
 
 {it}template <class T, unsigned long N>
-{it}std::ostream & operator << (std::ostream & out, HumonFormat<std::array<T, N>> const & obj)
+{it}struct hu::val<std::array<T, N>> const & obj)
 {it}{{
-{it}{it}out << "[ ";
-{it}{it}for (std::size_t i = 0; i < N; ++i)
+{it}{it}static inline std::array<T, N> extract(hu::Node const & node)
 {it}{it}{{
-{it}{it}{it}out << HumonFormat( (* obj)[i] ) << " ";
+{it}{it}{it}auto maker = [&node]<std::size_t... Seq>(std::index_sequence<Seq...>)
+{it}{it}{it}{{
+{it}{it}{it}{it}return std::array<T, N> {{ node / Seq % hu::val<T>...}};
+{it}{it}{it}}};
+
+{it}{it}{it}return maker(std::make_index_sequence<N> {{}});
 {it}{it}}}
 {it}{it}out << "]";
 
 {it}{it}return out;
 {it}}}''')
 
+# Just did: awesome array thing
+#  Next: pair, etc.
 
 def gen_pair(self):
-    if 'humon|pair' in self.containersSerializerTypes:
+    if 'humon|pair' in self.containersDeserializerTypes:
         return
-    self.containersSerializerTypes['humon|pair'] = None
+    self.containersDeserializerTypes['humon|pair'] = None
 
     it = self.indent()
 
@@ -68,9 +55,9 @@ def gen_pair(self):
 
 
 def gen_tuple(self):
-    if 'humon|tuple' in self.containersSerializerTypes:
+    if 'humon|tuple' in self.containersDeserializerTypes:
         return
-    self.containersSerializerTypes['humon|tuple'] = None
+    self.containersDeserializerTypes['humon|tuple'] = None
 
     it = self.indent()
 
@@ -93,9 +80,9 @@ def gen_tuple(self):
 
 
 def gen_vector(self):
-    if 'humon|vector' in self.containersSerializerTypes:
+    if 'humon|vector' in self.containersDeserializerTypes:
         return
-    self.containersSerializerTypes['humon|vector'] = None
+    self.containersDeserializerTypes['humon|vector'] = None
 
     it = self.indent()
 
@@ -118,9 +105,9 @@ def gen_vector(self):
 
 
 def gen_set(self):
-    if 'humon|set' in self.containersSerializerTypes:
+    if 'humon|set' in self.containersDeserializerTypes:
         return
-    self.containersSerializerTypes['humon|set'] = None
+    self.containersDeserializerTypes['humon|set'] = None
 
     it = self.indent()
 
@@ -143,9 +130,9 @@ def gen_set(self):
 
 
 def gen_unordered_set(self):
-    if 'humon|unordered_set' in self.containersSerializerTypes:
+    if 'humon|unordered_set' in self.containersDeserializerTypes:
         return
-    self.containersSerializerTypes['humon|unordered_set'] = None
+    self.containersDeserializerTypes['humon|unordered_set'] = None
 
     it = self.indent()
 
@@ -168,9 +155,9 @@ def gen_unordered_set(self):
 
 
 def gen_map(self):
-    if 'humon|map' in self.containersSerializerTypes:
+    if 'humon|map' in self.containersDeserializerTypes:
         return
-    self.containersSerializerTypes['humon|map'] = None
+    self.containersDeserializerTypes['humon|map'] = None
 
     it = self.indent()
 
@@ -193,9 +180,9 @@ def gen_map(self):
 
 
 def gen_unordered_map(self):
-    if 'humon|unordered_map' in self.containersSerializerTypes:
+    if 'humon|unordered_map' in self.containersDeserializerTypes:
         return
-    self.containersSerializerTypes['humon|unordered_map'] = None
+    self.containersDeserializerTypes['humon|unordered_map'] = None
 
     it = self.indent()
 
@@ -218,9 +205,9 @@ def gen_unordered_map(self):
 
 
 def gen_optional(self):
-    if 'humon|optional' in self.containersSerializerTypes:
+    if 'humon|optional' in self.containersDeserializerTypes:
         return
-    self.containersSerializerTypes['humon|optional'] = None
+    self.containersDeserializerTypes['humon|optional'] = None
 
     it = self.indent()
 
@@ -241,9 +228,9 @@ def gen_optional(self):
 
 
 def gen_variant(self):
-    if 'humon|variant' in self.containersSerializerTypes:
+    if 'humon|variant' in self.containersDeserializerTypes:
         return
-    self.containersSerializerTypes['humon|variant'] = None
+    self.containersDeserializerTypes['humon|variant'] = None
 
     it = self.indent()
 

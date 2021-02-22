@@ -18,9 +18,9 @@
 
             [ 
                 [ @type: set
-                    { shap: 12 hunz: 13 squih: 14 }
-                    { boz: 6 tim: 7 plu: 8 }
-                    { ruv: 9 wurt: 10 mun: 11 }
+                    { 12: [shap success] 13: [hunz not_ready] 14: [squih timeout] }
+                    { 6: [boz event_set] 7: [tim event_reset] 8: [plu incomplete] }
+                    { 9: [ruv error_out_of_host_memory] 10: [wurt error_out_of_device_memory] 11: [mun error_initialization_failed] }
                 ]
                 [ @type: unordered_set
                     sv, s
