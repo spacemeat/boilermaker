@@ -192,6 +192,7 @@ def _genSerializerToBinary(self, enumName, enum):
     enumType = enumName.replace('.', '::')
 
     src = f'''
+    
 {it}template <class T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
 {it}std::ostream & operator <<(std::ostream & out, BinaryFormat<T> obj);'''
     self._appendToSection('enumSerializerDecls', src)
