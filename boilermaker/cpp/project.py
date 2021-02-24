@@ -1,7 +1,56 @@
 from pathlib import Path
 import os
+from .. import ansi
 from .. import utilities
 from ..project import Project as BaseProject
+
+
+class OutputFile:
+    def __init__(self, sourcePath, sourceKind, sections):
+        self.sourcePath = sourcePath
+        self.sourceKind = sourceKind    # one of ['header', 'inline', 'compiled']
+        self.sections = sections
+
+
+class OutputSection:
+    def __init__(self):
+        self.dependentTypes = {} 
+        '''
+        looks like:
+                { 'vector': ('forwardDecl', 'std::vector<T, A>') }
+            or:
+                { 'vector': ('include' '<vector>')}
+        '''
+        self.includes = {}
+        self.src = ''
+
+    def forwardDeclareType(self, baseType, decl):
+        self.dependentTypes.setDefault(baseType, ('forwardDecl', decl))
+
+    def includeForType(self, baseType, includeFile):
+        self.dependentTypes[baseType] = ('include', includeFile)
+    
+    def includeOutputFile(self, outputFile, inPlace=False):
+        path = outputFile
+        # TODO: path = relative path
+        self.includes[outputFile] = (path, inPlace)
+
+    def includeFile(self, path, inPlace=False):
+        self.includes[path] = (path, inPlace)
+
+    def setSrc(self, src):
+        self.src = src
+    
+    def setSrcIfEmpty(self, src):
+        if len(self.src) == 0:
+            self.src = src
+
+    def appendSrc(self, src):
+        self.src.append(src)
+
+    def hasDecl(self, baseType):
+        return baseType in self.dependentTypes
+    
 
 
 class Project(BaseProject):
@@ -13,8 +62,11 @@ class Project(BaseProject):
     from . import gen_containersSerializeToBinary
     from . import gen_diffs
 
+
     def __init__(self, defsData):
         super().__init__(defsData)
+        self.outputFiles = {}
+        self.outputSections = {}
         self.includes = {}
         self.sections = {}
         self.includeDiffTypes = {}
@@ -25,7 +77,7 @@ class Project(BaseProject):
         self.defsData['headerToInl'] = os.path.relpath(self.d('inlineDir'), self.d('headerDir'))
         self.defsData['srcToHeader'] = os.path.relpath(self.d('headerDir'), self.d('sourceDir'))
         self.defsData['srcToInl'] = os.path.relpath(self.d('inlineDir'), self.d('sourceDir'))
-    
+
 
     def const(self, type):
         coast = self.d('constCoast', 'west')
@@ -33,22 +85,6 @@ class Project(BaseProject):
             return f'const {type}'
         else:
             return f'{type} const'
-    
-
-    def _appendToSection(self, section, src):
-        if section not in self.sections:
-            self.sections[section] = src
-        else:
-            self.sections[section] += src
-    
-
-    def _addInclude(self, section, kindToInclude):
-        '''section is like 'enumDeserializers' or 'someType|typeInlineSourceLocalIncludes'.'''
-        '''kind is like 'containersInlineSource' or 'someType|typesSource'.'''
-        if section not in self.includes:
-            self.includes[section] = {kindToInclude: None}
-        else:
-            self.includes[section][kindToInclude] = None
     
 
     def makeNative(self, bomaName, useNamespace=False):
@@ -85,8 +121,9 @@ class Project(BaseProject):
     def generateCode(self):
         super().generateCode()
 
-        self.gen_enums.genDeserializers(self)
-        self.gen_enums.genSerializers(self)
+        self.makeOutputForm()
+
+        self.gen_enums.genAll(self)
         self.gen_types.genAll(self)
         self.gen_containers.genBuiltInSerializers(self)
 
@@ -94,10 +131,131 @@ class Project(BaseProject):
         self.gen_global.genNamespaces(self)
         self.gen_global.genPragma(self)
         self.gen_global.genTopComment(self)
-        self.gen_global.genIncludes(self)
+        self.gen_global.genDecls(self)
 
         self.writeCode()
 
+
+    def makeOutputForm(self):
+        defsOutput = self.defsData.get('output', {})
+        if not defsOutput or type(defsOutput) is not dict:
+            raise RuntimeError('defs/output must be a dict.')
+
+        outputForm = self.d('outputForm')
+        defsFiles = defsOutput.get(outputForm)
+        if not defsFiles or type(defsFiles) is not dict:
+            raise RuntimeError(f'defs/output/{outputForm} must be a dict.')
+
+        for defsFileName, defsFile in defsFiles.items():
+            defsSourcePath = defsFile.get('sourcePath')
+            if not defsSourcePath or type(defsSourcePath) is not str:
+                raise RuntimeError(f'defs/output/{outputForm}/{defsFileName}/sourcePath must be a string.')
+
+            defsSourceKind = defsFile.get('sourceKind')
+            if not defsSourceKind or type(defsSourceKind) is not str:
+                raise RuntimeError(f'defs/output/{outputForm}/{defsFileName}/defsSourceKind must be a string.')
+
+            defsSections = defsFile.get('sections')
+            if not defsSections or type(defsSections) is not list:
+                raise RuntimeError(f'defs/output/{outputForm}/{defsFileName}/sections must be a list.')
+
+            if '$<type>' in defsFileName:
+                for typeName in self.types.keys():
+                    defsFileName = self.replaceStringArgs(defsFileName, {'type:', typeName})
+                    sourcePath = self.replaceStringArgs(defsSourcePath, {'type:', typeName})
+                    sourceKind = self.replaceStringArgs(defsSourceKind, {'type:', typeName})
+                    sections = [self.replaceStringArgs(sec, {'type:', typeName}) for sec in defsSections]
+
+                    self.outputFiles[defsFileName] = OutputFile(sourcePath, sourceKind, sections)
+                    for section in sections:
+                        self.outputSections[section] = OutputSection()
+            else:
+                defsFileName = self.replaceStringArgs(defsFileName)
+                sourcePath = self.replaceStringArgs(defsSourcePath)
+                sourceKind = self.replaceStringArgs(defsSourceKind)
+                sections = [self.replaceStringArgs(sec) for sec in defsSections]
+
+                self.outputFiles[defsFileName] = OutputFile(sourcePath, sourceKind, sections)
+                for section in sections:
+                    self.outputSections[section] = OutputSection()
+
+
+    def _appendToSection(self, section, src):
+        if section not in self.sections:
+            self.sections[section] = src
+        else:
+            self.sections[section] += src
+
+
+    def _addInclude(self, section, kindToInclude):
+        '''section is like 'enumDeserializers' or 'someType|typeInlineSourceLocalIncludes'.'''
+        '''kind is like 'containersInlineSource' or 'someType|typesSource'.'''
+        if section not in self.includes:
+            self.includes[section] = {kindToInclude: None}
+        else:
+            self.includes[section][kindToInclude] = None
+
+
+    def validateSection(self, section):
+        if section in self.outputSections:
+            return True
+        else:
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}Section "{section}" has no output in outputForm "{self.d("outputForm")}."')
+            return False
+
+
+    def validateOutputFile(self, outputFile):
+        if outputFile in self.outputFiles:
+            return True
+        else:
+            print (f'{ansi.lt_yellow_fg}Warning: {ansi.all_off}"{outputFile}" is not a file in defs/output/"{self.d("outputForm")}."')
+            return False
+
+
+    def setSrc(self, section, src):
+        section = self.replaceStringArgs(section)
+        if self.validateSection(section):
+            self.outputSections[section].setSrc(src)
+
+
+    def setSrcIfEmpty(self, section, src):
+        section = self.replaceStringArgs(section)
+        if self.validateSection(section):
+            self.outputSections[section].setSrcIfEmpty(src)
+
+
+    def appendSrc(self, section, src):
+        section = self.replaceStringArgs(section)
+        if self.validateSection(section):
+            self.outputSections[section].appendSrc(src)
+
+
+    def forwardDeclareType(self, section, baseType, decl):
+        '''baseType looks like 'vector'. decl looks like 'template <class T, class A> class std::vector<T, A>;'''
+        section = self.replaceStringArgs(section)
+        if self.validateSection(section):
+            self.outputSections[section].forwardDeclareType(baseType, decl)
+
+    
+    def includeForType(self, section, baseType, includeFile):
+        '''baseType looks like 'vector'. includeFile looks like '#include <vector>'''
+        section = self.replaceStringArgs(section)
+        if self.validateSection(section):
+            self.outputSections[section].includeForType(baseType, includeFile)
+    
+    
+    def includeOutputFile(self, section, outputFile, inPlace=False):
+        section = self.replaceStringArgs(section)
+        outputFile = self.replaceStringArgs(outputFile)
+        if self.validateSection(section):
+            self.outputSections[section].includeOutputFile(outputFile, inPlace)
+    
+
+    def includeFile(self, section, path, inPlace=False):
+        section = self.replaceStringArgs(section)
+        if self.validateSection(section):
+            self.outputSections[section].includeFile(path, inPlace)
+    
 
     def removeAllFiles(self, direc):
         d = Path(self.d('defsDir'), direc)
@@ -108,6 +266,28 @@ class Project(BaseProject):
 
 
     def writeCode(self):
+        '''By now, all the sections have their includes and forward decls resolved into src.'''
+
+        # clean any files in the target directories
+        self.removeAllFiles(self.d('headerDir'))
+        self.removeAllFiles(self.d('inlineDir'))
+        self.removeAllFiles(self.d('sourceDir'))
+
+        for outputFileName, outputFile in self.outputFiles.items():
+            self.writeFile(outputFile)
+    
+
+    def writeFile(self, outputFile):
+        path = Path(self.replaceStringArgs(outputFile.sourcePath))
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(path, 'wt') as f:
+            for sectionName in outputFile.sections:
+                section = self.outputSections.get(sectionName)
+                f.write(section.src)
+
+
+    def writeCodeOld(self):
         # clean any files in the target directories
         self.removeAllFiles(self.d('headerDir'))
         self.removeAllFiles(self.d('inlineDir'))
@@ -120,8 +300,8 @@ class Project(BaseProject):
                 continue
 
             for kind, kindInfo in kinds.items():
-                if (kind == 'typeHeader' or
-                    kind == 'typeSource'):
+                if ('typeHeader' in kind or
+                    'typeSource' in kind):
                     for typeName, typeObj in self.types.items():
                         self.writeFile(kind, kindInfo, typeName)
                 elif kind == 'diffsHeader':
@@ -131,7 +311,7 @@ class Project(BaseProject):
                     self.writeFile(kind, kindInfo)
 
 
-    def writeFile(self, kind, kindInfo, typeName = None):
+    def writeFileOld(self, kind, kindInfo, typeName = None):
         # path will have $<> replacements done.
         path = self._getPath(kind, kindInfo, typeName)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -139,7 +319,7 @@ class Project(BaseProject):
         with open(path, 'wt') as f:
             for section in kindInfo.get('sections', []):
                 # replace $<type> in section names
-                section = self.replaceArgs(section, {'type': typeName})
+                section = self.replaceStringArgs(section, {'type': typeName})
 
                 includeKinds = self.includes.get(section)
                 if includeKinds:
@@ -174,9 +354,9 @@ class Project(BaseProject):
             raise RuntimeError(f'Bad value for {kind}/sourcePath: {sourcePath}')
 
         # we do this twice to resolve an arg replaced with a more different arg
-        sourcePath = self.replaceArgs(sourcePath)
+        sourcePath = self.replaceStringArgs(sourcePath)
 
         repl = None if not typeName else { 'type': typeName }
-        sourcePath = self.replaceArgs(sourcePath, repl)
+        sourcePath = self.replaceStringArgs(sourcePath, repl)
 
         return Path(sourcePath)

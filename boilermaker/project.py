@@ -19,7 +19,7 @@ class Project:
         self.makeTypes()
     
 
-    def replaceArgs(self, val, replacements=None):
+    def replaceStringArgs(self, val, replacements=None):
         if not replacements:
             replacements = self.defsData
 
@@ -28,17 +28,36 @@ class Project:
                 return replacements[key]
             else:
                 return self.defsData.get(key, f'!{key}!')
-        return re.sub(defArgumentReg, lambda m: replace(m.group(1)), val)
+
+        # run this until val stops changing; handles nested $<>
+        while True:
+            newVal = re.sub(defArgumentReg, lambda m: replace(m.group(1)), val)
+            if newVal != val:
+                val = newVal
+            else:
+                return newVal
     
+
+    def replaceObjectArgs(self, val, replacements=None):
+        if not replacements:
+            replacements = self.defsData
+
+        if type(val) is str:
+            return self.replaceStringArgs(val, replacements)
+
+        elif type(val) is list:
+            return [self.replaceObjectArgs(ch, replacements) for ch in val]
+
+        elif type(val) is dict:
+            return {self.replaceStringArgs(k, replacements): self.replaceObjectArgs(v, replacements) for k, v in val.items()}
+
 
     def d(self, key, replacements=None):
         if not replacements:
             replacements = self.defsData
 
         val = self.defsData.get(key)
-        if type(val) is str:
-            val = self.replaceArgs(val, replacements)
-        return val
+        return self.replaceObjectArgs(val)
 
     
     def dIs(self, key):

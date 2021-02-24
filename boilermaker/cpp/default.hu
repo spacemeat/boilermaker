@@ -10,6 +10,13 @@
     outputForm:     headerOnly  // or compiled
     cavepersonCtrs: false
 
+    mainHeaderTopComment: ^^
+/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
+    Do not bother modifying this file, as your build process will overwrite
+    your changes.
+
+    #include this header in your project to use boilermaker-generated code.*/
+^^
     headerTopComment: ^^
 /*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
     Do not bother modifying this file, as your build process will overwrite
@@ -56,10 +63,11 @@
         }
     }
 
-    headerDir:              gen-cpp/inc/boma
-    inlineDir:              gen-cpp/inc/boma/inl
-    sourceDir:              gen-cpp/src/boma
+    headerDir:              $<defsDir>/gen-cpp/inc/boma
+    inlineDir:              $<defsDir>/gen-cpp/inc/boma/inl
+    sourceDir:              $<defsDir>/gen-cpp/src/boma
     mainHeaderFile:         $<namespace>.hpp
+    commonHeaderFile:       common.hpp
     diffsHeaderFile:        diffs.hpp
     enumHeaderFile:         enums.hpp
     enumInlineFile:         enums.inl.hpp
@@ -186,9 +194,9 @@
 
         compiled: {           // outputForm
             mainHeader: {       // kind
-                sourcePath: $<defsDir>/$<headerDir>/$<mainHeaderFile>
-                sections:
-                [
+                sourcePath: $<headerDir>/$<mainHeaderFile>
+                sourceKind: header
+                sections: [
                     pragma          // section
                     mainHeaderTopComment
                     mainHeaderIncludes
@@ -197,8 +205,21 @@
                 ]
             }
 
+            commonHeader: {
+                sourcePath: $<headerDir>/$<commonHeaderFile>
+                sourceKind: header
+                sections: [
+                    pragma
+                    commonHeaderIncludes
+                    isLessDecl
+                    containerSerializer_variantTypeNames
+                    serializerFormatWrappersDecl
+                ]
+            }
+
             diffsHeader: {
-                sourcePath: $<defsDir>/$<headerDir>/$<diffsHeaderFile>
+                sourcePath: $<headerDir>/$<diffsHeaderFile>
+                sourceKind: header
                 sections: [
                     pragma
                     headerTopComment
@@ -218,13 +239,14 @@
             }
 
             enumHeader: {
-                sourcePath: $<defsDir>/$<headerDir>/$<enumHeaderFile>
+                sourcePath: $<enumHeaderFile>
+                sourceKind: header
                 sections: [
                     pragma
                     headerTopComment
                     enumHeaderIncludes
                     enumHeaderForwardDecls
-                    enumDeserializerDefs
+                    enumDeserializerDecls
                     namespaceOpen
                     enumSerializerDecls
                     namespaceClose
@@ -232,10 +254,12 @@
             }
 
             enumSource: {
-                sourcePath: $<defsDir>/$<sourceDir>/$<enumSourceFile>
+                sourcePath: $<sourceDir>/$<enumSourceFile>
+                sourceKind: compiled
                 sections: [
                     sourceTopComment
                     enumSourceIncludes
+                    enumDeserializerDefs
                     namespaceOpen
                     enumSerializerDefs
                     namespaceClose
@@ -243,16 +267,14 @@
             }
 
             containersHeader: {
-                sourcePath: $<defsDir>/$<headerDir>/$<containersHeaderFile>
+                sourcePath: $<headerDir>/$<containersHeaderFile>
+                sourceKind: header
                 sections: [
                     pragma
                     headerTopComment
                     containersIncludes
                     containersLocalIncludes
                     namespaceOpen
-                    isLessDecl
-                    containerSerializer_variantTypeNames
-                    serializerFormatWrappersDecl
                     containerDeserializer_array
                     containerDeserializer_pair
                     containerDeserializer_tuple
@@ -278,7 +300,8 @@
             }
 
             containersSource: {
-                sourcePath: $<defsDir>/$<sourceDir>/$<containersSourceFile>
+                sourcePath: $<sourceDir>/$<containersSourceFile>
+                sourceKind: compiled
                 sections: [
                     sourceComment
                     containersSourceIncludes
@@ -290,8 +313,9 @@
                 ]
             }
 
-            typeHeader: {
-                sourcePath: $<defsDir>/$<headerDir>/$<typeHeaderFile>
+            $<type>|typeHeader: {
+                sourcePath: $<headerDir>/$<typeHeaderFile>
+                sourceKind: header
                 sections: [
                     pragma
                     headerTopComment
@@ -332,8 +356,9 @@
                 ]
             }
 
-            typeSource: {
-                sourcePath: $<defsDir>/$<sourceDir>/$<typeSourceFile>
+            $<type>|typeSource: {
+                sourcePath: $<sourceDir>/$<typeSourceFile>
+                sourceKind: compiled
                 sections: [
                     sourceTopComment
                     $<type>|typeSourceIncludes

@@ -255,11 +255,15 @@ def gen_variant(self):
 {it}template <class... Ts>
 {it}struct hu::val<std::variant<Ts...> const & obj)
 {it}{{
+{it}{it}// This checks if the type string matches a particular one in the defs.
 {it}{it}template <std::size_t I>
-{it}{it}static inline bool schecker(std::string_view tokStr, char ** names, std::optional<std::variant<Ts...>> & obj, hu::Node const & node)
+{it}{it}static inline bool schecker(std::string_view tokStr, std::optional<std::variant<Ts...>> & obj, hu::Node const & node)
 {it}{it}{{
+{it}{it}{it}// This holds the type names / aliases for each of the variant types.
+{it}{it}{it}auto names = VariantTypeNames<std::variant<Ts...>>::names;
 {it}{it}{it}if (obj.has_value() == false && tokStr == names[I]) 
 {it}{it}{it}{{
+{it}{it}{it}{it}// now we can make the correct variant and give it the node as a ctr arg
 {it}{it}{it}{it}obj = std::variant<Ts...> {{ std::in_place_index<I>, node }};
 {it}{it}    }}
 {it}{it}    return true;
@@ -271,61 +275,21 @@ def gen_variant(self):
 {it}{it}{it}if (! tok)
 {it}{it}{it}{it}{{ return {{ }}; }}
 {it}{it}{it}auto tokStr = tok.str();
-{it}{it}{it}auto names = VariantTypeNames<std::variant<Ts...>>::names;
 
 {it}{it}{it}auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
+{it}{it}{it}{it}// cycle through each type; when we find one we like, set the 
+{it}{it}{it}{it}// optional to the correct type.
 {it}{it}{it}{it}std::optional<std::variant<Ts...>> v;
-{it}{it}{it}{it}auto foo = {{ schecker<Seq>(tokStr, names, v, node)... }};
-{it}{it}{it}{it}return *v;
+{it}{it}{it}{it}// foo is not used; we're relying on ordered initialization
+{it}{it}{it}{it}// to set the optional, but the initialization has to init
+{it}{it}{it}{it}// something. :)
+{it}{it}{it}{it}auto foo = {{ schecker<Seq>(tokStr, v, node)... }};
+{it}{it}{it}{it}// whatever schecker found should be in v. Woe betide you if it is not.
+{it}{it}{it}{it}return * v;
 {it}{it}{it}}};
+
+{it}{it}{it}// We make a sequence of type indices for compile-time tomfoolery.
 {it}{it}{it}return maker(std::make_index_sequence<sizeof...(Ts)> {{ }});
 {it}{it}}}
 {it}}}''')
-
-
-
-
-
-def genVariantTypeNames(self, typeDict):
-    typeDecl = self.makeNativeSubtype(typeDict)
-    if typeDecl in self.containersVariantTypeNames:
-        return
-    
-    if len(self.containersVariantTypeNames) == 0:
-        self.gen_containersSerializeToHumon.genVariantTypeNamesTemplate(self)
-    
-    self.containersVariantTypeNames[typeDecl] = None
-
-    it = self.indent()
-
-    subTypes = []
-    for subDict in typeDict.get('of', []):
-        subType = subDict.get('alias')
-        if not subType:
-            subType = subDict['type']
-        subTypes.append(subType)
-
-    src = f'''
-
-{it}template <>
-{it}struct VariantTypeNames<{typeDecl}>
-{it}{{
-{it}{it}static constexpr char const * names[] = {{ {', '.join([f'"{st}"' for st in subTypes])} }};
-{it}{it}static constexpr std::size_t size = {len(subTypes)};
-{it}}};'''
-    self._appendToSection(f'containerDeserializer_variantTypeNames', src)
-
-
-def genVariantTypeNamesTemplate(self):
-    it = self.indent()
-
-    src = f'''
-
-{it}template <class T>
-{it}struct VariantTypeNames
-{it}{{
-{it}{it}static constexpr char const * names[] = {{ }};
-{it}{it}static constexpr std::size_t size = 0;
-{it}}};'''
-    self._appendToSection(f'containerDeserializer_variantTypeNames', src)

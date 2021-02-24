@@ -1,15 +1,20 @@
+def genAll(self):
+    self.includeOutputFile('mainHeaderIncludes', 'commonHeader')
+
+
 def genPragma(self):
     src = f'#pragma once\n'
-    self._appendToSection('pragma', src)
+    self.setSrc('pragma', src)
 
 
 def genTopComment(self):
-    self._appendToSection('mainHeaderTopComment', self.d('headerTopComment'))
-    self._appendToSection('inlineTopComment', self.d('inlineTopComment'))
-    self._appendToSection('sourceTopComment', self.d('sourceTopComment'))
+    self.setSrc('mainHeaderTopComment', self.d('mainHeaderTopComment'))
+    self.setSrc('headerTopComment', self.d('headerTopComment'))
+    self.setSrc('inlineTopComment', self.d('inlineTopComment'))
+    self.setSrc('sourceTopComment', self.d('sourceTopComment'))
 
 
-def genIncludes(self):
+def genDecls(self):
     return
     for kind, includes in self.includes.items():
         outputForm, kind = kind.split('.', 1)
@@ -27,21 +32,21 @@ def genNamespaces(self):
 
 namespace {self.d('namespace')}
 {{'''
-    self._appendToSection('namespaceOpen', src)
+    self.setSrc('namespaceOpen', src)
 
     src = f'''
     
 namespace std
 {{'''
-    self._appendToSection('namespaceStdOpen', src)
+    self.setSrc('namespaceStdOpen', src)
 
     src = f'''
     
 namespace hu
 {{'''
-    self._appendToSection('namespaceHuOpen', src)
+    self.setSrc('namespaceHuOpen', src)
 
     src = f'''
 }}
 '''
-    self._appendToSection('namespaceClose', src)
+    self.setSrc('namespaceClose', src)

@@ -1,44 +1,73 @@
-def genDeserializers(self):
-    if (not self.dIs('computeEnums') or
-        not self.dIs('deserializeFromHumon')):
-        return ''
+def genAll(self):
+    if not self.dIs('computeEnums'):
+        return
 
-    self._addInclude('mainHeaderIncludes', 'enumHeader')
+    self.includeOutputFile('mainHeaderIncludes', 'enumHeader')
+    # for header-only projects, enumHeader has a section for getting inline src.
+    self.includeOutputFile('enumHeaderIncludeInline', 'enumSource', inPlace=True)
+    # for compiled project, link cpp to hpp
+    self.includeOutputFile('enumSourceIncludes', 'enumHeader')
+
+    self.gen_enums.addEnumSourceIncludes(self)
+    self.gen_enums.genDeserializers(self)
+    self.gen_enums.genSerializers(self)
+
+
+def addEnumSourceIncludes(self):
     for enumName, enum in self.everyEnum():
-        self.gen_enums._genDeserializer(self, enumName, enum)
+        # include things found in the enums block.
+        for includeFile in enum.enumsObject.sources:
+            if includeFile.startswith('<') and includeFile.endswith('>'):
+                self.includeFile('enumHeaderIncludes', includeFile)
+            else:
+                self.includeFile('enumHeaderIncludes', f'"{includeFile}"')
 
 
-def _genDeserializer(self, enumName, enum):
+def genDeserializers(self):
+    fmts = self.d('deserializeFrom')
+    if not fmts:
+        return
+
+    for fmt in fmts:
+        if fmt.lower() == 'humon':
+            for enumName, enum in self.everyEnum():
+                self.gen_enums.genDeserializeFromHumon(self, enumName, enum)
+
+        elif fmt.lower() == 'binary':
+            for enumName, enum in self.everyEnum():
+                self.gen_enums.genDeserializeFromBinary(self, enumName, enum)
+
+
+def genDeserializeFromHumon(self, enumName, enum):
     it = self.indent()
-
-    self._addInclude('enumHeaderIncludes', '<humon/humon.hpp>')
-    self.gen_enums._addEnumSourceIncludes(self, enum)
-
-    enumType = self.makeNative(enumName)
+    enumDecl = self.makeNative(enumName)
 
     # write inline bits
+    self.forwardDeclareType('enumDeserializerDecls', 'hu::Node', 'class ::hu::Node;')
+
     src = f'''
 
 {it}template <>
-{it}struct hu::val<{enumType}>
+{it}struct hu::val<{enumDecl}>
 {it}{{
-{it}{it}static inline {enumType} extract(hu::Node node) noexcept;
+{it}{it}static inline {enumDecl} extract({self.const("hu::Node")} & node) noexcept;
 {it}}};'''
-    self._appendToSection('enumDeserializerDecls', src)
+    self.appendSrc('enumDeserializerDecls', src)
 
     # write source bits
 
-    self._addInclude('enumHeaderIncludes', '<cstring>')
+    self.includeForType('enumDeserializerDefs', 'hu::Node', '#include <humon/humon.hpp>')
+    self.includeFile('enumDeserializerDefs', '<cstring>')
     src = f'''
 
 template <>
-struct hu::val<{enumType}>
+struct hu::val<{enumDecl}>
 {{
-{it}static inline {enumType} extract(hu::Node node) noexcept
+{it}static inline {enumDecl} extract({self.const("hu::Node")} & node) noexcept
 {it}{{'''
     if enum.flags:
         src += f'''
-{it}{it}using enumIntType = std::underlying_type<{enumType}>::type;
+{it}{it}using enumIntType = std::underlying_type<{enumDecl}>::type;
 {it}{it}enumIntType e = 0;
 {it}{it}bool fromList = node.kind() == hu::NodeKind::list;
 {it}{it}if (fromList)
@@ -71,7 +100,7 @@ struct hu::val<{enumType}>
         src += f'''
 {it}{it}{it}node = node.nextSibling();
 {it}{it}}}
-{it}{it}return static_cast<{enumType}>(e);'''
+{it}{it}return static_cast<{enumDecl}>(e);'''
     else:
         src += f'''
 {it}{it}return {{}};'''
@@ -80,49 +109,49 @@ struct hu::val<{enumType}>
     src += f'''
 {it}}}
 }};'''
-    self._appendToSection('enumDeserializerDefs', src)
+    self.appendSrc('enumDeserializerDefs', src)
+
+
+def genDeserializeFromBinary(self, enumName, enum):
+    pass
 
 
 def genSerializers(self):
-    if (not self.dIs('computeEnums') or
-        not self.d('serializeTo')):
-        return
-
     fmts = self.d('serializeTo')
     if (not fmts):
         return
 
-    self._addInclude('mainHeaderIncludes', 'enumHeader')
-    self._addInclude('enumSourceIncludes', '<iostream>')
-    self._addInclude('enumHeaderIncludes', 'containersHeader')
-    self._addInclude('enumSourceIncludes', 'enumHeader')
+    self.includeOutputFile('enumHeaderIncludes', 'commonHeader')
 
     for fmt in fmts:
         if fmt.lower() == 'humon':
             for enumName, enum in self.everyEnum():
-                self.gen_enums._genSerializerToHumon(self, enumName, enum)
+                self.gen_enums.genSerializerToHumon(self, enumName, enum)
         elif fmt.lower() == 'binary':
             for enumName, enum in self.everyEnum():
-                self.gen_enums._genSerializerToBinary(self, enumName, enum)
+                self.gen_enums.genSerializerToBinary(self, enumName, enum)
 
 
-def _genSerializerToHumon(self, enumName, enum):
+def genSerializerToHumon(self, enumName, enum):
     it = self.indent()
-    enumType = enumName.replace('.', '::')
-
-    self.gen_enums._addEnumSourceIncludes(self, enum)
+    enumDecl = self.makeNative(enumName)
 
     # defs
+    self.forwardDeclareType('enumSerializerDecls', 'class std::ostream;')
+
     src = f'''
-{it}std::ostream & operator <<(std::ostream & out, {self.const(f'HumonFormat<{enumType}>')} & obj);'''
-    self._appendToSection('enumSerializerDecls', src)
+{it}std::ostream & operator <<(std::ostream & out, {self.const(f'HumonFormat<{enumDecl}>')} & obj);'''
+    self.appendSrc('enumSerializerDecls', src)
 
     # decls
+
+    self.includeForType('enumSerializerDefs', '#include <iostream>')
+
     src = f'''
 
-{it}std::ostream & operator <<(std::ostream & out, {self.const(f'HumonFormat<{enumType}>')} & obj)
+{it}std::ostream & operator <<(std::ostream & out, {self.const(f'HumonFormat<{enumDecl}>')} & obj)
 {it}{{
-{it}{it}using enumIntType = std::underlying_type<{enumType}>::type;'''
+{it}{it}using enumIntType = std::underlying_type<{enumDecl}>::type;'''
     if enum.flags:
         src += f'''
 {it}{it}enumIntType bits = static_cast<enumIntType>(* obj);
@@ -138,7 +167,7 @@ def _genSerializerToHumon(self, enumName, enum):
         seenVals.add(numericValue)
 
         # TODO: is this always correct? no
-        prefix = enumType
+        prefix = enumDecl
         if not enum.isScoped:
             scopePos = prefix.rfind('::')
             if scopePos >= 0:
@@ -172,39 +201,36 @@ def _genSerializerToHumon(self, enumName, enum):
 {it}{it}return out;
 {it}}}'''
 
-    self._appendToSection('enumSerializerDefs', src)
+    self.appendSrc('enumSerializerDefs', src)
 
 
-def _addEnumSourceIncludes(self, enum):
-    # include things found in the enums block.
-    for includeFile in enum.enumsObject.sources:
-        if includeFile.startswith('<') and includeFile.endswith('>'):
-            self._addInclude('enumHeaderIncludes', includeFile)
-        else:
-            self._addInclude('enumHeaderIncludes', f'"{includeFile}"')
-
-    # for header-only projects, enumHeader has a section for getting inline src.
-    self._addInclude('enumHeaderIncludeInline', 'enumSource')
-
-
-def _genSerializerToBinary(self, enumName, enum):
+def genSerializerToBinary(self, enumName, enum):
     it = self.indent()
-    enumType = enumName.replace('.', '::')
+    enumDecl = self.makeNative(enumName)
+
+    #decl
+
+    self.includeFile('enumSerializerDecls', "<type_traits>")
+    self.forwardDeclareType('enumSerializerDecls', 'class std::ostream;')
 
     src = f'''
     
 {it}template <class T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
 {it}std::ostream & operator <<(std::ostream & out, BinaryFormat<T> obj);'''
-    self._appendToSection('enumSerializerDecls', src)
+    self.appendSrc('enumSerializerDecls', src)
+
+    #def
+
+    self.includeForType('enumSerializerDefs', '#include <iostream>')
 
     src = f'''
 
 {it}template <class T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
 {it}std::ostream & operator <<(std::ostream & out, BinaryFormat<T> obj)
 {it}{{
-{it}{it}using enumIntType = std::underlying_type<{enumType}>::type;
+{it}{it}using enumIntType = std::underlying_type<{enumDecl}>::type;
 {it}{it}out << BinaryFormat(static_cast<enumIntType>(* obj));
 
 {it}{it}return out;
 {it}}}'''
-    self._appendToSection('enumSerializerDefs', src)
+    self.appendSrc('enumSerializerDefs', src)
