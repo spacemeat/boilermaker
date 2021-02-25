@@ -5,38 +5,93 @@ from .. import utilities
 from ..project import Project as BaseProject
 
 
+class DependentTypeDecl:
+    def __init__(self, declKind, decl):
+        self.declKind = declKind
+        self.decl = decl
+
+    def __str__(self):
+        dc = ansi.dk_blue_fg
+        lc = ansi.lt_blue_fg
+        return f'''{lc}{self.declKind}{dc} = {lc}{self.decl}{ansi.all_off}'''
+
+
+class IncludeDecl:
+    def __init__(self, isOutputFile, includeText, inPlace=False):
+        self.isOutputFile = isOutputFile
+        self.includeText = includeText
+        self.inPlace = inPlace
+
+    def __str__(self):
+        dc = ansi.dk_blue_fg
+        lc = ansi.lt_blue_fg
+        txt = f'''{dc}local {lc}{self.isOutputFile}{dc} = {lc}{self.includeText}'''
+        if self.inPlace:
+            txt += f'''{lc}(in place){ansi.all_off}'''
+        return txt
+
+
 class OutputFile:
     def __init__(self, sourcePath, sourceKind, sections):
         self.sourcePath = sourcePath
         self.sourceKind = sourceKind    # one of ['header', 'inline', 'compiled']
         self.sections = sections
+        self.dependentTypeDecls = {}    # these are filled in by gen_global.gen_typeDecls()
+        self.includes = {}              # these are filled in by gen_global.gen_typeDecls()
+        self.forwardDecls = {}          # these are filled in by gen_global.gen_typeDecls()
+    
+    def __str__(self):
+        dc = ansi.dk_magenta_fg
+        lc = ansi.lt_magenta_fg
+        db = ansi.dk_blue_fg
+        lb = ansi.lt_blue_fg
+        txt = f'''
+{dc}  File: {lc}{self.sourcePath}{dc}; kind: {lc}{self.sourceKind}{ansi.all_off}'''
+        for baseName, dtd in self.dependentTypeDecls.items():
+            txt += f'''
+{db}    typeDecl: {str(dtd)}{ansi.all_off}'''
+        for decl, _ in self.includes.items():
+            txt += f'''
+{db}    include: {lb}{decl}{ansi.all_off}'''
+        for decl, _ in self.forwardDecls.items():
+            txt += f'''
+{db}    forwardDecl: {lb}{decl}{ansi.all_off}'''
+        return txt
 
 
 class OutputSection:
     def __init__(self):
-        self.dependentTypes = {} 
-        '''
-        looks like:
-                { 'vector': ('forwardDecl', 'std::vector<T, A>') }
-            or:
-                { 'vector': ('include' '<vector>')}
-        '''
+        self.dependentTypeDecls = {} 
         self.includes = {}
         self.src = ''
 
+    def __str__(self):
+        dc = ansi.dk_blue_fg
+        lc = ansi.lt_blue_fg
+        txt = ''
+        for baseName, dtd in self.dependentTypeDecls.items():
+            txt += f'''
+{dc}  typeDecl: {lc}{baseName}{dc}: {str(dtd)}{ansi.all_off}'''
+        for incName, inco in self.includes.items():
+            txt += f'''
+{dc}  includes: {lc}{incName}{dc}: {str(inco)}{ansi.all_off}'''
+        if len(txt) > 0:
+            txt += f'''
+{dc}  len: {lc}{len(txt)}{ansi.all_off}'''
+        return txt
+
+
     def forwardDeclareType(self, baseType, decl):
-        self.dependentTypes.setDefault(baseType, ('forwardDecl', decl))
+        self.dependentTypeDecls.setdefault(baseType, DependentTypeDecl('forwardDecl', decl))
 
     def includeForType(self, baseType, includeFile):
-        self.dependentTypes[baseType] = ('include', includeFile)
+        self.dependentTypeDecls[baseType] = DependentTypeDecl('include', includeFile)
     
     def includeOutputFile(self, outputFile, inPlace=False):
-        path = outputFile
-        # TODO: path = relative path
-        self.includes[outputFile] = (path, inPlace)
+        self.includes[outputFile] = IncludeDecl(True, outputFile, inPlace)
 
     def includeFile(self, path, inPlace=False):
-        self.includes[path] = (path, inPlace)
+        self.includes[path] = IncludeDecl(False, path, inPlace)
 
     def setSrc(self, src):
         self.src = src
@@ -46,11 +101,10 @@ class OutputSection:
             self.src = src
 
     def appendSrc(self, src):
-        self.src.append(src)
+        self.src += src
 
     def hasDecl(self, baseType):
-        return baseType in self.dependentTypes
-    
+        return baseType in self.dependentTypeDecls
 
 
 class Project(BaseProject):
@@ -119,21 +173,23 @@ class Project(BaseProject):
 
 
     def generateCode(self):
-        super().generateCode()
-
         self.makeOutputForm()
 
+        self.gen_global.genAll(self)
         self.gen_enums.genAll(self)
         self.gen_types.genAll(self)
         self.gen_containers.genBuiltInSerializers(self)
 
-        # we're doing globals last, since any other gen_ can add to includes.
-        self.gen_global.genNamespaces(self)
-        self.gen_global.genPragma(self)
-        self.gen_global.genTopComment(self)
-        self.gen_global.genDecls(self)
+        # we're doing includes last, since any other gen_ can add to includes and typedecls.
+        self.gen_global.genTypeDecls(self)
 
-        self.writeCode()
+
+    def reportOutputs(self):
+        self.generateCode()
+        dc = ansi.dk_white_fg
+        lc = ansi.lt_white_fg
+        [print(f'{dc}outputFile {lc}{oun}{dc}: {str(ouf)}') for oun, ouf in self.outputFiles.items()]
+        [print(f'{dc}outputSection: {lc}{oun}{dc}: {str(ous)}') for oun, ous in self.outputSections.items()]
 
 
     def makeOutputForm(self):
@@ -158,17 +214,19 @@ class Project(BaseProject):
             defsSections = defsFile.get('sections')
             if not defsSections or type(defsSections) is not list:
                 raise RuntimeError(f'defs/output/{outputForm}/{defsFileName}/sections must be a list.')
-
-            if '$<type>' in defsFileName:
+            
+            if defsFileName == '$<type>|typeHeader':
+                breakpoint()
+            if defsFileName.find('$<type>') >= 0:
                 for typeName in self.types.keys():
-                    defsFileName = self.replaceStringArgs(defsFileName, {'type:', typeName})
-                    sourcePath = self.replaceStringArgs(defsSourcePath, {'type:', typeName})
-                    sourceKind = self.replaceStringArgs(defsSourceKind, {'type:', typeName})
-                    sections = [self.replaceStringArgs(sec, {'type:', typeName}) for sec in defsSections]
+                    t_defsFileName = self.replaceStringArgs(defsFileName, {'type': typeName})
+                    t_sourcePath = self.replaceStringArgs(defsSourcePath, {'type': typeName})
+                    t_sourceKind = self.replaceStringArgs(defsSourceKind, {'type': typeName})
+                    t_sections = [self.replaceStringArgs(sec, {'type': typeName}) for sec in defsSections]
 
-                    self.outputFiles[defsFileName] = OutputFile(sourcePath, sourceKind, sections)
-                    for section in sections:
-                        self.outputSections[section] = OutputSection()
+                    self.outputFiles[t_defsFileName] = OutputFile(t_sourcePath, t_sourceKind, t_sections)
+                    for t_section in t_sections:
+                        self.outputSections[t_section] = OutputSection()
             else:
                 defsFileName = self.replaceStringArgs(defsFileName)
                 sourcePath = self.replaceStringArgs(defsSourcePath)
@@ -200,7 +258,7 @@ class Project(BaseProject):
         if section in self.outputSections:
             return True
         else:
-            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}Section "{section}" has no output in outputForm "{self.d("outputForm")}."')
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}Section "{section}" has no output in outputForm "{self.d("outputForm")}".')
             return False
 
 
@@ -208,7 +266,7 @@ class Project(BaseProject):
         if outputFile in self.outputFiles:
             return True
         else:
-            print (f'{ansi.lt_yellow_fg}Warning: {ansi.all_off}"{outputFile}" is not a file in defs/output/"{self.d("outputForm")}."')
+            print (f'{ansi.lt_yellow_fg}Warning: {ansi.all_off}"{outputFile}" is not a file in defs/output/"{self.d("outputForm")}".')
             return False
 
 
@@ -230,14 +288,14 @@ class Project(BaseProject):
             self.outputSections[section].appendSrc(src)
 
 
-    def forwardDeclareType(self, section, baseType, decl):
+    def forwardDeclareType(self, section, baseType, decl, inPlace=False):
         '''baseType looks like 'vector'. decl looks like 'template <class T, class A> class std::vector<T, A>;'''
         section = self.replaceStringArgs(section)
         if self.validateSection(section):
             self.outputSections[section].forwardDeclareType(baseType, decl)
 
     
-    def includeForType(self, section, baseType, includeFile):
+    def includeForType(self, section, baseType, includeFile, inPlace=False):
         '''baseType looks like 'vector'. includeFile looks like '#include <vector>'''
         section = self.replaceStringArgs(section)
         if self.validateSection(section):
@@ -267,6 +325,9 @@ class Project(BaseProject):
 
     def writeCode(self):
         '''By now, all the sections have their includes and forward decls resolved into src.'''
+        super().writeCode()
+
+        self.generateCode()
 
         # clean any files in the target directories
         self.removeAllFiles(self.d('headerDir'))
@@ -283,8 +344,20 @@ class Project(BaseProject):
 
         with open(path, 'wt') as f:
             for sectionName in outputFile.sections:
-                section = self.outputSections.get(sectionName)
-                f.write(section.src)
+                if sectionName == 'includes':
+                    for decl in outputFile.includes.keys():
+                        f.write(f'''
+{decl}''')
+                else:
+                    section = self.outputSections.get(sectionName)
+
+                    # drop in-place #includes here (rarely has any)
+                    for baseTypeName, dependentTypeDecl in section.dependentTypeDecls.items():
+                        if dependentTypeDecl.inPlace:
+                            f.write(f'''
+{dependentTypeDecl.decl}''')
+
+                    f.write(section.src)
 
 
     def writeCodeOld(self):
@@ -337,7 +410,7 @@ class Project(BaseProject):
                         else:
                             incKindInfo = self.defsData['output'][self.d('outputForm')][incKind]
                             incPath = self._getPath(incKind, incKindInfo, incType)
-                            relPath = Path(os.path.relpath(incPath.parent, path.parent), incPath.name)
+                            relPath = Path( os.path.relpath( incPath.parent, path.parent ), incPath.name )
                             relPath = f'"{relPath}"'
                         f.write(f'\n#include {relPath}')
 

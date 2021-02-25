@@ -2,11 +2,11 @@ def genAll(self):
     if not self.dIs('computeEnums'):
         return
 
-    self.includeOutputFile('mainHeaderIncludes', 'enumHeader')
+    self.includeOutputFile('mainHeader|includes', 'enumHeader')
     # for header-only projects, enumHeader has a section for getting inline src.
     self.includeOutputFile('enumHeaderIncludeInline', 'enumSource', inPlace=True)
     # for compiled project, link cpp to hpp
-    self.includeOutputFile('enumSourceIncludes', 'enumHeader')
+    self.includeOutputFile('enumSource|includes', 'enumHeader')
 
     self.gen_enums.addEnumSourceIncludes(self)
     self.gen_enums.genDeserializers(self)
@@ -18,9 +18,9 @@ def addEnumSourceIncludes(self):
         # include things found in the enums block.
         for includeFile in enum.enumsObject.sources:
             if includeFile.startswith('<') and includeFile.endswith('>'):
-                self.includeFile('enumHeaderIncludes', includeFile)
+                self.includeFile('enumHeader|includes', includeFile)
             else:
-                self.includeFile('enumHeaderIncludes', f'"{includeFile}"')
+                self.includeFile('enumHeader|includes', f'"{includeFile}"')
 
 
 def genDeserializers(self):
@@ -43,14 +43,14 @@ def genDeserializeFromHumon(self, enumName, enum):
     enumDecl = self.makeNative(enumName)
 
     # write inline bits
-    self.forwardDeclareType('enumDeserializerDecls', 'hu::Node', 'class ::hu::Node;')
+    self.forwardDeclareType('enumDeserializerDecls', 'Node', 'class ::hu::Node;')
 
     src = f'''
 
 {it}template <>
 {it}struct hu::val<{enumDecl}>
 {it}{{
-{it}{it}static inline {enumDecl} extract({self.const("hu::Node")} & node) noexcept;
+{it}{it}static inline {enumDecl} extract({self.const("Node")} & node) noexcept;
 {it}}};'''
     self.appendSrc('enumDeserializerDecls', src)
 
@@ -121,7 +121,7 @@ def genSerializers(self):
     if (not fmts):
         return
 
-    self.includeOutputFile('enumHeaderIncludes', 'commonHeader')
+    self.includeOutputFile('enumSerializerDecls', 'commonHeader')
 
     for fmt in fmts:
         if fmt.lower() == 'humon':
@@ -137,7 +137,7 @@ def genSerializerToHumon(self, enumName, enum):
     enumDecl = self.makeNative(enumName)
 
     # defs
-    self.forwardDeclareType('enumSerializerDecls', 'class std::ostream;')
+    self.forwardDeclareType('enumSerializerDecls', 'ostream', 'class std::ostream;')
 
     src = f'''
 {it}std::ostream & operator <<(std::ostream & out, {self.const(f'HumonFormat<{enumDecl}>')} & obj);'''
@@ -145,7 +145,7 @@ def genSerializerToHumon(self, enumName, enum):
 
     # decls
 
-    self.includeForType('enumSerializerDefs', '#include <iostream>')
+    self.includeForType('enumSerializerDefs', 'ostream', '#include <iostream>')
 
     src = f'''
 
@@ -211,7 +211,7 @@ def genSerializerToBinary(self, enumName, enum):
     #decl
 
     self.includeFile('enumSerializerDecls', "<type_traits>")
-    self.forwardDeclareType('enumSerializerDecls', 'class std::ostream;')
+    self.forwardDeclareType('enumSerializerDecls', 'ostream', 'class std::ostream;')
 
     src = f'''
     
@@ -221,7 +221,7 @@ def genSerializerToBinary(self, enumName, enum):
 
     #def
 
-    self.includeForType('enumSerializerDefs', '#include <iostream>')
+    self.includeForType('enumSerializerDefs', 'ostream', '#include <iostream>')
 
     src = f'''
 

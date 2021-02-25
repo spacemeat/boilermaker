@@ -156,9 +156,11 @@ def main():
             operations.append('reportEnums')
         elif sys.argv[i] == '-rt':
             operations.append('reportTypes')
+        elif sys.argv[i] == '-ro':
+            operations.append('reportOutputs')
 
-        elif sys.argv[i] == '-g':
-            operations.append('generateCode')
+        elif sys.argv[i] == '-w':
+            operations.append('writeCode')
 
         elif sys.argv[i] == '-C':
             color = False

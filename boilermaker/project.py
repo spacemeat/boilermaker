@@ -20,7 +20,9 @@ class Project:
     
 
     def replaceStringArgs(self, val, replacements=None):
-        if not replacements:
+        if replacements:
+            replacements = {**replacements, **self.defsData}
+        else:
             replacements = self.defsData
 
         def replace(key):
@@ -81,12 +83,14 @@ class Project:
 
         if op == 'reportDefs':
             self.reportDefs()
-        if op == 'reportEnums':
+        elif op == 'reportEnums':
             self.reportEnums()
-        if op == 'reportTypes':
+        elif op == 'reportTypes':
             self.reportTypes()
-        elif op == 'generateCode':
-            self.generateCode()
+        elif op == 'reportOutputs':
+            self.reportOutputs()
+        elif op == 'writeCode':
+            self.writeCode()
     
 
     def everyEnum(self):
@@ -135,5 +139,9 @@ class Project:
             print (t)
         
 
-    def generateCode(self):
+    def reportOutputs(self):
+        pass
+
+    
+    def writeCode(self):
         pass

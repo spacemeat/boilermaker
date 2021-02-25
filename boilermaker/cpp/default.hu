@@ -199,7 +199,7 @@
                 sections: [
                     pragma          // section
                     mainHeaderTopComment
-                    mainHeaderIncludes
+                    mainHeader|includes
                     bomaStreamClass
                     mainHeaderLocalIncludes
                 ]
@@ -210,7 +210,7 @@
                 sourceKind: header
                 sections: [
                     pragma
-                    commonHeaderIncludes
+                    commonHeader|includes
                     isLessDecl
                     containerSerializer_variantTypeNames
                     serializerFormatWrappersDecl
@@ -223,7 +223,7 @@
                 sections: [
                     pragma
                     headerTopComment
-                    diffsHeaderIncludes
+                    diffsHeader|includes
                     namespaceOpen
                     diffTemplateDecl
                     diffArray
@@ -239,12 +239,12 @@
             }
 
             enumHeader: {
-                sourcePath: $<enumHeaderFile>
+                sourcePath: $<headerDir>/$<enumHeaderFile>
                 sourceKind: header
                 sections: [
                     pragma
                     headerTopComment
-                    enumHeaderIncludes
+                    enumHeader|includes
                     enumHeaderForwardDecls
                     enumDeserializerDecls
                     namespaceOpen
@@ -258,7 +258,7 @@
                 sourceKind: compiled
                 sections: [
                     sourceTopComment
-                    enumSourceIncludes
+                    enumSource|includes
                     enumDeserializerDefs
                     namespaceOpen
                     enumSerializerDefs
@@ -272,7 +272,7 @@
                 sections: [
                     pragma
                     headerTopComment
-                    containersIncludes
+                    containersHeader|includes
                     containersLocalIncludes
                     namespaceOpen
                     containerDeserializer_array
@@ -304,8 +304,7 @@
                 sourceKind: compiled
                 sections: [
                     sourceComment
-                    containersSourceIncludes
-                    containersSourceLocalIncludes
+                    containersSource|includes
                     namespaceOpen
                     isLessDef
                     serializerFormatWrappersDef
@@ -319,8 +318,7 @@
                 sections: [
                     pragma
                     headerTopComment
-                    $<type>|typeHeaderIncludes
-                    $<type>|typeHeaderLocalIncludes
+                    $<type>|typeHeader|includes
                     allTypeForwardDecls
                     namespaceStdOpen
                     $<type>|stdForwardDecls
@@ -361,8 +359,7 @@
                 sourceKind: compiled
                 sections: [
                     sourceTopComment
-                    $<type>|typeSourceIncludes
-                    $<type>|typeSourceLocalIncludes
+                    $<type>|typeSource|includes
                     namespaceOpen
                     $<type>|containerDifferDef
                     $<type>|defaultCtrDef
