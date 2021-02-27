@@ -50,7 +50,7 @@
                                                         of: [int, couple]
                                                     }
                                                 ]
-                                                isLess: "return lhs.begin()->second.get_a() < rhs.begin()->second..get_a();"
+                                                isLess: "return lhs.begin()->second.get_a() < rhs.begin()->second.get_a();"
                                             } {
                                                 type: unordered_set
                                                 of: string_view
@@ -78,9 +78,9 @@
     
     variants: {
         txtToBin: {
-            headerDir: gen-cpp/txtToBin2/inc/boma
-            inlineDir: gen-cpp/txtToBin2/inc/boma/inl
-            sourceDir: gen-cpp/txtToBin2/src/boma
+            headerDir: $<baseDir>/gen-cpp/txtToBin2/inc/boma
+            inlineDir: $<baseDir>/gen-cpp/txtToBin2/inc/boma/inl
+            sourceDir: $<baseDir>/gen-cpp/txtToBin2/src/boma
 
             namespace: txtToBin
             outputForm: compiled

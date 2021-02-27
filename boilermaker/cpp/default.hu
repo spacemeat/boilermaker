@@ -11,6 +11,7 @@
     cavepersonCtrs: false
 
     mainHeaderTopComment: ^^
+
 /*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
     Do not bother modifying this file, as your build process will overwrite
     your changes.
@@ -18,27 +19,28 @@
     #include this header in your project to use boilermaker-generated code.*/
 ^^
     headerTopComment: ^^
+
 /*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
     Do not bother modifying this file, as your build process will overwrite
     your changes. */
 ^^
     inlineTopComment: ^^
+
 /*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
     Do not bother modifying this file, as your build process will overwrite
     your changes. */
 ^^
     sourceTopComment: ^^
+
 /*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
     Do not bother modifying this file, as your build process will overwrite
     your changes. */
 ^^
 
-    deserializeFromHumon: true   // requires movable
-    deserializeFromBinary: false
+    deserializeFrom: [humon]
     defaultConstructible: false
     memberwiseConstructible: false
     virtualDestructor: false
-    //nullVariant: default // or throw
     copyable: true
     movable: true
     getters: true
@@ -63,11 +65,12 @@
         }
     }
 
-    headerDir:              $<defsDir>/gen-cpp/inc/boma
-    inlineDir:              $<defsDir>/gen-cpp/inc/boma/inl
-    sourceDir:              $<defsDir>/gen-cpp/src/boma
+    headerDir:              $<baseDir>/gen-cpp/inc/boma
+    inlineDir:              $<baseDir>/gen-cpp/inc/boma/inl
+    sourceDir:              $<baseDir>/gen-cpp/src/boma
     mainHeaderFile:         $<namespace>.hpp
     commonHeaderFile:       common.hpp
+    commonSourceFile:       common.cpp
     diffsHeaderFile:        diffs.hpp
     enumHeaderFile:         enums.hpp
     enumInlineFile:         enums.inl.hpp
@@ -199,6 +202,7 @@
                 sections: [
                     pragma          // section
                     mainHeaderTopComment
+                    forwardDecls
                     mainHeader|includes
                     bomaStreamClass
                     mainHeaderLocalIncludes
@@ -210,10 +214,26 @@
                 sourceKind: header
                 sections: [
                     pragma
+                    headerTopComment
                     commonHeader|includes
+                    namespaceOpen
                     isLessDecl
                     containerSerializer_variantTypeNames
                     serializerFormatWrappersDecl
+                    namespaceClose
+                ]
+            }
+
+            commonSource: {
+                sourcePath: $<sourceDir>/$<commonSourceFile>
+                sourceKind: compiled
+                sections: [
+                    sourceTopComment
+                    commonSource|includes
+                    namespaceOpen
+                    isLessDef
+                    serializerFormatWrappersDef
+                    namespaceClose
                 ]
             }
 
@@ -274,7 +294,7 @@
                     headerTopComment
                     containersHeader|includes
                     containersLocalIncludes
-                    namespaceOpen
+                    namespaceHuOpen
                     containerDeserializer_array
                     containerDeserializer_pair
                     containerDeserializer_tuple
@@ -285,6 +305,8 @@
                     containerDeserializer_unordered_map
                     containerDeserializer_optional
                     containerDeserializer_variant
+                    namespaceClose
+                    namespaceOpen
                     containerSerializer_array
                     containerSerializer_pair
                     containerSerializer_tuple
@@ -306,7 +328,6 @@
                     sourceComment
                     containersSource|includes
                     namespaceOpen
-                    isLessDef
                     serializerFormatWrappersDef
                     namespaceClose
                 ]
@@ -319,10 +340,6 @@
                     pragma
                     headerTopComment
                     $<type>|typeHeader|includes
-                    allTypeForwardDecls
-                    namespaceStdOpen
-                    $<type>|stdForwardDecls
-                    namespaceClose
                     namespaceOpen
                     $<type>|containerDifferDecl
                     $<type>|forwardClassDecl
@@ -349,8 +366,10 @@
                     $<type>|typeSerializerDecls
                     $<type>|containerSerializerDecls
                     namespaceClose
+                    namespaceHuOpen
                     $<type>|typeDeserializerDef
                     $<type>|containerDeserializerDefs
+                    namespaceClose
                 ]
             }
 

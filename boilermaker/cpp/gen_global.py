@@ -98,7 +98,7 @@ def genTypeDecls(self):
         # convert dependentTypeDecls to forward decl source and includes
         for baseType, decl in outputFile.dependentTypeDecls.items():
             if decl.declKind == 'include':
-                outputFile.includes[decl] = None
+                outputFile.includes[decl.decl] = None
             else:
-                outputFile.forwardDecls[decl] = None
+                outputFile.forwardDecls[decl.decl] = None
 

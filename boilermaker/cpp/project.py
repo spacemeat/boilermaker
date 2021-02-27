@@ -114,11 +114,19 @@ class Project(BaseProject):
     from . import gen_containers
     from . import gen_containersSerializeToHumon
     from . import gen_containersSerializeToBinary
+    from . import gen_containersDeserializeFromHumon
     from . import gen_diffs
 
 
     def __init__(self, defsData):
         super().__init__(defsData)
+        self.reset()
+        self.defsData['headerToInl'] = os.path.relpath(self.d('inlineDir'), self.d('headerDir'))
+        self.defsData['srcToHeader'] = os.path.relpath(self.d('headerDir'), self.d('sourceDir'))
+        self.defsData['srcToInl'] = os.path.relpath(self.d('inlineDir'), self.d('sourceDir'))
+
+
+    def reset(self):
         self.outputFiles = {}
         self.outputSections = {}
         self.includes = {}
@@ -128,17 +136,13 @@ class Project(BaseProject):
         self.containersSerializerTypes = {}
         self.containersVariantTypeNames = {}
 
-        self.defsData['headerToInl'] = os.path.relpath(self.d('inlineDir'), self.d('headerDir'))
-        self.defsData['srcToHeader'] = os.path.relpath(self.d('headerDir'), self.d('sourceDir'))
-        self.defsData['srcToInl'] = os.path.relpath(self.d('inlineDir'), self.d('sourceDir'))
-
 
     def const(self, type):
         coast = self.d('constCoast', 'west')
         if coast == 'east':
-            return f'const {type}'
-        else:
             return f'{type} const'
+        else:
+            return f'const {type}'
     
 
     def makeNative(self, bomaName, useNamespace=False):
@@ -173,6 +177,7 @@ class Project(BaseProject):
 
 
     def generateCode(self):
+        self.reset()
         self.makeOutputForm()
 
         self.gen_global.genAll(self)
@@ -215,8 +220,6 @@ class Project(BaseProject):
             if not defsSections or type(defsSections) is not list:
                 raise RuntimeError(f'defs/output/{outputForm}/{defsFileName}/sections must be a list.')
             
-            if defsFileName == '$<type>|typeHeader':
-                breakpoint()
             if defsFileName.find('$<type>') >= 0:
                 for typeName in self.types.keys():
                     t_defsFileName = self.replaceStringArgs(defsFileName, {'type': typeName})
@@ -266,7 +269,7 @@ class Project(BaseProject):
         if outputFile in self.outputFiles:
             return True
         else:
-            print (f'{ansi.lt_yellow_fg}Warning: {ansi.all_off}"{outputFile}" is not a file in defs/output/"{self.d("outputForm")}".')
+            print (f'{ansi.lt_yellow_fg}Warning: {ansi.all_off}"{outputFile}" is not a file in outputForm "{self.d("outputForm")}".')
             return False
 
 
@@ -335,25 +338,34 @@ class Project(BaseProject):
         self.removeAllFiles(self.d('sourceDir'))
 
         for outputFileName, outputFile in self.outputFiles.items():
-            self.writeFile(outputFile)
+            self.writeFile(outputFileName, outputFile)
     
 
-    def writeFile(self, outputFile):
+    def writeFile(self, outputFileName, outputFile):
         path = Path(self.replaceStringArgs(outputFile.sourcePath))
         path.parent.mkdir(parents=True, exist_ok=True)
 
+        print (f'{ansi.dk_blue_fg}Writing {ansi.lt_yellow_fg}{path}{ansi.dk_blue_fg}...{ansi.all_off}')
+
         with open(path, 'wt') as f:
             for sectionName in outputFile.sections:
-                if sectionName == 'includes':
-                    for decl in outputFile.includes.keys():
-                        f.write(f'''
+                if sectionName == f'{outputFileName}|includes':
+                    if len(outputFile.includes) > 0:
+                        f.write('\n')
+                        for decl in outputFile.includes.keys():
+                            f.write(f'''
+{decl}''')
+                    if len(outputFile.forwardDecls) > 0:
+                        f.write('\n')
+                        for decl in outputFile.forwardDecls.keys():
+                            f.write(f'''
 {decl}''')
                 else:
                     section = self.outputSections.get(sectionName)
 
                     # drop in-place #includes here (rarely has any)
-                    for baseTypeName, dependentTypeDecl in section.dependentTypeDecls.items():
-                        if dependentTypeDecl.inPlace:
+                    for decl, include in section.includes.items():
+                        if include.inPlace:
                             f.write(f'''
 {dependentTypeDecl.decl}''')
 

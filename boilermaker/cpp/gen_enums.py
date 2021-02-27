@@ -137,7 +137,7 @@ def genSerializerToHumon(self, enumName, enum):
     enumDecl = self.makeNative(enumName)
 
     # defs
-    self.forwardDeclareType('enumSerializerDecls', 'ostream', 'class std::ostream;')
+    self.forwardDeclareType('enumSerializerDecls', 'ostream', f'namespace std {{ class ostream; }}')
 
     src = f'''
 {it}std::ostream & operator <<(std::ostream & out, {self.const(f'HumonFormat<{enumDecl}>')} & obj);'''

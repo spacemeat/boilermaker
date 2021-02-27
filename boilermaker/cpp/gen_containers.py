@@ -2,6 +2,7 @@ from .. import utilities
 from functools import reduce
 
 def genDeserializers(self, t, memo):
+    return
     if (not self.dIs('computeTypes') or
         not self.dIs('deserializeFromHumon')):
         return ''
@@ -13,6 +14,7 @@ def genDeserializers(self, t, memo):
 
 
 def _genDeserializer(self, t, m, memo):
+    return
     it = self.indent()
 
     def recurse(phase, memo, typeDict):
@@ -24,44 +26,6 @@ def _genDeserializer(self, t, m, memo):
         else:
             return ''
 
-        baseType = typeDict['type']
-
-        if baseType == 'size_t':
-            self._addInclude(f'containersIncludes', '<cstddef>')
-        elif baseType == 'string':
-            self._addInclude(f'containersIncludes', '<string>')
-        elif baseType == 'string_view':
-            self._addInclude(f'containersIncludes', '<string_view>')
-        
-        # #include the inl for a StructType
-        #elif baseType in self.types:
-        #    self._addInclude(f'containersLocalIncludes', f'{baseType}|typeHeader')
-
-        # go until we are at a leaf node (no 'of' subtypes)
-        if baseType not in ['array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
-            return ''
-
-        if baseType == 'array':
-            self._addInclude(f'containersIncludes', '<array>')
-        elif baseType == 'pair':
-            self._addInclude(f'containersIncludes', '<utility>')
-        elif baseType == 'tuple':
-            self._addInclude(f'containersIncludes', '<tuple>')
-        elif baseType == 'vector':
-            self._addInclude(f'containersIncludes', '<vector>')
-        elif baseType == 'set':
-            self._addInclude(f'containersIncludes', '<set>')
-        elif baseType == 'unordered_set':
-            self._addInclude(f'containersIncludes', '<unordered_set>')
-        elif baseType == 'map':
-            self._addInclude(f'containersIncludes', '<map>')
-        elif baseType == 'unordered_map':
-            self._addInclude(f'containersIncludes', '<unordered_map>')
-        elif baseType == 'optional':
-            self._addInclude(f'containersIncludes', '<optional>')
-        elif baseType == 'variant':
-            self._addInclude(f'containersIncludes', '<variant>')
-
         ofProps = typeDict.get('of')
         if ofProps:
             for prop in utilities.listify(ofProps):
@@ -72,63 +36,6 @@ def _genDeserializer(self, t, m, memo):
         return
     
     src = recurse('classDef', memo, m.properties)
-
-
-def _genDsBody(self, typeDict):
-    fmts = self.d('deserializeFrom')
-    if (not fmts):
-        return
-
-    baseType = typeDict['type']
-
-    for fmt in fmts:
-        if fmt.lower() == 'humon':
-            if baseType == 'array':
-                self.gen_containersDeserializeFromHumon.gen_array(self)
-            elif baseType == 'pair':
-                self.gen_containersDeserializeFromHumon.gen_pair(self)
-            elif baseType == 'tuple':
-                self.gen_containersDeserializeFromHumon.gen_tuple(self)
-            elif baseType == 'vector':
-                self.gen_containersDeserializeFromHumon.gen_vector(self)
-            elif baseType == 'set':
-                self.gen_containersDeserializeFromHumon.gen_set(self)
-            elif baseType == 'unordered_set':
-                self.gen_containersDeserializeFromHumon.gen_unordered_set(self)
-            elif baseType == 'map':
-                self.gen_containersDeserializeFromHumon.gen_map(self)
-            elif baseType == 'unordered_map':
-                self.gen_containersDeserializeFromHumon.gen_unordered_map(self)
-            elif baseType == 'optional':
-                self.gen_containersDeserializeFromHumon.gen_optional(self)
-            elif baseType == 'variant':
-                self.gen_containersDeserializeFromHumon.gen_variant(self)
-                # TODO: Move this to gen_containers since deser and ser both need it
-                #self.gen_containersDeserializeFromHumon.genVariantTypeNames(self, typeDict)
-
-        elif fmt.lower() == 'binary':
-            if baseType == 'array':
-                self.gen_containersDeserializeFromBinary.gen_array(self)
-            elif baseType == 'pair':
-                self.gen_containersDeserializeFromBinary.gen_pair(self)
-            elif baseType == 'tuple':
-                self.gen_containersDeserializeFromBinary.gen_tuple(self)
-            elif baseType == 'vector':
-                self.gen_containersDeserializeFromBinary.gen_vector(self)
-            elif baseType == 'set':
-                self.gen_containersDeserializeFromBinary.gen_set(self)
-            elif baseType == 'unordered_set':
-                self.gen_containersDeserializeFromBinary.gen_unordered_set(self)
-            elif baseType == 'map':
-                self.gen_containersDeserializeFromBinary.gen_map(self)
-            elif baseType == 'unordered_map':
-                self.gen_containersDeserializeFromBinary.gen_unordered_map(self)
-            elif baseType == 'optional':
-                self.gen_containersDeserializeFromBinary.gen_optional(self)
-            elif baseType == 'variant':
-                self.gen_containersDeserializeFromBinary.gen_variant(self)
-
-
 
 
 def _genDeserializer_OLD(self, t, mProps, memo):
@@ -248,10 +155,6 @@ struct hu::val<{declType}>
 
 
 def genSerializers(self, t, memo):
-    if (not self.dIs('computeTypes') or
-        not self.dIs('serializeToHumon')):
-        return ''
-
     fmts = self.d('serializeTo')
     if (not fmts):
         return
@@ -270,7 +173,7 @@ def genBuiltInSerializers(self):
             self.gen_containersSerializeToBinary.gen_builtIn(self)
 
 
-def genFormatSelector(self):
+def genFormatSelector_OLD(self):
     it = self.indent()
     src = f'''
 
@@ -406,44 +309,3 @@ def _genCsBody(self, typeDict):
                 self.gen_containersSerializeToBinary.gen_optional(self)
             elif baseType == 'variant':
                 self.gen_containersSerializeToBinary.gen_variant(self)
-
-
-def genIsLessStructs(self, t):
-    def visit(properties):
-        name = properties['fullName']
-
-        for ofo in properties.get('of', []):
-            visit(ofo)
-
-        lessCode = properties.get('isLess')
-        if lessCode:
-            self.gen_containers._genIsLessStruct(self, t, name, properties)
-
-
-    for memberName, m in t.members.items():
-        visit(m.properties)
-
-
-def _genIsLessStruct(self, t, name, properties):
-    it = self.indent()
-    lessCode = properties.get('isLess')
-    subtypeDecl = ''
-    stype = properties.get('type')
-    if stype == 'set' or stype == 'map':
-        subtypeDecl = self.makeNativeSubtype(properties['of'][0])
-
-    src = f'''
-
-{it}struct IsLess_{name}
-{it}{{
-{it}{it}bool operator()({self.const(subtypeDecl)} & lhs, {self.const(subtypeDecl)} & rhs) const;
-{it}}};'''
-    self._appendToSection('isLessDecl', src)
-
-    src = f'''
-
-{it}bool IsLess_{name}::operator()({self.const(subtypeDecl)} & lhs, {self.const(subtypeDecl)} & rhs) const
-{it}{{
-{it}{it}{lessCode}
-{it}}}'''
-    self._appendToSection('isLessDef', src)

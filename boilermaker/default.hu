@@ -2,4 +2,5 @@
 {
     namespace: boma
     indent: { type: space, num: 4 }
+    baseDir: $<defsDir>
 }
