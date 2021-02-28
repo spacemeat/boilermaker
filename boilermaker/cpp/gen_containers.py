@@ -1,7 +1,7 @@
 from .. import utilities
 from functools import reduce
 
-def genDeserializers(self, t, memo):
+def genDeserializers_OLD(self, t, memo):
     return
     if (not self.dIs('computeTypes') or
         not self.dIs('deserializeFromHumon')):
@@ -13,7 +13,7 @@ def genDeserializers(self, t, memo):
         src = self.gen_containers._genDeserializer(self, t, memberObj, memo)
 
 
-def _genDeserializer(self, t, m, memo):
+def _genDeserializer_OLD(self, t, m, memo):
     return
     it = self.indent()
 
@@ -38,7 +38,7 @@ def _genDeserializer(self, t, m, memo):
     src = recurse('classDef', memo, m.properties)
 
 
-def _genDeserializer_OLD(self, t, mProps, memo):
+def _genDeserializer_OLD_OLD(self, t, mProps, memo):
     it = self.indent()
     endl = '\n'
     src = ''
@@ -154,7 +154,7 @@ struct hu::val<{declType}>
         self._appendToSection(f'{t.name}|containerDeserializerDefs', src)
 
 
-def genSerializers(self, t, memo):
+def genSerializers_OLD(self, t, memo):
     fmts = self.d('serializeTo')
     if (not fmts):
         return
@@ -163,7 +163,7 @@ def genSerializers(self, t, memo):
         self.gen_containers._genSerializer(self, t, memberObj, memo)
 
 
-def genBuiltInSerializers(self):
+def genBuiltInSerializers_OLD(self):
     self.gen_containers.genFormatSelector(self)
 
     for fmt in self.d('serializeTo'):
@@ -195,7 +195,7 @@ def genFormatSelector_OLD(self):
     self._appendToSection('serializerFormatWrappersDecl', src)
 
 
-def _genSerializer(self, t, m, memo):
+def _genSerializer_OLD(self, t, m, memo):
     it = self.indent()
 
     def recurse(phase, memo, typeDict):
@@ -257,7 +257,7 @@ def _genSerializer(self, t, m, memo):
     src = recurse('classDef', memo, m.properties)
 
 
-def _genCsBody(self, typeDict):
+def _genCsBody_OLD(self, typeDict):
     fmts = self.d('serializeTo')
     if (not fmts):
         return

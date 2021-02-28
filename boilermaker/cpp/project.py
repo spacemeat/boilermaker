@@ -112,9 +112,10 @@ class Project(BaseProject):
     from . import gen_global
     from . import gen_types
     from . import gen_containers
+    from . import gen_containersDeserializeFromHumon
+    from . import gen_containersDeserializeFromBinary
     from . import gen_containersSerializeToHumon
     from . import gen_containersSerializeToBinary
-    from . import gen_containersDeserializeFromHumon
     from . import gen_diffs
 
 
@@ -134,6 +135,7 @@ class Project(BaseProject):
         self.includeDiffTypes = {}
         self.serializerFormatWrappers = {}
         self.containersSerializerTypes = {}
+        self.containersDeserializerTypes = {}
         self.containersVariantTypeNames = {}
 
 
@@ -183,7 +185,7 @@ class Project(BaseProject):
         self.gen_global.genAll(self)
         self.gen_enums.genAll(self)
         self.gen_types.genAll(self)
-        self.gen_containers.genBuiltInSerializers(self)
+        #self.gen_containers.genBuiltInSerializers(self)
 
         # we're doing includes last, since any other gen_ can add to includes and typedecls.
         self.gen_global.genTypeDecls(self)

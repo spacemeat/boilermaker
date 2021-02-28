@@ -37,7 +37,7 @@
     your changes. */
 ^^
 
-    deserializeFrom: [humon]
+    deserializeFrom: [humon, binary]
     defaultConstructible: false
     memberwiseConstructible: false
     virtualDestructor: false
@@ -218,8 +218,21 @@
                     commonHeader|includes
                     namespaceOpen
                     isLessDecl
-                    containerSerializer_variantTypeNames
+                    variantTypeNames
+                    
+                    deserializerFormatWrapperBase
+                    deserializerFormatWrappersDecl                    
+                    namespaceClose
+                    namespaceHuOpen
+                    humon|deserializersDecl
+                    namespaceClose
+                    namespaceOpen
+                    binary|deserializersDecl
+
+                    serializerFormatWrapperBase
                     serializerFormatWrappersDecl
+                    humon|serializersDecl
+                    binary|serializersDecl
                     namespaceClose
                 ]
             }
@@ -232,7 +245,13 @@
                     commonSource|includes
                     namespaceOpen
                     isLessDef
+                    namespaceClose
+                    namespaceHuOpen
+                    deserializersDef
+                    namespaceClose
+                    namespaceOpen
                     serializerFormatWrappersDef
+                    serializersDef
                     namespaceClose
                 ]
             }
@@ -286,53 +305,6 @@
                 ]
             }
 
-            containersHeader: {
-                sourcePath: $<headerDir>/$<containersHeaderFile>
-                sourceKind: header
-                sections: [
-                    pragma
-                    headerTopComment
-                    containersHeader|includes
-                    containersLocalIncludes
-                    namespaceHuOpen
-                    containerDeserializer_array
-                    containerDeserializer_pair
-                    containerDeserializer_tuple
-                    containerDeserializer_vector
-                    containerDeserializer_set
-                    containerDeserializer_unordered_set
-                    containerDeserializer_map
-                    containerDeserializer_unordered_map
-                    containerDeserializer_optional
-                    containerDeserializer_variant
-                    namespaceClose
-                    namespaceOpen
-                    containerSerializer_array
-                    containerSerializer_pair
-                    containerSerializer_tuple
-                    containerSerializer_vector
-                    containerSerializer_set
-                    containerSerializer_unordered_set
-                    containerSerializer_map
-                    containerSerializer_unordered_map
-                    containerSerializer_optional
-                    containerSerializer_variant
-                    namespaceClose
-                ]
-            }
-
-            containersSource: {
-                sourcePath: $<sourceDir>/$<containersSourceFile>
-                sourceKind: compiled
-                sections: [
-                    sourceComment
-                    containersSource|includes
-                    namespaceOpen
-                    serializerFormatWrappersDef
-                    namespaceClose
-                ]
-            }
-
             $<type>|typeHeader: {
                 sourcePath: $<headerDir>/$<typeHeaderFile>
                 sourceKind: header
@@ -350,6 +322,7 @@
                     $<type>|defaultCtrDecl
                     $<type>|memberwiseCtrDecl
                     $<type>|humonCtrDecl
+                    $<type>|binaryCtrDecl
                     $<type>|copyCtrDecl
                     $<type>|moveCtrDecl
                     $<type>|copyAssignDecl
@@ -384,6 +357,7 @@
                     $<type>|defaultCtrDef
                     $<type>|memberwiseCtrDef
                     $<type>|humonCtrDef
+                    $<type>|binaryCtrDef
                     $<type>|copyCtrDef
                     $<type>|moveCtrDef
                     $<type>|copyAssignDef

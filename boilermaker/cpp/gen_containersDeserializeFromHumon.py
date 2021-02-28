@@ -1,19 +1,18 @@
 def gen_builtIn(self):
-    #self._addInclude('containersIncludes', '<iostream>')
     pass
 
 
 def gen_array(self):
-    #if 'humon|array' in self.containersDeserializerTypes:
-    #    return
-    #self.containersDeserializerTypes['humon|array'] = None
+    if 'humon|array' in self.containersDeserializerTypes:
+        return
+    self.containersDeserializerTypes['humon|array'] = None
 
     it = self.indent()
 
-    self.forwardDeclareType('containerDeserializer_array', 'array', '#include <array>')
-    self.includeForType('containerDeserializer_array', 'Node', '#include <humon/humon.hpp>')
+    self.includeForType('humon|deserializersDecl', 'array', '#include <array>')
+    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
 
-    self.setSrcIfEmpty('containerDeserializer_array', f'''
+    self.appendSrc('humon|deserializersDecl', f'''
 
 {it}template <class T, unsigned long N>
 {it}struct val<std::array<T, N>>
@@ -31,16 +30,16 @@ def gen_array(self):
 
 
 def gen_pair(self):
-    #if 'humon|pair' in self.containersDeserializerTypes:
-    #    return
-    #self.containersDeserializerTypes['humon|pair'] = None
+    if 'humon|pair' in self.containersDeserializerTypes:
+        return
+    self.containersDeserializerTypes['humon|pair'] = None
 
     it = self.indent()
 
-    self.forwardDeclareType('containerDeserializer_pair', 'pair', '#include <utility>')
-    self.includeForType('containerDeserializer_pair', 'Node', '#include <humon/humon.hpp>')
+    self.includeForType('humon|deserializersDecl', 'pair', '#include <utility>')
+    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
 
-    self.setSrcIfEmpty('containerDeserializer_pair', f'''
+    self.appendSrc('humon|deserializersDecl', f'''
 
 {it}template <class T0, class T1>
 {it}struct val<std::pair<T0, T1>>
@@ -56,16 +55,16 @@ def gen_pair(self):
 
 
 def gen_tuple(self):
-    #if 'humon|tuple' in self.containersDeserializerTypes:
-    #    return
-    #self.containersDeserializerTypes['humon|tuple'] = None
+    if 'humon|tuple' in self.containersDeserializerTypes:
+        return
+    self.containersDeserializerTypes['humon|tuple'] = None
 
     it = self.indent()
 
-    self.forwardDeclareType('containerDeserializer_tuple', 'tuple', '#include <tuple>')
-    self.includeForType('containerDeserializer_tuple', 'Node', '#include <humon/humon.hpp>')
+    self.includeForType('humon|deserializersDecl', 'tuple', '#include <tuple>')
+    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
 
-    self.setSrcIfEmpty('containerDeserializer_tuple', f'''
+    self.appendSrc('humon|deserializersDecl', f'''
 
 {it}template <class... Ts>
 {it}struct val<std::tuple<Ts...>>
@@ -83,16 +82,16 @@ def gen_tuple(self):
 
 
 def gen_vector(self):
-    #if 'humon|vector' in self.containersDeserializerTypes:
-    #    return
-    #self.containersDeserializerTypes['humon|vector'] = None
+    if 'humon|vector' in self.containersDeserializerTypes:
+        return
+    self.containersDeserializerTypes['humon|vector'] = None
 
     it = self.indent()
 
-    self.forwardDeclareType('containerDeserializer_vector', 'vector', '#include <vector>')
-    self.includeForType('containerDeserializer_vector', 'Node', '#include <humon/humon.hpp>')
+    self.includeForType('humon|deserializersDecl', 'vector', '#include <vector>')
+    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
 
-    self.setSrcIfEmpty('containerDeserializer_vector', f'''
+    self.appendSrc('humon|deserializersDecl', f'''
 
 {it}template <class T, class A>
 {it}struct val<std::vector<T, A>>
@@ -110,16 +109,16 @@ def gen_vector(self):
 
 
 def gen_set(self):
-    #if 'humon|set' in self.containersDeserializerTypes:
-    #    return
-    #self.containersDeserializerTypes['humon|set'] = None
+    if 'humon|set' in self.containersDeserializerTypes:
+        return
+    self.containersDeserializerTypes['humon|set'] = None
 
     it = self.indent()
 
-    self.forwardDeclareType('containerDeserializer_set', 'set', '#include <set>')
-    self.includeForType('containerDeserializer_set', 'Node', '#include <humon/humon.hpp>')
+    self.includeForType('humon|deserializersDecl', 'set', '#include <set>')
+    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
 
-    self.setSrcIfEmpty('containerDeserializer_set', f'''
+    self.appendSrc('humon|deserializersDecl', f'''
 
 {it}template <class K, class C, class A>
 {it}struct val<std::set<K, C, A>>
@@ -137,16 +136,16 @@ def gen_set(self):
 
 
 def gen_unordered_set(self):
-    #if 'humon|unordered_set' in self.containersDeserializerTypes:
-    #    return
-    #self.containersDeserializerTypes['humon|unordered_set'] = None
+    if 'humon|unordered_set' in self.containersDeserializerTypes:
+        return
+    self.containersDeserializerTypes['humon|unordered_set'] = None
 
     it = self.indent()
 
-    self.forwardDeclareType('containerDeserializer_unordered_set', 'unordered_set', '#include <unordered_set>')
-    self.includeForType('containerDeserializer_unordered_set', 'Node', '#include <humon/humon.hpp>')
+    self.includeForType('humon|deserializersDecl', 'unordered_set', '#include <unordered_set>')
+    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
 
-    self.setSrcIfEmpty('containerDeserializer_unordered_set', f'''
+    self.appendSrc('humon|deserializersDecl', f'''
 
 {it}template <class K, class H, class E, class A>
 {it}struct val<std::unordered_set<K, H, E, A>>
@@ -164,16 +163,16 @@ def gen_unordered_set(self):
 
 
 def gen_map(self):
-    #if 'humon|map' in self.containersDeserializerTypes:
-    #    return
-    #self.containersDeserializerTypes['humon|map'] = None
+    if 'humon|map' in self.containersDeserializerTypes:
+        return
+    self.containersDeserializerTypes['humon|map'] = None
 
     it = self.indent()
 
-    self.forwardDeclareType('containerDeserializer_map', 'map', '#include <map>')
-    self.includeForType('containerDeserializer_map', 'Node', '#include <humon/humon.hpp>')
+    self.includeForType('humon|deserializersDecl', 'map', '#include <map>')
+    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
 
-    self.setSrcIfEmpty('containerDeserializer_map', f'''
+    self.appendSrc('humon|deserializersDecl', f'''
 
 {it}template <class K, class T, class C, class A>
 {it}struct val<std::map<K, T, C, A>>
@@ -193,16 +192,16 @@ def gen_map(self):
 
 
 def gen_unordered_map(self):
-    #if 'humon|unordered_map' in self.containersDeserializerTypes:
-    #    return
-    #self.containersDeserializerTypes['humon|unordered_map'] = None
+    if 'humon|unordered_map' in self.containersDeserializerTypes:
+        return
+    self.containersDeserializerTypes['humon|unordered_map'] = None
 
     it = self.indent()
 
-    self.forwardDeclareType('containerDeserializer_unordered_map', 'unordered_map', '#include <unordered_map>')
-    self.includeForType('containerDeserializer_unordered_map', 'Node', '#include <humon/humon.hpp>')
+    self.includeForType('humon|deserializersDecl', 'unordered_map', '#include <unordered_map>')
+    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
 
-    self.setSrcIfEmpty('containerDeserializer_unordered_map', f'''
+    self.appendSrc('humon|deserializersDecl', f'''
 
 {it}template <class K, class T, class H, class E, class A>
 {it}struct val<std::unordered_map<K, T, H, E, A>>
@@ -222,16 +221,16 @@ def gen_unordered_map(self):
 
 
 def gen_optional(self):
-    #if 'humon|optional' in self.containersDeserializerTypes:
-    #    return
-    #self.containersDeserializerTypes['humon|optional'] = None
+    if 'humon|optional' in self.containersDeserializerTypes:
+        return
+    self.containersDeserializerTypes['humon|optional'] = None
 
     it = self.indent()
 
-    self.forwardDeclareType('containerDeserializer_optional', 'optional', '#include <optional>')
-    self.includeForType('containerDeserializer_optional', 'Node', '#include <humon/humon.hpp>')
+    self.includeForType('humon|deserializersDecl', 'optional', '#include <optional>')
+    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
 
-    self.setSrcIfEmpty('containerDeserializer_optional', f'''
+    self.appendSrc('humon|deserializersDecl', f'''
 
 {it}template <class T>
 {it}struct val<std::optional<T>>
@@ -249,16 +248,16 @@ def gen_optional(self):
 
 
 def gen_variant(self):
-    #if 'humon|variant' in self.containersDeserializerTypes:
-    #    return
-    #self.containersDeserializerTypes['humon|variant'] = None
+    if 'humon|variant' in self.containersDeserializerTypes:
+        return
+    self.containersDeserializerTypes['humon|variant'] = None
 
     it = self.indent()
 
-    self.forwardDeclareType('containerDeserializer_variant', 'variant', '#include <variant>')
-    self.includeForType('containerDeserializer_variant', 'Node', '#include <humon/humon.hpp>')
+    self.includeForType('humon|deserializersDecl', 'variant', '#include <variant>')
+    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
 
-    self.setSrcIfEmpty('containerDeserializer_variant', f'''
+    self.appendSrc('humon|deserializersDecl', f'''
 
 {it}template <class... Ts>
 {it}struct val<std::variant<Ts...>>

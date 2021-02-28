@@ -15,9 +15,10 @@ def genAllForType(self, typeName, t, deserializeMemo, serializersMemo):
     self.defsData['type'] = typeName
     self.gen_types.genIncludesInline(self, t)
     self.gen_types.genIsLessStructs(self, t)
+    self.gen_types.genVariantTypeNamesForType(self, t)
     self.gen_types.genClassBegin(self, t)
-    self.gen_containers.genDeserializers(self, t, deserializeMemo)
-    self.gen_containers.genSerializers(self, t, serializersMemo)
+    #self.gen_containers.genDeserializers(self, t, deserializeMemo)
+    #self.gen_containers.genSerializers(self, t, serializersMemo)
     self.gen_types.genDefaultConstructor(self, t)
     self.gen_types.genMemberwiseConstructor(self, t)
     self.gen_types.genCopyConstructor(self, t)
@@ -28,8 +29,8 @@ def genAllForType(self, typeName, t, deserializeMemo, serializersMemo):
     self.gen_types.genSwap(self, t)
     self.gen_types.genGetters(self, t)
     self.gen_types.genSetters(self, t)
-    self.gen_types.genDeserializer(self, t)
-    self.gen_types.genSerializer(self, t)
+    self.gen_types.genDeserializers(self, t)
+    self.gen_types.genSerializers(self, t)
     self.gen_types.genComparator(self, t)
     self.gen_diffs.genTypeDiffer(self, t)
     self.gen_types.genMembers(self, t)
@@ -209,6 +210,59 @@ def _genIsLessStruct(self, t, name, properties):
     self.appendSrc('isLessDef', src)
 
 
+def genVariantTypeNamesForType(self, t):
+    self.gen_types.fwdDeclareType(self, 'variantTypeNames', t)
+    for memberName, m in t.members.items():
+        self.gen_types.genVariantTypeNamesForSubtype(self, m.properties)
+
+
+def genVariantTypeNamesForSubtype(self, typeDict):
+    if typeDict['type'] == 'variant':
+        typeDecl = self.makeNativeSubtype(typeDict)
+        if typeDecl in self.containersVariantTypeNames:
+            return
+
+        if len(self.containersVariantTypeNames) == 0:
+            self.gen_types.genVariantTypeNamesTemplate(self)
+
+        self.containersVariantTypeNames[typeDecl] = None
+
+        it = self.indent()
+        subTypes = []
+        for subDict in typeDict.get('of', []):
+            subType = subDict.get('alias')
+            if not subType:
+                subType = subDict['type']
+            subTypes.append(subType)
+
+        src = f'''
+
+{it}template <>
+{it}struct VariantTypeNames<{typeDecl}>
+{it}{{
+{it}{it}static constexpr char const * names[] = {{ {', '.join([f'"{st}"' for st in subTypes])} }};
+{it}{it}static constexpr std::size_t size = {len(subTypes)};
+{it}}};'''
+        self.appendSrc(f'variantTypeNames', src)
+    
+    if typeDict.get('of'):
+        for chDict in typeDict['of']:
+            self.gen_types.genVariantTypeNamesForSubtype(self, chDict)
+
+
+def genVariantTypeNamesTemplate(self):
+    it = self.indent()
+    src = f'''
+
+{it}template <class T>
+{it}struct VariantTypeNames
+{it}{{
+{it}{it}static constexpr char const * names[] = {{ }};
+{it}{it}static constexpr std::size_t size = 0;
+{it}}};'''
+    self.appendSrc(f'variantTypeNames', src)
+
+
 def genClassBegin(self, t):
     it = self.indent()
     typeDecl = self.makeNative(t.name)
@@ -222,7 +276,7 @@ def genClassBegin(self, t):
     self.appendSrc(f'{t.name}|classBegin', src)
 
 
-def genDeserializer(self, t):
+def genDeserializers(self, t):
     fmts = self.d('deserializeFrom')
     if (not fmts):
         return
@@ -238,7 +292,6 @@ def genDeserializer(self, t):
 
 def genDeserializer_humon(self, t):
     self.gen_containersDeserializeFromHumon.gen_builtIn(self)
-    self.gen_types.genSerializerFormatWrappers(self, 'humon')
 
     it = self.indent()
     typeDecl = self.makeNative(t.name)
@@ -306,79 +359,124 @@ def genDeserializer_humon(self, t):
 
 
 def genDeserializerSubtype_humon(self, typeDict):
-    fmts = self.d('deserializeFrom')
-    if not fmts:
-        return
-
     baseType = typeDict['type']
 
-    for fmt in fmts:
-        if fmt.lower() == 'humon':
-            if baseType == 'array':
-                self.gen_containersDeserializeFromHumon.gen_array(self)
-            elif baseType == 'pair':
-                self.gen_containersDeserializeFromHumon.gen_pair(self)
-            elif baseType == 'tuple':
-                self.gen_containersDeserializeFromHumon.gen_tuple(self)
-            elif baseType == 'vector':
-                self.gen_containersDeserializeFromHumon.gen_vector(self)
-            elif baseType == 'set':
-                self.gen_containersDeserializeFromHumon.gen_set(self)
-            elif baseType == 'unordered_set':
-                self.gen_containersDeserializeFromHumon.gen_unordered_set(self)
-            elif baseType == 'map':
-                self.gen_containersDeserializeFromHumon.gen_map(self)
-            elif baseType == 'unordered_map':
-                self.gen_containersDeserializeFromHumon.gen_unordered_map(self)
-            elif baseType == 'optional':
-                self.gen_containersDeserializeFromHumon.gen_optional(self)
-            elif baseType == 'variant':
-                self.gen_containersDeserializeFromHumon.gen_variant(self)
+    if baseType == 'array':
+        self.gen_containersDeserializeFromHumon.gen_array(self)
+    elif baseType == 'pair':
+        self.gen_containersDeserializeFromHumon.gen_pair(self)
+    elif baseType == 'tuple':
+        self.gen_containersDeserializeFromHumon.gen_tuple(self)
+    elif baseType == 'vector':
+        self.gen_containersDeserializeFromHumon.gen_vector(self)
+    elif baseType == 'set':
+        self.gen_containersDeserializeFromHumon.gen_set(self)
+    elif baseType == 'unordered_set':
+        self.gen_containersDeserializeFromHumon.gen_unordered_set(self)
+    elif baseType == 'map':
+        self.gen_containersDeserializeFromHumon.gen_map(self)
+    elif baseType == 'unordered_map':
+        self.gen_containersDeserializeFromHumon.gen_unordered_map(self)
+    elif baseType == 'optional':
+        self.gen_containersDeserializeFromHumon.gen_optional(self)
+    elif baseType == 'variant':
+        self.gen_containersDeserializeFromHumon.gen_variant(self)
+    
+    if typeDict.get('of'):
+        for chDict in typeDict['of']:
+            self.gen_types.genDeserializerSubtype_humon(self, chDict)
 
 
 def genDeserializer_binary(self, t):
     self.gen_containersDeserializeFromBinary.gen_builtIn(self)
 
     it = self.indent()
-    # TODO: anything at all would be good
+    typeDecl = self.makeNative(t.name)
+
+    # ----- declaration
+
+    self.forwardDeclareType(f'{t.name}|binaryCtrDecl', 'istream', 'namespace std { class istream; }')
+
+    src = f'''
+{it}{it}{t.name}(std::istream & in)'''
+    self.appendSrc(f'{t.name}|binaryCtrDecl', src + ';')
+
+    # ----- definition
+
+    self.includeForType(f'{t.name}|binaryCtrDef', 'istream', '#include <iostream>')
+    # ----- signature
+    src = f'''
+
+{it}{t.name}::{t.name}(std::istream & in)
+'''
+    # ----- member constructors
+    firstMember = True
+    for memberName, m in t.members.items():
+        memberDecl = self.makeNativeMemberType(m.properties)
+        decl = f'{memberName}(BinaryReader<{memberDecl}>::extract(in))'
+        if firstMember:
+            firstMember = False
+            src += f'{it}: '
+        else:
+            src += f', \n{it}  '
+        src += decl
+    src += f'''
+{it}{{
+{it}}}'''
+    self.appendSrc(f'{t.name}|binaryCtrDef', src + ';')
+
+    # do container types
+    for memberName, m in t.members.items():
+        self.gen_types.genDeserializerSubtype_binary(self, m.properties)
 
 
 def genDeserializerSubtype_binary(self, typeDict):
-    fmts = self.d('deserializeFrom')
+    baseType = typeDict['type']
+
+    if baseType == 'array':
+        self.gen_containersDeserializeFromBinary.gen_array(self)
+    elif baseType == 'pair':
+        self.gen_containersDeserializeFromBinary.gen_pair(self)
+    elif baseType == 'tuple':
+        self.gen_containersDeserializeFromBinary.gen_tuple(self)
+    elif baseType == 'vector':
+        self.gen_containersDeserializeFromBinary.gen_vector(self)
+    elif baseType == 'set':
+        self.gen_containersDeserializeFromBinary.gen_set(self)
+    elif baseType == 'unordered_set':
+        self.gen_containersDeserializeFromBinary.gen_unordered_set(self)
+    elif baseType == 'map':
+        self.gen_containersDeserializeFromBinary.gen_map(self)
+    elif baseType == 'unordered_map':
+        self.gen_containersDeserializeFromBinary.gen_unordered_map(self)
+    elif baseType == 'optional':
+        self.gen_containersDeserializeFromBinary.gen_optional(self)
+    elif baseType == 'variant':
+        self.gen_containersDeserializeFromBinary.gen_variant(self)
+    
+    if typeDict.get('of'):
+        for chDict in typeDict['of']:
+            self.gen_types.genDeserializerSubtype_binary(self, chDict)
+
+
+def genSerializers(self, t):
+    fmts = self.d('serializeTo')
     if (not fmts):
         return
 
-    baseType = typeDict['type']
+    self.gen_types.genSerializerFormatWrappers(self)
 
     for fmt in fmts:
-        if fmt.lower() == 'binary':
-            if baseType == 'array':
-                self.gen_containersDeserializeFromBinary.gen_array(self)
-            elif baseType == 'pair':
-                self.gen_containersDeserializeFromBinary.gen_pair(self)
-            elif baseType == 'tuple':
-                self.gen_containersDeserializeFromBinary.gen_tuple(self)
-            elif baseType == 'vector':
-                self.gen_containersDeserializeFromBinary.gen_vector(self)
-            elif baseType == 'set':
-                self.gen_containersDeserializeFromBinary.gen_set(self)
-            elif baseType == 'unordered_set':
-                self.gen_containersDeserializeFromBinary.gen_unordered_set(self)
-            elif baseType == 'map':
-                self.gen_containersDeserializeFromBinary.gen_map(self)
-            elif baseType == 'unordered_map':
-                self.gen_containersDeserializeFromBinary.gen_unordered_map(self)
-            elif baseType == 'optional':
-                self.gen_containersDeserializeFromBinary.gen_optional(self)
-            elif baseType == 'variant':
-                self.gen_containersDeserializeFromBinary.gen_variant(self)
+        if fmt.lower() == 'humon':
+            self.gen_types.genSerializer_humon(self, t)
+        elif fmt.lower() == 'binary':
+            self.gen_types.genSerializer_binary(self, t)
 
 
-def genSerializerFormatWrappers(self, format):
-    '''format looks like 'Binary' or 'Humon'. It just names the selector template.'''
-
-    if len(self.serializerFormatWrappers) == 0:
-        src = f'''
+def genSerializerFormatWrappers(self):
+    '''format looks like 'binary' or 'humon'. It just names the selector template.'''
+    it = self.indent()
+    src = f'''
 
 {it}template <class T>
 {it}struct SerializedFormat
@@ -395,22 +493,11 @@ def genSerializerFormatWrappers(self, format):
 
 {it}{it}{self.const('T')} & obj;
 {it}}};'''
-        self.setSrcIfEmpty('serializerFormatWrappers', src)
-
-
-def genSerializer(self, t):
-    fmts = self.d('serializeTo')
-    if (not fmts):
-        return
-
-    for fmt in fmts:
-        if fmt.lower() == 'humon':
-            self.gen_types.genSerializer_humon(self, t)
-        elif fmt.lower() == 'binary':
-            self.gen_types.genSerializer_binary(self, t)
+    self.setSrcIfEmpty('serializerFormatWrapperBase', src)
 
 
 def genSerializer_humon(self, t):
+    self.gen_containersSerializeToHumon.gen_builtIn(self)
     it = self.indent()
 
     self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'''namespace std {{ class ostream; }}''')
@@ -444,8 +531,42 @@ def genSerializer_humon(self, t):
 
     self.appendSrc(f'{t.name}|serialzierDef', src)
 
+    # do container types
+    for memberName, m in t.members.items():
+        self.gen_types.genSerializerSubtype_humon(self, m.properties)
+
+
+def genSerializerSubtype_humon(self, typeDict):
+    baseType = typeDict['type']
+
+    if baseType == 'array':
+        self.gen_containersSerializeToHumon.gen_array(self)
+    elif baseType == 'pair':
+        self.gen_containersSerializeToHumon.gen_pair(self)
+    elif baseType == 'tuple':
+        self.gen_containersSerializeToHumon.gen_tuple(self)
+    elif baseType == 'vector':
+        self.gen_containersSerializeToHumon.gen_vector(self)
+    elif baseType == 'set':
+        self.gen_containersSerializeToHumon.gen_set(self)
+    elif baseType == 'unordered_set':
+        self.gen_containersSerializeToHumon.gen_unordered_set(self)
+    elif baseType == 'map':
+        self.gen_containersSerializeToHumon.gen_map(self)
+    elif baseType == 'unordered_map':
+        self.gen_containersSerializeToHumon.gen_unordered_map(self)
+    elif baseType == 'optional':
+        self.gen_containersSerializeToHumon.gen_optional(self)
+    elif baseType == 'variant':
+        self.gen_containersSerializeToHumon.gen_variant(self)
+    
+    if typeDict.get('of'):
+        for chDict in typeDict['of']:
+            self.gen_types.genSerializerSubtype_humon(self, chDict)
+
 
 def genSerializer_binary(self, t):
+    self.gen_containersSerializeToBinary.gen_builtIn(self)
     it = self.indent()
 
     self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'''namespace std {{ class ostream; }}''')
@@ -471,6 +592,39 @@ def genSerializer_binary(self, t):
 {it}{it}return out;
 {it}}}'''
     self.appendSrc(f'{t.name}|serialzierDef', src)
+
+    # do container types
+    for memberName, m in t.members.items():
+        self.gen_types.genSerializerSubtype_binary(self, m.properties)
+
+
+def genSerializerSubtype_binary(self, typeDict):
+    baseType = typeDict['type']
+
+    if baseType == 'array':
+        self.gen_containersSerializeToBinary.gen_array(self)
+    elif baseType == 'pair':
+        self.gen_containersSerializeToBinary.gen_pair(self)
+    elif baseType == 'tuple':
+        self.gen_containersSerializeToBinary.gen_tuple(self)
+    elif baseType == 'vector':
+        self.gen_containersSerializeToBinary.gen_vector(self)
+    elif baseType == 'set':
+        self.gen_containersSerializeToBinary.gen_set(self)
+    elif baseType == 'unordered_set':
+        self.gen_containersSerializeToBinary.gen_unordered_set(self)
+    elif baseType == 'map':
+        self.gen_containersSerializeToBinary.gen_map(self)
+    elif baseType == 'unordered_map':
+        self.gen_containersSerializeToBinary.gen_unordered_map(self)
+    elif baseType == 'optional':
+        self.gen_containersSerializeToBinary.gen_optional(self)
+    elif baseType == 'variant':
+        self.gen_containersSerializeToBinary.gen_variant(self)
+    
+    if typeDict.get('of'):
+        for chDict in typeDict['of']:
+            self.gen_types.genSerializerSubtype_binary(self, chDict)
 
 
 def genDefaultConstructor(self, t):

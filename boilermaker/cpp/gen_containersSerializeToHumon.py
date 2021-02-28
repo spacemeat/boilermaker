@@ -1,5 +1,8 @@
 def gen_builtIn(self):
-    self._addInclude('containersIncludes', '<iostream>')
+    if 'humon|builtIn' in self.containersSerializerTypes:
+        return
+    self.containersSerializerTypes['humon|builtIn'] = None
+
     it = self.indent()
 
     src = f'''
@@ -19,7 +22,7 @@ def gen_builtIn(self):
 
 {it}{it}return out;
 {it}}}'''
-    self._appendToSection('serializerFormatWrappersDecl', src)
+    self.appendSrc('serializerFormatWrappersDecl', src)
 
 
 def gen_array(self):
@@ -29,9 +32,10 @@ def gen_array(self):
 
     it = self.indent()
 
-    self._addInclude('containersIncludes', '<array>')
+    self.includeForType('humon|serializersDecl', 'array', '#include <array>')
+    self.includeOutputFile('humon|serializersDecl', 'commonHeader')
 
-    self._appendToSection('containerSerializer_array', f'''
+    self.appendSrc('humon|serializersDecl', f'''
 
 {it}template <class T, unsigned long N>
 {it}std::ostream & operator << (std::ostream & out, HumonFormat<std::array<T, N>> const & obj)
@@ -54,9 +58,11 @@ def gen_pair(self):
 
     it = self.indent()
 
-    self._addInclude('containersIncludes', '<utility>')
+    self.includeForType('humon|serializersDecl', 'pair', '#include <utility>')
+    self.includeForType('humon|serializersDecl', 'ostream', '#include <iostream>')
+    self.includeOutputFile('humon|serializersDecl', 'commonHeader')
 
-    self._appendToSection('containerSerializer_pair', f'''
+    self.appendSrc('humon|serializersDecl', f'''
 
 {it}template <class T0, class T1>
 {it}std::ostream & operator << (std::ostream & out, HumonFormat<std::pair<T0, T1>> const & obj)
@@ -74,9 +80,11 @@ def gen_tuple(self):
 
     it = self.indent()
 
-    self._addInclude('containersIncludes', '<tuple>')
+    self.includeForType('humon|serializersDecl', 'tuple', '#include <tuple>')
+    self.includeForType('humon|serializersDecl', 'ostream', '#include <iostream>')
+    self.includeOutputFile('humon|serializersDecl', 'commonHeader')
 
-    self._appendToSection('containerSerializer_tuple', f'''
+    self.appendSrc('humon|serializersDecl', f'''
 
 {it}template <class... Ts>
 {it}std::ostream & operator << (std::ostream & out, HumonFormat<std::tuple<Ts...>> const & obj)
@@ -99,9 +107,11 @@ def gen_vector(self):
 
     it = self.indent()
 
-    self._addInclude('containersIncludes', '<vector>')
+    self.includeForType('humon|serializersDecl', 'vector', '#include <vector>')
+    self.includeForType('humon|serializersDecl', 'ostream', '#include <iostream>')
+    self.includeOutputFile('humon|serializersDecl', 'commonHeader')
 
-    self._appendToSection('containerSerializer_vector', f'''
+    self.appendSrc('humon|serializersDecl', f'''
 
 {it}template <class T, class A>
 {it}std::ostream & operator << (std::ostream & out, HumonFormat<std::vector<T, A>> const & obj)
@@ -124,9 +134,11 @@ def gen_set(self):
 
     it = self.indent()
 
-    self._addInclude('containersIncludes', '<set>')
+    self.includeForType('humon|serializersDecl', 'set', '#include <set>')
+    self.includeForType('humon|serializersDecl', 'ostream', '#include <iostream>')
+    self.includeOutputFile('humon|serializersDecl', 'commonHeader')
 
-    self._appendToSection('containerSerializer_set', f'''
+    self.appendSrc('humon|serializersDecl', f'''
 
 {it}template <class K, class C, class A>
 {it}std::ostream & operator << (std::ostream & out, HumonFormat<std::set<K, C, A>> const & obj)
@@ -149,9 +161,11 @@ def gen_unordered_set(self):
 
     it = self.indent()
 
-    self._addInclude('containersIncludes', '<unordered_set>')
+    self.includeForType('humon|serializersDecl', 'unordered_set', '#include <unordered_set>')
+    self.includeForType('humon|serializersDecl', 'ostream', '#include <iostream>')
+    self.includeOutputFile('humon|serializersDecl', 'commonHeader')
 
-    self._appendToSection('containerSerializer_unordered_set', f'''
+    self.appendSrc('humon|serializersDecl', f'''
 
 {it}template <class K, class H, class E, class A>
 {it}std::ostream & operator << (std::ostream & out, HumonFormat<std::unordered_set<K, H, E, A>> const & obj)
@@ -174,9 +188,11 @@ def gen_map(self):
 
     it = self.indent()
 
-    self._addInclude('containersIncludes', '<map>')
+    self.includeForType('humon|serializersDecl', 'map', '#include <map>')
+    self.includeForType('humon|serializersDecl', 'ostream', '#include <iostream>')
+    self.includeOutputFile('humon|serializersDecl', 'commonHeader')
 
-    self._appendToSection('containerSerializer_map', f'''
+    self.appendSrc('humon|serializersDecl', f'''
 
 {it}template <class K, class T, class C, class A>
 {it}std::ostream & operator << (std::ostream & out, HumonFormat<std::map<K, T, C, A>> const & obj)
@@ -199,9 +215,11 @@ def gen_unordered_map(self):
 
     it = self.indent()
 
-    self._addInclude('containersIncludes', '<unordered_map>')
+    self.includeForType('humon|serializersDecl', 'unordered_map', '#include <unordered_map>')
+    self.includeForType('humon|serializersDecl', 'ostream', '#include <iostream>')
+    self.includeOutputFile('humon|serializersDecl', 'commonHeader')
 
-    self._appendToSection('containerSerializer_unordered_map', f'''
+    self.appendSrc('humon|serializersDecl', f'''
 
 {it}template <class K, class T, class H, class E, class A>
 {it}std::ostream & operator << (std::ostream & out, HumonFormat<std::unordered_map<K, T, H, E, A>> const & obj)
@@ -224,9 +242,11 @@ def gen_optional(self):
 
     it = self.indent()
 
-    self._addInclude('containersIncludes', '<optional>')
+    self.includeForType('humon|serializersDecl', 'optional', '#include <optional>')
+    self.includeForType('humon|serializersDecl', 'ostream', '#include <iostream>')
+    self.includeOutputFile('humon|serializersDecl', 'commonHeader')
 
-    self._appendToSection('containerSerializer_optional', f'''
+    self.appendSrc('humon|serializersDecl', f'''
 
 {it}template <class T>
 {it}std::ostream & operator << (std::ostream & out, HumonFormat<std::optional<T>> const & obj)
@@ -247,9 +267,11 @@ def gen_variant(self):
 
     it = self.indent()
 
-    self._addInclude('containersIncludes', '<variant>')
+    self.includeForType('humon|serializersDecl', 'variant', '#include <variant>')
+    self.includeForType('humon|serializersDecl', 'ostream', '#include <iostream>')
+    self.includeOutputFile('humon|serializersDecl', 'commonHeader')
 
-    self._appendToSection('containerSerializer_variant', f'''
+    self.appendSrc('humon|serializersDecl', f'''
 
 {it}template <class... Ts>
 {it}std::ostream & operator << (std::ostream & out, HumonFormat<std::variant<Ts...>> const & obj)
@@ -263,48 +285,3 @@ def gen_variant(self):
 
 {it}{it}return out;
 {it}}}''')
-
-
-
-def genVariantTypeNames(self, typeDict):
-    typeDecl = self.makeNativeSubtype(typeDict)
-    if typeDecl in self.containersVariantTypeNames:
-        return
-    
-    if len(self.containersVariantTypeNames) == 0:
-        self.gen_containersSerializeToHumon.genVariantTypeNamesTemplate(self)
-    
-    self.containersVariantTypeNames[typeDecl] = None
-
-    it = self.indent()
-
-    subTypes = []
-    for subDict in typeDict.get('of', []):
-        subType = subDict.get('alias')
-        if not subType:
-            subType = subDict['type']
-        subTypes.append(subType)
-
-    src = f'''
-
-{it}template <>
-{it}struct VariantTypeNames<{typeDecl}>
-{it}{{
-{it}{it}static constexpr char const * names[] = {{ {', '.join([f'"{st}"' for st in subTypes])} }};
-{it}{it}static constexpr std::size_t size = {len(subTypes)};
-{it}}};'''
-    self._appendToSection(f'containerSerializer_variantTypeNames', src)
-
-
-def genVariantTypeNamesTemplate(self):
-    it = self.indent()
-
-    src = f'''
-
-{it}template <class T>
-{it}struct VariantTypeNames
-{it}{{
-{it}{it}static constexpr char const * names[] = {{ }};
-{it}{it}static constexpr std::size_t size = 0;
-{it}}};'''
-    self._appendToSection(f'containerSerializer_variantTypeNames', src)
