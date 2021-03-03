@@ -251,7 +251,7 @@
                     namespaceClose
                     namespaceOpen
                     serializerFormatWrappersDef
-                    serializersDef
+                    binary|serializersDef
                     namespaceClose
                 ]
             }
@@ -285,7 +285,9 @@
                     headerTopComment
                     enumHeader|includes
                     enumHeaderForwardDecls
+                    namespaceHuOpen
                     enumDeserializerDecls
+                    namespaceClose
                     namespaceOpen
                     enumSerializerDecls
                     namespaceClose

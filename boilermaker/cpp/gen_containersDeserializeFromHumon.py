@@ -2,6 +2,21 @@ def gen_builtIn(self):
     pass
 
 
+def gen_includeHumon(self, section):
+    # humon includes all of these, so any forward declares should be nixed.
+    self.includeForType(section, 'Node', '#include <humon/humon.hpp>')
+    self.includeForType(section, 'size_t', '#include <humon/humon.hpp>')
+    self.includeForType(section, 'string_view', '#include <humon/humon.hpp>')
+    self.includeForType(section, 'string', '#include <humon/humon.hpp>')
+    self.includeForType(section, 'tuple', '#include <humon/humon.hpp>')
+    self.includeForType(section, 'vector', '#include <humon/humon.hpp>')
+    self.includeForType(section, 'array', '#include <humon/humon.hpp>')
+    self.includeForType(section, 'optional', '#include <humon/humon.hpp>')
+    self.includeForType(section, 'variant', '#include <humon/humon.hpp>')
+    self.includeForType(section, 'istream', '#include <humon/humon.hpp>')
+    self.includeForType(section, 'ostream', '#include <humon/humon.hpp>')
+
+
 def gen_array(self):
     if 'humon|array' in self.containersDeserializerTypes:
         return
@@ -10,7 +25,7 @@ def gen_array(self):
     it = self.indent()
 
     self.includeForType('humon|deserializersDecl', 'array', '#include <array>')
-    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
+    self.gen_containersDeserializeFromHumon.gen_includeHumon(self, 'humon|deserializersDecl')
 
     self.appendSrc('humon|deserializersDecl', f'''
 
@@ -37,7 +52,7 @@ def gen_pair(self):
     it = self.indent()
 
     self.includeForType('humon|deserializersDecl', 'pair', '#include <utility>')
-    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
+    self.gen_containersDeserializeFromHumon.gen_includeHumon(self, 'humon|deserializersDecl')
 
     self.appendSrc('humon|deserializersDecl', f'''
 
@@ -62,7 +77,7 @@ def gen_tuple(self):
     it = self.indent()
 
     self.includeForType('humon|deserializersDecl', 'tuple', '#include <tuple>')
-    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
+    self.gen_containersDeserializeFromHumon.gen_includeHumon(self, 'humon|deserializersDecl')
 
     self.appendSrc('humon|deserializersDecl', f'''
 
@@ -89,7 +104,7 @@ def gen_vector(self):
     it = self.indent()
 
     self.includeForType('humon|deserializersDecl', 'vector', '#include <vector>')
-    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
+    self.gen_containersDeserializeFromHumon.gen_includeHumon(self, 'humon|deserializersDecl')
 
     self.appendSrc('humon|deserializersDecl', f'''
 
@@ -116,7 +131,7 @@ def gen_set(self):
     it = self.indent()
 
     self.includeForType('humon|deserializersDecl', 'set', '#include <set>')
-    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
+    self.gen_containersDeserializeFromHumon.gen_includeHumon(self, 'humon|deserializersDecl')
 
     self.appendSrc('humon|deserializersDecl', f'''
 
@@ -128,7 +143,7 @@ def gen_set(self):
 {it}{it}{it}std::set<K, C, A> rv;
 {it}{it}{it}for (size_t i = 0; i < node.numChildren(); ++i)
 {it}{it}{it}{{
-{it}{it}{it}{it}rv.emplace(node / i % val<T> {{ }} );
+{it}{it}{it}{it}rv.emplace(node / i % val<K> {{ }} );
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
@@ -143,7 +158,7 @@ def gen_unordered_set(self):
     it = self.indent()
 
     self.includeForType('humon|deserializersDecl', 'unordered_set', '#include <unordered_set>')
-    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
+    self.gen_containersDeserializeFromHumon.gen_includeHumon(self, 'humon|deserializersDecl')
 
     self.appendSrc('humon|deserializersDecl', f'''
 
@@ -155,7 +170,7 @@ def gen_unordered_set(self):
 {it}{it}{it}std::unordered_set<K, H, E, A> rv;
 {it}{it}{it}for (size_t i = 0; i < node.numChildren(); ++i)
 {it}{it}{it}{{
-{it}{it}{it}{it}rv.emplace(node / i % val<T> {{ }} );
+{it}{it}{it}{it}rv.emplace(node / i % val<K> {{ }} );
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
@@ -170,7 +185,7 @@ def gen_map(self):
     it = self.indent()
 
     self.includeForType('humon|deserializersDecl', 'map', '#include <map>')
-    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
+    self.gen_containersDeserializeFromHumon.gen_includeHumon(self, 'humon|deserializersDecl')
 
     self.appendSrc('humon|deserializersDecl', f'''
 
@@ -184,7 +199,7 @@ def gen_map(self):
 {it}{it}{it}{{
 {it}{it}{it}{it}Node elemNode = node / i;
 {it}{it}{it}{it}rv.emplace(std::move(val<K>::extract(elemNode.key().str())),
-{it}{it}{it}{it}           std::move(elemNode i % val<T> {{ }} ));
+{it}{it}{it}{it}           std::move(elemNode % val<T> {{ }} ));
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
@@ -199,7 +214,7 @@ def gen_unordered_map(self):
     it = self.indent()
 
     self.includeForType('humon|deserializersDecl', 'unordered_map', '#include <unordered_map>')
-    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
+    self.gen_containersDeserializeFromHumon.gen_includeHumon(self, 'humon|deserializersDecl')
 
     self.appendSrc('humon|deserializersDecl', f'''
 
@@ -213,7 +228,7 @@ def gen_unordered_map(self):
 {it}{it}{it}{{
 {it}{it}{it}{it}Node elemNode = node / i;
 {it}{it}{it}{it}rv.emplace(std::move(val<K>::extract(elemNode.key().str())),
-{it}{it}{it}{it}           std::move(elemNode i % val<T> {{ }} ));
+{it}{it}{it}{it}           std::move(elemNode % val<T> {{ }} ));
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
@@ -228,7 +243,7 @@ def gen_optional(self):
     it = self.indent()
 
     self.includeForType('humon|deserializersDecl', 'optional', '#include <optional>')
-    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
+    self.gen_containersDeserializeFromHumon.gen_includeHumon(self, 'humon|deserializersDecl')
 
     self.appendSrc('humon|deserializersDecl', f'''
 
@@ -253,9 +268,10 @@ def gen_variant(self):
     self.containersDeserializerTypes['humon|variant'] = None
 
     it = self.indent()
+    ns = self.d('namespace')
 
     self.includeForType('humon|deserializersDecl', 'variant', '#include <variant>')
-    self.includeForType('humon|deserializersDecl', 'Node', '#include <humon/humon.hpp>')
+    self.gen_containersDeserializeFromHumon.gen_includeHumon(self, 'humon|deserializersDecl')
 
     self.appendSrc('humon|deserializersDecl', f'''
 
@@ -267,11 +283,12 @@ def gen_variant(self):
 {it}{it}static inline bool schecker(std::string_view tokStr, std::optional<std::variant<Ts...>> & obj, {self.const('Node')} & node)
 {it}{it}{{
 {it}{it}{it}// This holds the type names / aliases for each of the variant types.
-{it}{it}{it}auto names = VariantTypeNames<std::variant<Ts...>>::names;
+{it}{it}{it}using IndexedType = typename std::tuple_element<I, std::tuple<Ts...>>::type;
+{it}{it}{it}auto names = {ns}::VariantTypeNames<std::variant<Ts...>>::names;
 {it}{it}{it}if (obj.has_value() == false && tokStr == names[I]) 
 {it}{it}{it}{{
 {it}{it}{it}{it}// now we can make the correct variant and give it the node as a ctr arg
-{it}{it}{it}{it}obj = std::variant<Ts...> {{ std::in_place_index<I>, node }};
+{it}{it}{it}{it}obj = std::variant<Ts...>(std::in_place_index<I>, node % val<IndexedType> {{ }} );
 {it}{it}    }}
 {it}{it}    return true;
 {it}{it}}};
@@ -292,6 +309,7 @@ def gen_variant(self):
 {it}{it}{it}{it}// to set the optional, but the initialization has to init
 {it}{it}{it}{it}// something. :)
 {it}{it}{it}{it}auto foo = {{ schecker<Seq>(tokStr, v, node)... }};
+{it}{it}{it}{it}(void) foo;
 {it}{it}{it}{it}// whatever schecker found should be in v. Woe betide you if it is not.
 {it}{it}{it}{it}return * v;
 {it}{it}{it}}};

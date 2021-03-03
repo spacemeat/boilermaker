@@ -2,7 +2,6 @@ from pathlib import Path
 import os
 
 def genAll(self):
-    self.includeOutputFile('mainHeaderIncludes', 'commonHeader')
     self.gen_global.genPragma(self)
     self.gen_global.genTopComment(self)
     self.gen_global.genDecls(self)
@@ -39,12 +38,6 @@ def genNamespaces(self):
 namespace {self.d('namespace')}
 {{'''
     self.setSrc('namespaceOpen', src)
-
-    src = f'''
-    
-namespace std
-{{'''
-    self.setSrc('namespaceStdOpen', src)
 
     src = f'''
     
@@ -89,9 +82,10 @@ def genTypeDecls(self):
                             includeFilePath = Path(self.replaceStringArgs(includeFilePathString))
                             
                             relPath = Path(os.path.relpath(includeFilePath.parent, outputFilePath.parent), includeFilePath.name)
-                            relPath = f'"{relPath}"'
-                            
-                            outputFile.includes.setdefault(f'#include {relPath}', None)
+                            # don't #include ourselves
+                            if relPath.name != outputFilePath.name:
+                                relPath = f'"{relPath}"'
+                                outputFile.includes.setdefault(f'#include {relPath}', None)
                     else:
                         outputFile.includes.setdefault(f'#include {includeName}', None)
 

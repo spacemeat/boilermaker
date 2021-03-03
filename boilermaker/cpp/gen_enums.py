@@ -18,9 +18,9 @@ def addEnumSourceIncludes(self):
         # include things found in the enums block.
         for includeFile in enum.enumsObject.sources:
             if includeFile.startswith('<') and includeFile.endswith('>'):
-                self.includeFile('enumHeader|includes', includeFile)
+                self.includeFile('commonHeader|includes', includeFile)
             else:
-                self.includeFile('enumHeader|includes', f'"{includeFile}"')
+                self.includeFile('commonHeader|includes', f'"{includeFile}"')
 
 
 def genDeserializers(self):
@@ -43,41 +43,31 @@ def genDeserializeFromHumon(self, enumName, enum):
     enumDecl = self.makeNative(enumName)
 
     # write inline bits
-    self.forwardDeclareType('enumDeserializerDecls', 'Node', 'class ::hu::Node;')
+    self.gen_containersDeserializeFromHumon.gen_includeHumon(self, 'enumDeserializerDecls')
+    self.includeOutputFile('enumDeserializerDecls', 'commonHeader')
+    self.includeFile('enumDeserializerDecls', '<cstring>')
 
     src = f'''
 
 {it}template <>
-{it}struct hu::val<{enumDecl}>
+{it}struct val<{enumDecl}>
 {it}{{
-{it}{it}static inline {enumDecl} extract({self.const("Node")} & node) noexcept;
-{it}}};'''
-    self.appendSrc('enumDeserializerDecls', src)
-
-    # write source bits
-
-    self.includeForType('enumDeserializerDefs', 'hu::Node', '#include <humon/humon.hpp>')
-    self.includeFile('enumDeserializerDefs', '<cstring>')
-    src = f'''
-
-template <>
-struct hu::val<{enumDecl}>
-{{
-{it}static inline {enumDecl} extract({self.const("hu::Node")} & node) noexcept
-{it}{{'''
+{it}{it}static inline {enumDecl} extract({self.const("Node")} & node) noexcept
+{it}{it}{{'''
     if enum.flags:
         src += f'''
-{it}{it}using enumIntType = std::underlying_type<{enumDecl}>::type;
-{it}{it}enumIntType e = 0;
-{it}{it}bool fromList = node.kind() == hu::NodeKind::list;
-{it}{it}if (fromList)
-{it}{it}{it}{{ node = node.firstChild(); }}
-{it}{it}while(node)
-{it}{it}{{
-{it}{it}{it}auto nodeVal = node.value().str().data();'''
+{it}{it}{it}using enumIntType = std::underlying_type<{enumDecl}>::type;
+{it}{it}{it}enumIntType e = 0;
+{it}{it}{it}bool fromList = node.kind() == hu::NodeKind::list;
+{it}{it}{it}Node chNode = node;
+{it}{it}{it}if (fromList)
+{it}{it}{it}{it}{{ chNode = chNode.firstChild(); }}
+{it}{it}{it}do
+{it}{it}{it}{{
+{it}{it}{it}{it}auto nodeVal = chNode.value().str().data();'''
     else:
         src += f'''
-{it}{it}auto nodeVal = node.value().str().data();'''
+{it}{it}{it}auto nodeVal = node.value().str().data();'''
 
     firstTime = True
     for modName, (declName, numericValue) in enum.enumVals.items():
@@ -91,25 +81,27 @@ struct hu::val<{enumDecl}>
 
         if enum.flags:
             src += f'''
-{it}{it}{it}{doElse}if {spaces}(std::strncmp(nodeVal, "{modName}", {len(modName)}) == 0) {{ e |= static_cast<enumIntType>({declName}); }}'''
+{it}{it}{it}{it}{doElse}if {spaces}(std::strncmp(nodeVal, "{modName}", {len(modName)}) == 0) {{ e |= static_cast<enumIntType>({declName}); }}'''
         else:
             src += f'''
-{it}{it}if (std::strncmp(nodeVal, "{modName}", {len(modName)}) == 0) {{ return {declName}; }}'''
+{it}{it}{it}if (std::strncmp(nodeVal, "{modName}", {len(modName)}) == 0) {{ return {declName}; }}'''
 
     if enum.flags:
         src += f'''
-{it}{it}{it}node = node.nextSibling();
-{it}{it}}}
-{it}{it}return static_cast<{enumDecl}>(e);'''
+{it}{it}{it}{it}chNode = chNode.nextSibling();
+{it}{it}{it}}}
+{it}{it}{it}while(fromList && chNode);
+
+{it}{it}{it}return static_cast<{enumDecl}>(e);'''
     else:
         src += f'''
-{it}{it}return {{}};'''
+{it}{it}{it}return {{}};'''
 
     # TODO: define and extract a default value
     src += f'''
-{it}}}
-}};'''
-    self.appendSrc('enumDeserializerDefs', src)
+{it}{it}}}
+{it}}};'''
+    self.appendSrc('enumDeserializerDecls', src)
 
 
 def genDeserializeFromBinary(self, enumName, enum):
@@ -137,7 +129,11 @@ def genSerializerToHumon(self, enumName, enum):
     enumDecl = self.makeNative(enumName)
 
     # defs
-    self.forwardDeclareType('enumSerializerDecls', 'ostream', f'namespace std {{ class ostream; }}')
+    # Only forward-declare ostream if we're not getting it from humon.hpp.
+    # This system could be improvd.
+    fmts = self.d('deserializeFrom')
+    if not fmts or 'humon' not in fmts:
+        self.forwardDeclareType('enumSerializerDecls', 'ostream', f'namespace std {{ class ostream; }}')
 
     src = f'''
 {it}std::ostream & operator <<(std::ostream & out, {self.const(f'HumonFormat<{enumDecl}>')} & obj);'''
@@ -208,29 +204,28 @@ def genSerializerToBinary(self, enumName, enum):
     it = self.indent()
     enumDecl = self.makeNative(enumName)
 
+    # we actually only need one
+    if 'binary|enum' in self.containersSerializerTypes:
+        return
+    self.containersSerializerTypes['binary|enum'] = None
+
     #decl
 
     self.includeFile('enumSerializerDecls', "<type_traits>")
-    self.forwardDeclareType('enumSerializerDecls', 'ostream', 'class std::ostream;')
+    self.includeForType('enumSerializerDecls', 'ostream', '#include <iostream>')
 
-    src = f'''
-    
-{it}template <class T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
-{it}std::ostream & operator <<(std::ostream & out, BinaryFormat<T> obj);'''
-    self.appendSrc('enumSerializerDecls', src)
-
-    #def
-
-    self.includeForType('enumSerializerDefs', 'ostream', '#include <iostream>')
+    fmts = self.d('deserializeFrom')
+    if not fmts or 'humon' not in fmts:
+        self.forwardDeclareType('enumSerializerDecls', 'ostream', 'class std::ostream;')
 
     src = f'''
 
 {it}template <class T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
-{it}std::ostream & operator <<(std::ostream & out, BinaryFormat<T> obj)
+{it}std::ostream & operator <<(std::ostream & out, {self.const('BinaryFormat<T>')} & obj)
 {it}{{
 {it}{it}using enumIntType = std::underlying_type<{enumDecl}>::type;
 {it}{it}out << BinaryFormat(static_cast<enumIntType>(* obj));
 
 {it}{it}return out;
 {it}}}'''
-    self.appendSrc('enumSerializerDefs', src)
+    self.appendSrc('enumSerializerDecls', src)

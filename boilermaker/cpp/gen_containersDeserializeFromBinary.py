@@ -9,7 +9,7 @@ def gen_builtIn(self):
     src = f'''
 
 {it}template <class T>
-{it}class BinaryReader
+{it}struct BinaryReader
 {it}{{
 {it}{it}static inline T extract(std::istream & in)
 {it}{it}{{
@@ -34,13 +34,13 @@ def gen_array(self):
     self.appendSrc('binary|deserializersDecl', f'''
 
 {it}template <class T, unsigned long N>
-{it}class BinaryReader<std::array<T, N>>
+{it}struct BinaryReader<std::array<T, N>>
 {it}{{
-{it}{it}static inline std::array<T, N>> extract(std::istream & in)
+{it}{it}static inline std::array<T, N> extract(std::istream & in)
 {it}{it}{{
-{it}{it}{it}auto maker = [&node]<std::size_t... Seq>(std::index_sequence<Seq...>)
+{it}{it}{it}auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
-{it}{it}{it}{it}return std::array<T, N> {{ BinaryReader<T>::extract(in)... }};
+{it}{it}{it}{it}return std::array<T, N> {{ ((void) Seq, BinaryReader<T>::extract(in))... }};
 {it}{it}{it}}};
 
 {it}{it}{it}return maker(std::make_index_sequence<N> {{}});
@@ -66,7 +66,7 @@ def gen_pair(self):
 {it}{it}{{
 {it}{it}{it}return {{
 {it}{it}{it}{it}BinaryReader<T0>::extract(in),
-{it}{it}{it}{it}BinaryReader<T1>::extract(in).
+{it}{it}{it}{it}BinaryReader<T1>::extract(in)
 {it}{it}{it}}};
 {it}{it}}}
 {it}}};''')
@@ -88,9 +88,9 @@ def gen_tuple(self):
 {it}{{
 {it}{it}static inline std::tuple<Ts...> extract(std::istream & in)
 {it}{it}{{
-{it}{it}{it}auto maker = [&node]<std::size_t... Seq>(std::index_sequence<Seq...>)
+{it}{it}{it}auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
-{it}{it}{it}{it}return std::tuple<Ts...> {{ BinaryReader<Ts>::extract(in).... }};
+{it}{it}{it}{it}return std::tuple<Ts...> {{ ((void) Seq, BinaryReader<Ts>::extract(in))... }};
 {it}{it}{it}}};
 
 {it}{it}{it}return maker(std::make_index_sequence<sizeof...(Ts)> {{ }});
@@ -145,7 +145,7 @@ def gen_set(self):
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
 {it}{it}{it}{{
-{it}{it}{it}{it}rv.emplace(BinaryReader<T>::extract(in));
+{it}{it}{it}{it}rv.emplace(BinaryReader<K>::extract(in));
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
@@ -172,7 +172,7 @@ def gen_unordered_set(self):
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
 {it}{it}{it}{{
-{it}{it}{it}{it}rv.emplace(BinaryReader<T>::extract(in));
+{it}{it}{it}{it}rv.emplace(BinaryReader<K>::extract(in));
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
@@ -199,7 +199,7 @@ def gen_map(self):
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
 {it}{it}{it}{{
-{it}{it}{it}{it}rv.emplace(BinaryReader<T>::extract(in),
+{it}{it}{it}{it}rv.emplace(BinaryReader<K>::extract(in),
 {it}{it}{it}{it}           BinaryReader<T>::extract(in));
 {it}{it}{it}}}
 {it}{it}{it}return rv;
@@ -227,7 +227,7 @@ def gen_unordered_map(self):
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
 {it}{it}{it}{{
-{it}{it}{it}{it}rv.emplace(BinaryReader<T>::extract(in),
+{it}{it}{it}{it}rv.emplace(BinaryReader<K>::extract(in),
 {it}{it}{it}{it}           BinaryReader<T>::extract(in));
 {it}{it}{it}}}
 {it}{it}{it}return rv;
@@ -282,18 +282,17 @@ def gen_variant(self):
 {it}{it}static inline bool schecker(std::size_t idx, std::optional<std::variant<Ts...>> & obj, std::istream & in)
 {it}{it}{{
 {it}{it}{it}using IndexedType = typename std::tuple_element<I, std::tuple<Ts...>>::type;
-
 {it}{it}{it}if (obj.has_value() == false && idx == I) 
 {it}{it}{it}{{
 {it}{it}{it}{it}// now we can make the correct variant
-{it}{it}{it}{it}obj = std::variant<Ts...> {{ std::in_place_index<I>, BinaryReader<IndexedType>(in) }};
+{it}{it}{it}{it}obj = std::variant<Ts...> (std::in_place_index<I>, BinaryReader<IndexedType>::extract(in));
 {it}{it}{it}}}
 {it}{it}{it}return true;  // we don't actually care about the return value
 {it}{it}}};
 
 {it}{it}static inline std::variant<Ts...> extract(std::istream & in)
 {it}{it}{{
-            auto idx = BinaryReader<std::size_t>(in);
+            auto idx = BinaryReader<std::size_t>::extract(in);
 
 {it}{it}{it}auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
@@ -304,6 +303,7 @@ def gen_variant(self):
 {it}{it}{it}{it}// to set the optional, but the initialization has to init
 {it}{it}{it}{it}// something. :)
 {it}{it}{it}{it}auto foo = {{ schecker<Seq>(idx, v, in)... }};
+{it}{it}{it}{it}(void) foo;
 {it}{it}{it}{it}// whatever schecker found should be in v. Woe betide you if it is not.
 {it}{it}{it}{it}return * v;
 {it}{it}{it}}};

@@ -17,8 +17,6 @@ def genAllForType(self, typeName, t, deserializeMemo, serializersMemo):
     self.gen_types.genIsLessStructs(self, t)
     self.gen_types.genVariantTypeNamesForType(self, t)
     self.gen_types.genClassBegin(self, t)
-    #self.gen_containers.genDeserializers(self, t, deserializeMemo)
-    #self.gen_containers.genSerializers(self, t, serializersMemo)
     self.gen_types.genDefaultConstructor(self, t)
     self.gen_types.genMemberwiseConstructor(self, t)
     self.gen_types.genCopyConstructor(self, t)
@@ -51,8 +49,7 @@ def fwdDeclareType(self, section, t):
 def fwdDeclareSubtype(self, section, t, typeDict):
     baseType = typeDict['type']
 
-    decl = f'''
-namespace std {{ class size_t; }}'''
+    decl = None
 
     src = ''
     if baseType == 'size_t':
@@ -64,7 +61,7 @@ namespace std {{ class string; }}'''
     elif baseType == 'string_view':
         decl = f'''
 namespace std {{ class string_view; }}'''
-    if baseType == 'array':
+    elif baseType == 'array':
         decl = f'''
 namespace std {{ template <class T, size_t N> class array; }}'''
     elif baseType == 'pair':
@@ -98,7 +95,8 @@ namespace std {{ template <class... Types> class variant; }}'''
         decl = f'''
 namespace {self.d('namespace')} {{ class {baseType}; }}'''
 
-    self.forwardDeclareType(section, baseType, decl)
+    if decl:
+        self.forwardDeclareType(section, baseType, decl)
 
     if typeDict.get('of'):
         for subType in typeDict['of']:
@@ -117,33 +115,45 @@ def includeForType(self, section, t):
 
 def includeForSubtype(self, section, t, typeDict):
     baseType = typeDict['type']
-    
+    removeSizetTypedef = False
     if baseType == 'size_t':
         decl = '#include <cstddef>'
     elif baseType == 'string':
         decl = '#include <string>'
+        removeSizetTypedef = True
     elif baseType == 'string_view':
         decl = '#include <string_view>'
-    if baseType == 'array':
+        removeSizetTypedef = True
+    elif baseType == 'array':
         decl = '#include <array>'
+        removeSizetTypedef = True
     elif baseType == 'pair':
         decl = '#include <utility>'
+        removeSizetTypedef = True
     elif baseType == 'tuple':
         decl = '#include <tuple>'
+        removeSizetTypedef = True
     elif baseType == 'vector':
         decl = '#include <vector>'
+        removeSizetTypedef = True
     elif baseType == 'set':
         decl = '#include <set>'
+        removeSizetTypedef = True
     elif baseType == 'unordered_set':
         decl = '#include <unordered_set>'
+        removeSizetTypedef = True
     elif baseType == 'map':
         decl = '#include <map>'
+        removeSizetTypedef = True
     elif baseType == 'unordered_map':
         decl = '#include <unordered_map>'
+        removeSizetTypedef = True
     elif baseType == 'optional':
         decl = '#include <optional>'
+        removeSizetTypedef = True
     elif baseType == 'variant':
         decl = '#include <variant>'
+        removeSizetTypedef = True
     elif baseType in self.types.keys():
         self.includeOutputFile(section, f'{baseType}|typeHeader')
         decl = None
@@ -152,6 +162,11 @@ def includeForSubtype(self, section, t, typeDict):
 
     if decl:
         self.includeForType(section, baseType, decl)
+    
+    if removeSizetTypedef:
+        # promotes size_t from typedef to #include, using the same
+        # decl as above to make the typedef effectively disappear
+        self.includeForType(section, 'size_t', decl)
 
     if typeDict.get('of'):
         for subType in typeDict['of']:
@@ -164,6 +179,7 @@ def genIncludesInline(self, t):
     self.includeOutputFile(f'mainHeader|includes', f'{t.name}|typeHeader')
     self.includeOutputFile(f'{t.name}|typeSource|includes', f'{t.name}|typeHeader')
 
+    self.includeOutputFile(f'{t.name}|typeSource|includes', 'enumHeader')
 
 def genIsLessStructs(self, t):
     def visit(properties):
@@ -395,7 +411,9 @@ def genDeserializer_binary(self, t):
 
     # ----- declaration
 
-    self.forwardDeclareType(f'{t.name}|binaryCtrDecl', 'istream', 'namespace std { class istream; }')
+    fmts = self.d('deserializeFrom')
+    if not fmts or 'humon' not in fmts:
+        self.forwardDeclareType(f'{t.name}|binaryCtrDecl', 'istream', 'namespace std { class istream; }')
 
     src = f'''
 {it}{it}{t.name}(std::istream & in)'''
@@ -474,7 +492,6 @@ def genSerializers(self, t):
 
 
 def genSerializerFormatWrappers(self):
-    '''format looks like 'binary' or 'humon'. It just names the selector template.'''
     it = self.indent()
     src = f'''
 
@@ -500,12 +517,16 @@ def genSerializer_humon(self, t):
     self.gen_containersSerializeToHumon.gen_builtIn(self)
     it = self.indent()
 
-    self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'''namespace std {{ class ostream; }}''')
+    fmts = self.d('deserializeFrom')
+    if not fmts or 'humon' not in fmts:
+        self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'''namespace std {{ class ostream; }}''')
     src = f'''
 {it}std::ostream & operator <<(std::ostream & out, HumonFormat<{t.name}> const & obj);'''
     self.appendSrc(f'{t.name}|forwardDecls', src)
 
-    self.forwardDeclareType(f'{t.name}|serializerDecl', 'ostream', f'''namespace std {{ class ostream; }}''')
+    fmts = self.d('deserializeFrom')
+    if not fmts or 'humon' not in fmts:
+        self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'''namespace std {{ class ostream; }}''')
     src = f'''
 {it}{it}friend std::ostream & operator <<(std::ostream & out, HumonFormat<{t.name}> const & obj);'''
     self.appendSrc(f'{t.name}|serializerDecl', src)
@@ -569,12 +590,16 @@ def genSerializer_binary(self, t):
     self.gen_containersSerializeToBinary.gen_builtIn(self)
     it = self.indent()
 
-    self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'''namespace std {{ class ostream; }}''')
+    fmts = self.d('deserializeFrom')
+    if not fmts or 'humon' not in fmts:
+        self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'''namespace std {{ class ostream; }}''')
     src = f'''
 {it}std::ostream & operator <<(std::ostream & out, BinaryFormat<{t.name}> const & obj);'''
     self.appendSrc(f'{t.name}|forwardDecls', src)
 
-    self.forwardDeclareType(f'{t.name}|serializerDecl', 'ostream', f'''namespace std {{ class ostream; }}''')
+    fmts = self.d('deserializeFrom')
+    if not fmts or 'humon' not in fmts:
+        self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'''namespace std {{ class ostream; }}''')
     src = f'''
 {it}{it}friend std::ostream & operator <<(std::ostream & out, BinaryFormat<{t.name}> const & obj);'''
     self.appendSrc(f'{t.name}|serializerDecl', src)
@@ -965,6 +990,13 @@ def genComparator(self, t):
 {it}{it}return !(lhs == rhs);
 {it}}}'''
     self.appendSrc(f'{t.name}|comparatorDef', src)
+
+
+def genTypeDiffer(self, t):
+    if not self.dIs('diffable'):
+        return
+
+    self.gen_diffs.genTypeDiffer(self, t)
 
 
 def genMembers(self, t):

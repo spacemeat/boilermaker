@@ -1,12 +1,31 @@
-def genTypeDiffer(self, t):
-    if not self.dIs('diffable'):
+def gen_builtIn(self):
+    if 'builtIn' in self.includeDiffTypes:
         return
+    self.includeDiffTypes['builtIn'] = None
+
+    it = self.indent()
+    src = f'''
+{it}template <class StructType>
+{it}struct Diff
+{it}{{
+{it}{it}Diff() : memberDiffs(false) {{ }}
+
+{it}{it}Diff(StructType const & lhs, StructType const & rhs)
+{it}{it}: memberDiffs(lhs != rhs)
+{it}{it}{{ }}
+
+{it}{it}bool memberDiffs = false;
+{it}}};'''
+    self.appendSrc('diffTemplateDecl', src)
+
+
+def genTypeDiffer(self, t):
+    self.gen_diffs.gen_builtIn(self)
 
     it = self.indent()
     typeDecl = self.makeNative(t.name)
 
-    self._addInclude(f'{t.name}|typeHeaderLocalIncludes', 'diffsHeader')
-    self.gen_diffs.genDiffTemplate(self)
+    self.includeOutputFile(f'{t.name}|typeHeader|includes', 'diffsHeader')
 
     def foreachMemberName():
         for memberName, m in t.members.items():
@@ -18,6 +37,8 @@ def genTypeDiffer(self, t):
             if m.properties['type'] in ['array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
                 memberDecl = self.makeNativeMemberType(m.properties)
                 yield (memberName, memberDecl)
+
+    self.includeForType(f'{t.name}|differDecl', 'bitset', '#include <bitset>')
 
     src = f'''
 
@@ -43,12 +64,12 @@ def genTypeDiffer(self, t):
 {it}{it}Diff<{memberDecl}> {memberName}_diffs;'''
     src += f'''
 {it}}};'''
-    self._appendToSection(f'{t.name}|differDecl', src)
+    self.appendSrc(f'{t.name}|differDecl', src)
 
     src = f'''
-{it}friend Diff<{typeDecl}>::Diff();
-{it}friend Diff<{typeDecl}>::Diff({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs);'''
-    self._appendToSection(f'{t.name}|diffFriendDecls', src)
+{it}{it}friend Diff<{typeDecl}>::Diff();
+{it}{it}friend Diff<{typeDecl}>::Diff({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs);'''
+    self.appendSrc(f'{t.name}|diffFriendDecls', src)
 
     src = f'''
 
@@ -62,53 +83,34 @@ def genTypeDiffer(self, t):
     src += f'''
 {it}{{
 {it}}}'''
-    self._appendToSection(f'{t.name}|differDef', src)
+    self.appendSrc(f'{t.name}|differDef', src)
 
     for memberName, m in t.members.items():
-        baseType = m.properties['type']
-        if baseType == 'array':
-            self.gen_diffs.genDiff_array(self)
-        elif baseType == 'pair':
-            self.gen_diffs.genDiff_pair(self)
-        elif baseType == 'tuple':
-            self.gen_diffs.genDiff_tuple(self)
-        elif baseType == 'vector':
-            self.gen_diffs.genDiff_vector(self)
-        elif baseType == 'set':
-            self.gen_diffs.genDiff_set(self)
-        elif baseType == 'unordered_set':
-            self.gen_diffs.genDiff_unordered_set(self)
-        elif baseType == 'map':
-            self.gen_diffs.genDiff_map(self)
-        elif baseType == 'unordered_map':
-            self.gen_diffs.genDiff_unordered_map(self)
+        self.gen_diffs.genSubtypeDiffer(self, t, m.properties)
 
 
-def genDiffTemplate(self):
-    if not self.dIs('diffable'):
-        return
+def genSubtypeDiffer(self, t, properties):
+    baseType = properties['type']
+    if baseType == 'array':
+        self.gen_diffs.genDiff_array(self)
+    elif baseType == 'pair':
+        self.gen_diffs.genDiff_pair(self)
+    elif baseType == 'tuple':
+        self.gen_diffs.genDiff_tuple(self)
+    elif baseType == 'vector':
+        self.gen_diffs.genDiff_vector(self)
+    elif baseType == 'set':
+        self.gen_diffs.genDiff_set(self)
+    elif baseType == 'unordered_set':
+        self.gen_diffs.genDiff_unordered_set(self)
+    elif baseType == 'map':
+        self.gen_diffs.genDiff_map(self)
+    elif baseType == 'unordered_map':
+        self.gen_diffs.genDiff_unordered_map(self)
     
-    if 'template' in self.includeDiffTypes:
-        return
-    self.includeDiffTypes['template'] = None
-
-    self._addInclude('diffsHeaderIncludes', '<bitset>')
-
-    it = self.indent()
-    
-    self._appendToSection('diffTemplateDecl', f'''
-{it}template <class StructType>
-{it}struct Diff
-{it}{{
-{it}{it}Diff() : memberDiffs(false) {{ }}
-
-{it}{it}Diff(StructType const & lhs, StructType const & rhs)
-{it}{it}: memberDiffs(lhs != rhs)
-{it}{it}{{ }}
-
-{it}{it}bool memberDiffs = false;
-{it}}};
-''')
+    ofs = properties.get('of', [])
+    for ofn in ofs:
+        self.gen_diffs.genSubtypeDiffer(self, t, ofn)
 
 
 def genDiff_array(self):
@@ -119,13 +121,14 @@ def genDiff_array(self):
         return
     self.includeDiffTypes['array'] = None
 
+    self.includeForType('diffArray', 'array', '#include <array>')
+    self.includeForType('diffArray', 'vector', '#include <vector>')
+    self.includeForType('diffArray', 'pair', '#include <utility>')
+    self.includeForType('diffArray', 'bitset', '#include <bitset>')
+
     it = self.indent()
 
-    self._addInclude('diffsHeaderIncludes', '<array>')
-    self._addInclude('diffsHeaderIncludes', '<vector>')
-    self._addInclude('diffsHeaderIncludes', '<utility>')
-
-    self._appendToSection('diffArray', f'''
+    src = f'''
 
 
 {it}template <class T, std::size_t Size>
@@ -145,7 +148,8 @@ def genDiff_array(self):
 {it}{it}}}
 
 {it}{it}std::vector<std::pair<std::size_t, Diff<T>>> elementDiffs;
-{it}}};''')
+{it}}};'''
+    self.appendSrc('diffArray', src)
 
 
 def genDiff_pair(self):
@@ -156,11 +160,12 @@ def genDiff_pair(self):
         return
     self.includeDiffTypes['pair'] = None
 
-    self._addInclude('diffsHeaderIncludes', '<utility>')
+    self.includeForType('diffPair', 'pair', '#include <utility>')
+    self.includeForType('diffPair', 'bitset', '#include <bitset>')
 
     it = self.indent()
 
-    self._appendToSection('diffPair', f'''
+    src = f'''
 
 
 {it}template <class TF, class TS>
@@ -175,7 +180,8 @@ def genDiff_pair(self):
 
 {it}{it}std::bitset<2> memberDiffs;
 {it}{it}std::pair<Diff<TF>, Diff<TS>> diffObjects;
-{it}}};''')
+{it}}};'''
+    self.appendSrc('diffPair', src)
 
 
 def genDiff_tuple(self):
@@ -186,12 +192,13 @@ def genDiff_tuple(self):
         return
     self.includeDiffTypes['tuple'] = None
 
-    self._addInclude('diffsHeaderIncludes', '<tuple>')
-    self._addInclude('diffsHeaderIncludes', '<functional>')
+    self.includeForType('diffTuple', 'tuple', '#include <tuple>')
+    self.includeForType('diffTuple', 'invoke', '#include <functional>')
+    self.includeForType('diffTuple', 'bitset', '#include <bitset>')
 
     it = self.indent()
 
-    self._appendToSection('diffTuple', f'''
+    src = f'''
 
 
 {it}// Calls func with tuple element.
@@ -231,7 +238,8 @@ def genDiff_tuple(self):
 
 {it}{it}std::bitset<sizeof...(Args)> memberDiffs;
 {it}{it}std::tuple<Diff<Args>...> diffObjects;
-{it}}};''')
+{it}}};'''
+    self.appendSrc('diffTuple', src)
 
 
 def genDiff_vector(self):
@@ -242,12 +250,13 @@ def genDiff_vector(self):
         return
     self.includeDiffTypes['vector'] = None
 
-    self._addInclude('diffsHeaderIncludes', '<vector>')
-    self._addInclude('diffsHeaderIncludes', '<tuple>')
+    self.includeForType('diffVector', 'vector', '#include <vector>')
+    self.includeForType('diffVector', 'tuple', '#include <tuple>')
+    self.includeForType('diffVector', 'bitset', '#include <bitset>')
 
     it = self.indent()
 
-    self._appendToSection('diffVector', f'''
+    src = f'''
 
 
 {it}template <class T>
@@ -281,7 +290,8 @@ def genDiff_vector(self):
 {it}{it}}}
 
 {it}{it}std::vector<std::tuple<std::size_t, DiffKind, Diff<T>>> elementDiffs;
-{it}}};''')
+{it}}};'''
+    self.appendSrc('diffVector', src)
 
 
 def genDiff_set(self):
@@ -292,13 +302,14 @@ def genDiff_set(self):
         return
     self.includeDiffTypes['set'] = None
 
-    self._addInclude('diffsHeaderIncludes', '<set>')
-    self._addInclude('diffsHeaderIncludes', '<vector>')
-    self._addInclude('diffsHeaderIncludes', '<tuple>')
+    self.includeForType('diffSet', 'set', '#include <set>')
+    self.includeForType('diffSet', 'vector', '#include <vector>')
+    self.includeForType('diffSet', 'tuple', '#include <tuple>')
+    self.includeForType('diffSet', 'bitset', '#include <bitset>')
 
     it = self.indent()
 
-    self._appendToSection('diffSet', f'''
+    src = f'''
 
 
 {it}template <class T>
@@ -330,7 +341,8 @@ def genDiff_set(self):
 {it}{it}}}
 
 {it}{it}std::vector<std::tuple<T, DiffKind, Diff<T>>> elementDiffs;
-{it}}};''')
+{it}}};'''
+    self.appendSrc('diffSet', src)
 
 
 def genDiff_unordered_set(self):
@@ -341,13 +353,14 @@ def genDiff_unordered_set(self):
         return
     self.includeDiffTypes['unordered_set'] = None
 
-    self._addInclude('diffsHeaderIncludes', '<unordered_set>')
-    self._addInclude('diffsHeaderIncludes', '<vector>')
-    self._addInclude('diffsHeaderIncludes', '<tuple>')
+    self.includeForType('diffUnorderedSet', 'unordered_set', '#include <unordered_set>')
+    self.includeForType('diffUnorderedSet', 'vector', '#include <vector>')
+    self.includeForType('diffUnorderedSet', 'tuple', '#include <tuple>')
+    self.includeForType('diffUnorderedSet', 'bitset', '#include <bitset>')
 
     it = self.indent()
 
-    self._appendToSection('diffUnorderedSet', f'''
+    src = f'''
 
 
 {it}template <class T>
@@ -379,7 +392,8 @@ def genDiff_unordered_set(self):
 {it}{it}}}
 
 {it}{it}std::vector<std::tuple<T, DiffKind, Diff<T>>> elementDiffs;
-{it}}};''')
+{it}}};'''
+    self.appendSrc('diffUnorderedSet', src)
 
 
 def genDiff_map(self):
@@ -390,13 +404,14 @@ def genDiff_map(self):
         return
     self.includeDiffTypes['map'] = None
 
-    self._addInclude('diffsHeaderIncludes', '<map>')
-    self._addInclude('diffsHeaderIncludes', '<vector>')
-    self._addInclude('diffsHeaderIncludes', '<tuple>')
+    self.includeForType('diffMap', 'map', '#include <map>')
+    self.includeForType('diffMap', 'vector', '#include <vector>')
+    self.includeForType('diffMap', 'tuple', '#include <tuple>')
+    self.includeForType('diffMap', 'bitset', '#include <bitset>')
 
     it = self.indent()
 
-    self._appendToSection('diffMap', f'''
+    src = f'''
 
 
 {it}template <class Key, class T>
@@ -437,7 +452,8 @@ def genDiff_map(self):
 {it}{it}}}
 {it}{it}
 {it}{it}std::vector<std::tuple<Key, DiffKind, Diff<T>>> elementDiffs;
-{it}}};''')
+{it}}};'''
+    self.appendSrc('diffMap', src)
 
 
 def genDiff_unordered_map(self):
@@ -448,13 +464,14 @@ def genDiff_unordered_map(self):
         return
     self.includeDiffTypes['unordered_map'] = None
 
-    self._addInclude('diffsHeaderIncludes', '<unordered_map>')
-    self._addInclude('diffsHeaderIncludes', '<vector>')
-    self._addInclude('diffsHeaderIncludes', '<tuple>')
+    self.includeForType('diffUnorderedMap', 'unordered_map', '#include <unordered_map>')
+    self.includeForType('diffUnorderedMap', 'vector', '#include <vector>')
+    self.includeForType('diffUnorderedMap', 'tuple', '#include <tuple>')
+    self.includeForType('diffUnorderedMap', 'bitset', '#include <bitset>')
 
     it = self.indent()
 
-    self._appendToSection('diffUnorderedMap', f'''
+    src = f'''
 
 
 {it}template <class Key, class T>
@@ -495,4 +512,5 @@ def genDiff_unordered_map(self):
 {it}{it}}}
 {it}{it}
 {it}{it}std::vector<std::tuple<Key, DiffKind, Diff<T>>> elementDiffs;
-{it}}};''')
+{it}}};'''
+    self.appendSrc('diffUnorderedMap', src)
