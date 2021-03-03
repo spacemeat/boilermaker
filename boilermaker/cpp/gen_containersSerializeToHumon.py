@@ -91,8 +91,8 @@ def gen_tuple(self):
 {it}{{
 {it}{it}out << "[ ";
 {it}{it}apply(
-{it}{it}{it}[](auto &&... args)
-{it}{it}{it}{it}{{ ((std::cout << HumonFormat(args) << ' '), ...); }},
+{it}{it}{it}[&out](auto &&... args)
+{it}{it}{it}{it}{{ ((out << HumonFormat(args) << ' '), ...); }},
 {it}{it}{it}* obj);
 {it}{it}out << "]";
 

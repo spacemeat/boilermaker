@@ -1,4 +1,4 @@
-#include "gen-cpp/txtToBin2/inc/boma/txtToBin.hpp"
+#include "gen-cpp/txtToBin/inc/boma/txtToBin.hpp"
 #include <iostream>
 #include <unistd.h>
 
@@ -18,13 +18,13 @@ int testEnums()
     if (auto t = get_if<hu::Trove>(&res))
     {
         auto ev = t->root() / "foo" % hu::val<VkSparseImageFormatFlagBits>();
-        cout << "Got value: '" << ev << "'.\n";
+        cout << "Got value: '" << HumonFormat(ev) << "'.\n";
         ev = (VkSparseImageFormatFlagBits) ((int) ev + VK_SPARSE_IMAGE_FORMAT_ALIGNED_MIP_SIZE_BIT - VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT);
-        cout << "Mod value: '" << ev << "'.\n";
+        cout << "Mod value: '" << HumonFormat(ev) << "'.\n";
         auto ev2 = t->root() / "bar" % hu::val<VkSystemAllocationScope>();
-        cout << "Got value: '" << ev2 << "'.\n";
+        cout << "Got value: '" << HumonFormat(ev2) << "'.\n";
         auto ev3 = t->root() / "baz" % hu::val<VkSparseImageFormatFlagBits>();
-        cout << "Got value: '" << ev3 << "'.\n";
+        cout << "Got value: '" << HumonFormat(ev3) << "'.\n";
     }
 
     return 0;

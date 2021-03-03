@@ -178,8 +178,8 @@ def genIncludesInline(self, t):
     self.includeOutputFile(f'{t.name}|typeHeader|includes', 'commonHeader')
     self.includeOutputFile(f'mainHeader|includes', f'{t.name}|typeHeader')
     self.includeOutputFile(f'{t.name}|typeSource|includes', f'{t.name}|typeHeader')
-
     self.includeOutputFile(f'{t.name}|typeSource|includes', 'enumHeader')
+
 
 def genIsLessStructs(self, t):
     def visit(properties):

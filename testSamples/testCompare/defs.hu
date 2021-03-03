@@ -1,9 +1,9 @@
 @{ app: boma, boma-version: 1.0.0 }
 {
     inherit: c++|gnu
-    headerDir: gen-cpp/inc
-    inlineDir: gen-cpp/inc/inl
-    sourceDir: gen-cpp/src
+    headerDir: $<baseDir>/gen-cpp/inc
+    inlineDir: $<baseDir>/gen-cpp/inc/inl
+    sourceDir: $<baseDir>/gen-cpp/src
     namespace: testCompare
     const: east
     headerOnly: true
@@ -14,6 +14,8 @@
     getters: true
     privateMembers: true
     outputForm: compiled
+    deserializeFrom: [humon]
+    serializeTo: [humon]
  
     types: {
         achievement: {

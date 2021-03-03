@@ -31,7 +31,7 @@ def gen_array(self):
 
     self.includeForType('binary|deserializersDecl', 'array', '#include <array>')
 
-    self.appendSrc('binary|deserializersDecl', f'''
+    src = f'''
 
 {it}template <class T, unsigned long N>
 {it}struct BinaryReader<std::array<T, N>>
@@ -45,7 +45,9 @@ def gen_array(self):
 
 {it}{it}{it}return maker(std::make_index_sequence<N> {{}});
 {it}{it}}}
-{it}}};''')
+{it}}};'''
+    self.appendSrc('binary|deserializersDecl', src)
+
 
 
 def gen_pair(self):
@@ -57,7 +59,7 @@ def gen_pair(self):
 
     self.includeForType('binary|deserializersDecl', 'pair', '#include <utility>')
 
-    self.appendSrc('binary|deserializersDecl', f'''
+    src = f'''
 
 {it}template <class T0, class T1>
 {it}struct BinaryReader<std::pair<T0, T1>>
@@ -69,7 +71,9 @@ def gen_pair(self):
 {it}{it}{it}{it}BinaryReader<T1>::extract(in)
 {it}{it}{it}}};
 {it}{it}}}
-{it}}};''')
+{it}}};'''
+    self.appendSrc('binary|deserializersDecl', src)
+
 
 
 def gen_tuple(self):
@@ -81,7 +85,7 @@ def gen_tuple(self):
 
     self.includeForType('binary|deserializersDecl', 'tuple', '#include <tuple>')
 
-    self.appendSrc('binary|deserializersDecl', f'''
+    src = f'''
 
 {it}template <class... Ts>
 {it}struct BinaryReader<std::tuple<Ts...>>
@@ -95,7 +99,9 @@ def gen_tuple(self):
 
 {it}{it}{it}return maker(std::make_index_sequence<sizeof...(Ts)> {{ }});
 {it}{it}}}
-{it}}};''')
+{it}}};'''
+    self.appendSrc('binary|deserializersDecl', src)
+
 
 
 def gen_vector(self):
@@ -107,7 +113,7 @@ def gen_vector(self):
 
     self.includeForType('binary|deserializersDecl', 'vector', '#include <vector>')
 
-    self.appendSrc('binary|deserializersDecl', f'''
+    src = f'''
 
 {it}template <class T, class A>
 {it}struct BinaryReader<std::vector<T, A>>
@@ -122,7 +128,8 @@ def gen_vector(self):
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
-{it}}};''')
+{it}}};'''
+    self.appendSrc('binary|deserializersDecl', src)
 
 
 def gen_set(self):
@@ -134,7 +141,7 @@ def gen_set(self):
 
     self.includeForType('binary|deserializersDecl', 'set', '#include <set>')
 
-    self.appendSrc('binary|deserializersDecl', f'''
+    src = f'''
 
 {it}template <class K, class C, class A>
 {it}struct BinaryReader<std::set<K, C, A>>
@@ -149,7 +156,8 @@ def gen_set(self):
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
-{it}}};''')
+{it}}};'''
+    self.appendSrc('binary|deserializersDecl', src)
 
 
 def gen_unordered_set(self):
@@ -161,7 +169,7 @@ def gen_unordered_set(self):
 
     self.includeForType('binary|deserializersDecl', 'unordered_set', '#include <unordered_set>')
 
-    self.appendSrc('binary|deserializersDecl', f'''
+    src = f'''
 
 {it}template <class K, class H, class E, class A>
 {it}struct BinaryReader<std::unordered_set<K, H, E, A>>
@@ -176,7 +184,8 @@ def gen_unordered_set(self):
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
-{it}}};''')
+{it}}};'''
+    self.appendSrc('binary|deserializersDecl', src)
 
 
 def gen_map(self):
@@ -188,7 +197,7 @@ def gen_map(self):
 
     self.includeForType('binary|deserializersDecl', 'map', '#include <map>')
 
-    self.appendSrc('binary|deserializersDecl', f'''
+    src = f'''
 
 {it}template <class K, class T, class C, class A>
 {it}struct BinaryReader<std::map<K, T, C, A>>
@@ -204,7 +213,8 @@ def gen_map(self):
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
-{it}}};''')
+{it}}};'''
+    self.appendSrc('binary|deserializersDecl', src)
 
 
 def gen_unordered_map(self):
@@ -216,7 +226,7 @@ def gen_unordered_map(self):
 
     self.includeForType('binary|deserializersDecl', 'unordered_map', '#include <unordered_map>')
 
-    self.appendSrc('binary|deserializersDecl', f'''
+    src = f'''
 
 {it}template <class K, class T, class H, class E, class A>
 {it}struct BinaryReader<std::unordered_map<K, T, H, E, A>>
@@ -232,7 +242,8 @@ def gen_unordered_map(self):
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
-{it}}};''')
+{it}}};'''
+    self.appendSrc('binary|deserializersDecl', src)
 
 
 def gen_optional(self):
@@ -244,7 +255,7 @@ def gen_optional(self):
 
     self.includeForType('binary|deserializersDecl', 'optional', '#include <optional>')
 
-    self.appendSrc('binary|deserializersDecl', f'''
+    src = f'''
 
 {it}template <class T>
 {it}struct BinaryReader<std::optional<T>>
@@ -257,7 +268,8 @@ def gen_optional(self):
 {it}{it}{it}else
 {it}{it}{it}{it}{{ return {{ }}; }}
 {it}{it}}}
-{it}}};''')
+{it}}};'''
+    self.appendSrc('binary|deserializersDecl', src)
 
 
 def gen_variant(self):
@@ -272,7 +284,7 @@ def gen_variant(self):
     self.includeForType('binary|deserializersDecl', 'tuple', '#include <tuple>')
     self.includeForType('binary|deserializersDecl', 'optional', '#include <optional>')
 
-    self.appendSrc('binary|deserializersDecl', f'''
+    src = f'''
 
 {it}template <class... Ts>
 {it}struct BinaryReader<std::variant<Ts...>>
@@ -311,4 +323,5 @@ def gen_variant(self):
 {it}{it}{it}// We make a sequence of type indices for compile-time tomfoolery.
 {it}{it}{it}return maker(std::make_index_sequence<sizeof...(Ts)> {{ }});
 {it}{it}}}
-{it}}};''')
+{it}}};'''
+    self.appendSrc('binary|deserializersDecl', src)

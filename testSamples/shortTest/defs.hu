@@ -6,7 +6,6 @@
             source: [enums.h]
             languageVersion: c|gnu17
             platform: vulkan
-            attributes: {}
         }
     ]
     types: {
@@ -29,8 +28,7 @@
             outputForm: compiled
 
             namespace: shortTest
-            deserializeFromHumon: true      // done
-            deserializeFromBinary: true     // .
+            deserializeFrom: [humon, binary]
             defaultConstructible: true      // done
             memberwiseConstructible: true   // done
             virtualDestructor: true         // done
@@ -39,8 +37,7 @@
             getters: true                   // done
             setters: true                   // done
             privateMembers: true            // done
-            serializeToHumon: true          // done
-            serializeToBinary: true         // .
+            serializeTo: [humon, binary]
             comparable: true                // done
             diffable: true                  // done
         }

@@ -4,8 +4,9 @@ import os
 def genAll(self):
     self.gen_global.genPragma(self)
     self.gen_global.genTopComment(self)
-    self.gen_global.genDecls(self)
     self.gen_global.genNamespaces(self)
+    self.gen_global.genCommonIncludes(self)
+
 
 def genPragma(self):
     src = f'#pragma once\n'
@@ -17,19 +18,6 @@ def genTopComment(self):
     self.setSrc('headerTopComment', self.d('headerTopComment'))
     self.setSrc('inlineTopComment', self.d('inlineTopComment'))
     self.setSrc('sourceTopComment', self.d('sourceTopComment'))
-
-
-def genDecls(self):
-    return
-    for kind, includes in self.includes.items():
-        outputForm, kind = kind.split('.', 1)
-        if outputForm != self.d('outputForm'):
-            continue
-
-        src = ''
-        for includeFile, section in includes.items():
-            src += f'#include {includeFile}\n'
-        self._appendToSection(section, src)
 
 
 def genNamespaces(self):
@@ -49,6 +37,10 @@ namespace hu
 }}
 '''
     self.setSrc('namespaceClose', src)
+
+
+def genCommonIncludes(self):
+    self.includeOutputFile('commonSource|includes', 'commonHeader')
 
 
 def genTypeDecls(self):

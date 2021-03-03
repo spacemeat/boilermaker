@@ -78,9 +78,9 @@
     
     variants: {
         txtToBin: {
-            headerDir: $<baseDir>/gen-cpp/txtToBin2/inc/boma
-            inlineDir: $<baseDir>/gen-cpp/txtToBin2/inc/boma/inl
-            sourceDir: $<baseDir>/gen-cpp/txtToBin2/src/boma
+            headerDir: $<baseDir>/gen-cpp/txtToBin/inc/boma
+            inlineDir: $<baseDir>/gen-cpp/txtToBin/inc/boma/inl
+            sourceDir: $<baseDir>/gen-cpp/txtToBin/src/boma
 
             namespace: txtToBin
             outputForm: compiled
