@@ -17,7 +17,34 @@ def gen_builtIn(self):
 {it}{it}{it}in.read(reinterpret_cast<char *>(& t), sizeof(T));
 {it}{it}{it}return t;
 {it}{it}}}
-{it}}};'''
+{it}}};
+
+{it}template <>
+{it}struct BinaryReader<std::string>
+{it}{{
+{it}{it}static inline std::string extract(std::istream & in)
+{it}{it}{{
+{it}{it}{it}std::string t;
+            auto size = BinaryReader<std::size_t>::extract(in);
+            t.resize(size);
+{it}{it}{it}in.read(reinterpret_cast<char *>(t.data()), size);
+{it}{it}{it}return t;
+{it}{it}}}
+{it}}};
+
+{it}template <>
+{it}struct BinaryReader<std::string_view>
+{it}{{
+{it}{it}static inline std::string extract(std::istream & in)
+{it}{it}{{
+{it}{it}{it}std::string t;
+            auto size = BinaryReader<std::size_t>::extract(in);
+            t.resize(size);
+{it}{it}{it}in.read(reinterpret_cast<char *>(t.data()), size);
+{it}{it}{it}return t;
+{it}{it}}}
+{it}}};
+'''
     self.appendSrc('deserializerFormatWrapperBase', src)
     # TODO: Specializations for string, string_view
 

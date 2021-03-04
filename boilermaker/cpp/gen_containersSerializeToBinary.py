@@ -3,6 +3,8 @@ def gen_builtIn(self):
         return
     self.containersSerializerTypes['binary|builtIn'] = None
 
+    self.includeFile('serializerFormatWrappersDecl', '<iomanip>')
+
     it = self.indent()
 
     src = f'''
@@ -18,6 +20,14 @@ def gen_builtIn(self):
 {it}template <class T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<T> const & obj)
 {it}{{
+{it}{it}auto up = reinterpret_cast<{self.const('uint8_t')} *>(&(* obj));
+        std::cout << "Writing " << sizeof(T) << " int bytes: ";
+        std::cout.flush();
+        for (std::size_t i = 0; i < sizeof(T); ++i)
+        {{
+            std::cout << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(up[i]);
+        }}
+        std::cout << '\\n';
 {it}{it}auto p = reinterpret_cast<{self.const('char')} *>(&(* obj));
 {it}{it}out.write(p, sizeof(T));
 
@@ -27,6 +37,13 @@ def gen_builtIn(self):
 {it}template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<T> const & obj)
 {it}{{
+{it}{it}auto up = reinterpret_cast<{self.const('uint8_t')} *>(&(* obj));
+        std::cout << "Writing " << sizeof(T) << " float bytes: ";
+        for (std::size_t i = 0; i < sizeof(T); ++i)
+        {{
+            std::cout << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(up[i]);
+        }}
+        std::cout << '\\n';
 {it}{it}auto p = reinterpret_cast<{self.const('char')} *>(&(* obj));
 {it}{it}out.write(p, sizeof(T));
 
@@ -41,7 +58,14 @@ def gen_builtIn(self):
 
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::string_view> const & obj)
 {it}{{
+        std::cout << "Writing string_view:\\n";
 {it}{it}out << BinaryFormat(obj->size());
+        std::cout << "           -- chars: ";
+        for (std::size_t i = 0; i < obj->size(); ++i)
+        {{
+            std::cout << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((*obj)[i]);
+        }}
+        std::cout << '\\n';
 {it}{it}out.write(obj->data(), obj->size());
 
 {it}{it}return out;
@@ -49,7 +73,14 @@ def gen_builtIn(self):
 
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::string> const & obj)
 {it}{{
+        std::cout << "Writing string:\\n";
 {it}{it}out << BinaryFormat(obj->size());
+        std::cout << "           -- chars: ";
+        for (std::size_t i = 0; i < obj->size(); ++i)
+        {{
+            std::cout << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((*obj)[i]);
+        }}
+        std::cout << '\\n';
 {it}{it}out.write(obj->data(), obj->size());
 
 {it}{it}return out;
@@ -74,6 +105,7 @@ def gen_array(self):
 {it}template <class T, unsigned long N>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::array<T, N>> const & obj)
 {it}{{
+        std::cout << "Writing array:\\n";
 {it}{it}for (std::size_t i = 0; i < N; ++i)
 {it}{it}  {{ out << BinaryFormat( (* obj)[i] ); }}
 
@@ -97,6 +129,7 @@ def gen_pair(self):
 {it}template <class T0, class T1>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::pair<T0, T1>> const & obj)
 {it}{{
+        std::cout << "Writing pair:\\n";
 {it}{it}out << BinaryFormat(obj->first);
 {it}{it}out << BinaryFormat(obj->second);
 
@@ -120,9 +153,10 @@ def gen_tuple(self):
 {it}template <class... Ts>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::tuple<Ts...>> const & obj)
 {it}{{
+        std::cout << "Writing tuple:\\n";
 {it}{it}std::apply(
-{it}{it}{it}[](auto &&... args)
-{it}{it}{it}{it}{{ ((std::cout << BinaryFormat(args)), ...); }},
+{it}{it}{it}[&out](auto &&... args)
+{it}{it}{it}{it}{{ ((out << BinaryFormat(args)), ...); }},
 {it}{it}{it}* obj);
 
 {it}{it}return out;
@@ -145,6 +179,7 @@ def gen_vector(self):
 {it}template <class T, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::vector<T, A>> const & obj)
 {it}{{
+        std::cout << "Writing vector:\\n";
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & elem : * obj)
 {it}{it}  {{ out << BinaryFormat(elem); }}
@@ -169,6 +204,7 @@ def gen_set(self):
 {it}template <class K, class C, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::set<K, C, A>> const & obj)
 {it}{{
+        std::cout << "Writing set:\\n";
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & elem : * obj)
 {it}{it}  {{ out << BinaryFormat(elem); }}
@@ -193,6 +229,7 @@ def gen_unordered_set(self):
 {it}template <class K, class H, class E, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::unordered_set<K, H, E, A>> const & obj)
 {it}{{
+        std::cout << "Writing unordered_set:\\n";
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & elem : * obj)
 {it}{it}  {{ out << BinaryFormat(elem); }}
@@ -217,6 +254,7 @@ def gen_map(self):
 {it}template <class K, class T, class C, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::map<K, T, C, A>> const & obj)
 {it}{{
+        std::cout << "Writing map:\\n";
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & [k, v] : * obj)
 {it}{it}  {{ out << BinaryFormat(k) << BinaryFormat(v); }}
@@ -241,6 +279,7 @@ def gen_unordered_map(self):
 {it}template <class K, class T, class H, class E, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::unordered_map<K, T, H, E, A>> const & obj)
 {it}{{
+        std::cout << "Writing unordered_map:\\n";
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & [k, v] : * obj)
 {it}{it}  {{ out << BinaryFormat(k) << BinaryFormat(v); }}
@@ -265,6 +304,7 @@ def gen_optional(self):
 {it}template <class T>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::optional<T>> const & obj)
 {it}{{
+        std::cout << "Writing optional:\\n";
 {it}{it}out << BinaryFormat(obj->has_value());
 {it}{it}if (obj->has_value())
 {it}{it}  {{ out << BinaryFormat(** obj); }}
@@ -289,6 +329,7 @@ def gen_variant(self):
 {it}template <class... Ts>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::variant<Ts...>> const & obj)
 {it}{{
+        std::cout << "Writing variant:\\n";
 {it}{it}out << BinaryFormat(obj->index());
 {it}{it}std::visit(
 {it}{it}{it}[&](auto && o)

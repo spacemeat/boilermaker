@@ -25,6 +25,7 @@ int testEnums()
         cout << "Got value: '" << HumonFormat(ev2) << "'.\n";
         auto ev3 = t->root() / "baz" % hu::val<VkSparseImageFormatFlagBits>();
         cout << "Got value: '" << HumonFormat(ev3) << "'.\n";
+        cout << '\n';
     }
 
     return 0;
@@ -88,6 +89,8 @@ int testWut(string_view dir)
             }
         }
 
+        cout << '\n';
+
         return 0;
     }
 
@@ -103,7 +106,32 @@ int testPrintingWut(string_view dir)
     {
         auto whaa = t->root() / "whaa" % hu::val<txtToBin::wut> {};
 
-        cout << HumonFormat(whaa);
+        cout << HumonFormat(whaa) << "\n\n";
+
+        return 0;
+    }
+
+    return 1;
+}
+
+int testBinaryWut(string_view dir)
+{
+    string path = string(dir) + string("/testSamples/newsamp/wut.hu");
+    cout << "path = " << path << '\n';
+    auto res = hu::Trove::fromFile(path);
+    if (auto t = get_if<hu::Trove>(&res))
+    {
+        auto whaa = t->root() / "whaa" % hu::val<txtToBin::wut> {};
+
+        auto out = ofstream("wutBinary.bin", std::ios::binary);
+        out << BinaryFormat(whaa);
+        out.close();
+
+        auto in = ifstream("wutBinary.bin", std::ios::binary);
+        auto nuwut = BinaryReader<txtToBin::wut>::extract(in);
+        in.close();
+
+        cout << HumonFormat(nuwut) << "\n\n";
 
         return 0;
     }
@@ -135,6 +163,10 @@ int main(int argc, char ** argv)
         { return ret; }
     
     ret = testPrintingWut(path);
+    if (ret)
+        { return ret; }
+    
+    ret = testBinaryWut(path);
     if (ret)
         { return ret; }
 
