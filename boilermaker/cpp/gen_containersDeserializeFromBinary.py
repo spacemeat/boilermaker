@@ -8,13 +8,45 @@ def gen_builtIn(self):
     it = self.indent()
     src = f'''
 
-{it}template <class T>
+{it}template <class T, typename V = void>
 {it}struct BinaryReader
+{it}{{
+{it}}};
+
+{it}template <class T>
+{it}struct BinaryReader<T, typename std::enable_if_t<std::is_integral_v<T>>>
 {it}{{
 {it}{it}static inline T extract(std::istream & in)
 {it}{it}{{
 {it}{it}{it}T t;
-{it}{it}{it}in.read(reinterpret_cast<char *>(& t), sizeof(T));
+{it}{it}{it}in.read(reinterpret_cast<char *>(& t), sizeof(T));'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading integ: " << t << "\\n";'''
+
+    src += f'''
+{it}{it}{it}return t;
+{it}{it}}}
+{it}}};
+
+{it}template <class T>
+{it}struct BinaryReader<T, typename std::enable_if_t<std::is_floating_point_v<T>>>
+{it}{{
+{it}{it}static inline T extract(std::istream & in)
+{it}{it}{{
+{it}{it}{it}T t;
+{it}{it}{it}in.read(reinterpret_cast<char *>(& t), sizeof(T));'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading float: " << t << "\\n";'''
+
+    src += f'''
 {it}{it}{it}return t;
 {it}{it}}}
 {it}}};
@@ -23,30 +55,58 @@ def gen_builtIn(self):
 {it}struct BinaryReader<std::string>
 {it}{{
 {it}{it}static inline std::string extract(std::istream & in)
-{it}{it}{{
+{it}{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading string: \\n";'''
+
+    src += f'''
 {it}{it}{it}std::string t;
-            auto size = BinaryReader<std::size_t>::extract(in);
-            t.resize(size);
-{it}{it}{it}in.read(reinterpret_cast<char *>(t.data()), size);
+{it}{it}{it}auto size = BinaryReader<std::size_t>::extract(in);
+{it}{it}{it}t.resize(size);
+{it}{it}{it}in.read(reinterpret_cast<char *>(t.data()), size);'''
+
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "           -- : " << t << "\\n";'''
+
+    src += f'''
 {it}{it}{it}return t;
 {it}{it}}}
 {it}}};
 
 {it}template <>
 {it}struct BinaryReader<std::string_view>
-{it}{{
+{it}{{  // NOTE: Returning std::string, until we get a string table
 {it}{it}static inline std::string extract(std::istream & in)
-{it}{it}{{
+{it}{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading string_view:\\n";'''
+
+    src += f'''
 {it}{it}{it}std::string t;
-            auto size = BinaryReader<std::size_t>::extract(in);
-            t.resize(size);
-{it}{it}{it}in.read(reinterpret_cast<char *>(t.data()), size);
+{it}{it}{it}auto size = BinaryReader<std::size_t>::extract(in);
+{it}{it}{it}t.resize(size);
+{it}{it}{it}in.read(reinterpret_cast<char *>(t.data()), size);'''
+
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "           -- : " << t << "\\n";'''
+
+    src += f'''
 {it}{it}{it}return t;
 {it}{it}}}
-{it}}};
-'''
+{it}}};'''
     self.appendSrc('deserializerFormatWrapperBase', src)
-    # TODO: Specializations for string, string_view
 
 
 def gen_array(self):
@@ -64,7 +124,15 @@ def gen_array(self):
 {it}struct BinaryReader<std::array<T, N>>
 {it}{{
 {it}{it}static inline std::array<T, N> extract(std::istream & in)
-{it}{it}{{
+{it}{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading array:\\n";'''
+
+    src += f'''
 {it}{it}{it}auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
 {it}{it}{it}{it}return std::array<T, N> {{ ((void) Seq, BinaryReader<T>::extract(in))... }};
@@ -74,7 +142,6 @@ def gen_array(self):
 {it}{it}}}
 {it}}};'''
     self.appendSrc('binary|deserializersDecl', src)
-
 
 
 def gen_pair(self):
@@ -92,7 +159,15 @@ def gen_pair(self):
 {it}struct BinaryReader<std::pair<T0, T1>>
 {it}{{
 {it}{it}static inline std::pair<T0, T1> extract(std::istream & in)
-{it}{it}{{
+{it}{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading pair:\\n";'''
+
+    src += f'''
 {it}{it}{it}return {{
 {it}{it}{it}{it}BinaryReader<T0>::extract(in),
 {it}{it}{it}{it}BinaryReader<T1>::extract(in)
@@ -100,7 +175,6 @@ def gen_pair(self):
 {it}{it}}}
 {it}}};'''
     self.appendSrc('binary|deserializersDecl', src)
-
 
 
 def gen_tuple(self):
@@ -118,7 +192,15 @@ def gen_tuple(self):
 {it}struct BinaryReader<std::tuple<Ts...>>
 {it}{{
 {it}{it}static inline std::tuple<Ts...> extract(std::istream & in)
-{it}{it}{{
+{it}{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading tuple:\\n";'''
+
+    src += f'''
 {it}{it}{it}auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
 {it}{it}{it}{it}return std::tuple<Ts...> {{ ((void) Seq, BinaryReader<Ts>::extract(in))... }};
@@ -128,7 +210,6 @@ def gen_tuple(self):
 {it}{it}}}
 {it}}};'''
     self.appendSrc('binary|deserializersDecl', src)
-
 
 
 def gen_vector(self):
@@ -146,7 +227,15 @@ def gen_vector(self):
 {it}struct BinaryReader<std::vector<T, A>>
 {it}{{
 {it}{it}static inline std::vector<T, A> extract(std::istream & in)
-{it}{it}{{
+{it}{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading vector:\\n";'''
+
+    src += f'''
 {it}{it}{it}std::vector<T, A> rv;
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
@@ -174,7 +263,15 @@ def gen_set(self):
 {it}struct BinaryReader<std::set<K, C, A>>
 {it}{{
 {it}{it}static inline std::set<K, C, A> extract(std::istream & in)
-{it}{it}{{
+{it}{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading set:\\n";'''
+
+    src += f'''
 {it}{it}{it}std::set<K, C, A> rv;
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
@@ -202,7 +299,15 @@ def gen_unordered_set(self):
 {it}struct BinaryReader<std::unordered_set<K, H, E, A>>
 {it}{{
 {it}{it}static inline std::unordered_set<K, H, E, A> extract(std::istream & in)
-{it}{it}{{
+{it}{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading unordered_set:\\n";'''
+
+    src += f'''
 {it}{it}{it}std::unordered_set<K, H, E, A> rv;
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
@@ -230,12 +335,21 @@ def gen_map(self):
 {it}struct BinaryReader<std::map<K, T, C, A>>
 {it}{{
 {it}{it}static inline std::map<K, T, C, A> extract(std::istream & in)
-{it}{it}{{
+{it}{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading map:\\n";'''
+
+    src += f'''
 {it}{it}{it}std::map<K, T, C, A> rv;
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
 {it}{it}{it}{{
-{it}{it}{it}{it}rv.emplace(BinaryReader<K>::extract(in),
+{it}{it}{it}{it}auto key = BinaryReader<K>::extract(in);
+{it}{it}{it}{it}rv.emplace(std::move(key),
 {it}{it}{it}{it}           BinaryReader<T>::extract(in));
 {it}{it}{it}}}
 {it}{it}{it}return rv;
@@ -259,12 +373,21 @@ def gen_unordered_map(self):
 {it}struct BinaryReader<std::unordered_map<K, T, H, E, A>>
 {it}{{
 {it}{it}static inline std::unordered_map<K, T, H, E, A> extract(std::istream & in)
-{it}{it}{{
+{it}{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading unordered_map:\\n";'''
+
+    src += f'''
 {it}{it}{it}std::unordered_map<K, T, H, E, A> rv;
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
 {it}{it}{it}{{
-{it}{it}{it}{it}rv.emplace(BinaryReader<K>::extract(in),
+{it}{it}{it}{it}auto key = BinaryReader<K>::extract(in);
+{it}{it}{it}{it}rv.emplace(std::move(key),
 {it}{it}{it}{it}           BinaryReader<T>::extract(in));
 {it}{it}{it}}}
 {it}{it}{it}return rv;
@@ -288,9 +411,17 @@ def gen_optional(self):
 {it}struct BinaryReader<std::optional<T>>
 {it}{{
 {it}{it}static inline std::optional<T> extract(std::istream & in)
-{it}{it}{{
-{it}{it}{it}auto hasValue = BinaryReader<bool>::extract(in);
-{it}{it}{it}if (hasValue)
+{it}{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading optional:\\n";'''
+
+    src += f'''
+{it}{it}{it}auto hasValue = BinaryReader<char>::extract(in);
+{it}{it}{it}if (static_cast<bool>(hasValue))
 {it}{it}{it}{it}{{ return BinaryReader<T>::extract(in); }}
 {it}{it}{it}else
 {it}{it}{it}{it}{{ return {{ }}; }}
@@ -330,8 +461,16 @@ def gen_variant(self):
 {it}{it}}};
 
 {it}{it}static inline std::variant<Ts...> extract(std::istream & in)
-{it}{it}{{
-            auto idx = BinaryReader<std::size_t>::extract(in);
+{it}{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'deserializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading variant:\\n";'''
+
+    src += f'''
+{it}{it}{it}auto idx = BinaryReader<std::size_t>::extract(in);
 
 {it}{it}{it}auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{

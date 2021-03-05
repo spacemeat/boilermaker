@@ -39,13 +39,17 @@ def genDeserializers(self):
 
 
 def genDeserializeFromHumon(self, enumName, enum):
+    if f'humon|{enumName}' in self.containersDeserializerTypes:
+        return
+    self.containersDeserializerTypes[f'humon|{enumName}'] = None
+
     it = self.indent()
     enumDecl = self.makeNative(enumName)
 
     # write inline bits
-    self.gen_containersDeserializeFromHumon.gen_includeHumon(self, 'enumDeserializerDecls')
-    self.includeOutputFile('enumDeserializerDecls', 'commonHeader')
-    self.includeFile('enumDeserializerDecls', '<cstring>')
+    self.gen_containersDeserializeFromHumon.gen_includeHumon(self, 'humon|enumDeserializerDecls')
+    self.includeOutputFile('humon|enumDeserializerDecls', 'commonHeader')
+    self.includeFile('humon|enumDeserializerDecls', '<cstring>')
 
     src = f'''
 
@@ -101,11 +105,28 @@ def genDeserializeFromHumon(self, enumName, enum):
     src += f'''
 {it}{it}}}
 {it}}};'''
-    self.appendSrc('enumDeserializerDecls', src)
+    self.appendSrc('humon|enumDeserializerDecls', src)
 
 
 def genDeserializeFromBinary(self, enumName, enum):
-    pass
+    if 'binary|enum' in self.containersDeserializerTypes:
+        return
+    self.containersDeserializerTypes['binary|enum'] = None
+
+    it = self.indent()
+    src = f'''
+
+{it}template <class T>
+{it}struct BinaryReader<T, typename std::enable_if_t<std::is_enum_v<T>>>
+{it}{{
+{it}{it}static inline T extract(std::istream & in)
+{it}{it}{{
+{it}{it}{it}T t;
+{it}{it}{it}in.read(reinterpret_cast<char *>(& t), sizeof(T));
+{it}{it}{it}return t;
+{it}{it}}}
+{it}}};'''
+    self.appendSrc('binary|enumDeserializerDecls', src)
 
 
 def genSerializers(self):
@@ -211,12 +232,12 @@ def genSerializerToBinary(self, enumName, enum):
 
     #decl
 
-    self.includeFile('enumSerializerDecls', "<type_traits>")
-    self.includeForType('enumSerializerDecls', 'ostream', '#include <iostream>')
+    self.includeFile('binary|serializersDecl', "<type_traits>")
+    self.includeForType('binary|serializersDecl', 'ostream', '#include <iostream>')
 
-    fmts = self.d('deserializeFrom')
-    if not fmts or 'humon' not in fmts:
-        self.forwardDeclareType('enumSerializerDecls', 'ostream', 'class std::ostream;')
+    fmts = self.d('serializeTo')
+    if not fmts or 'binary' not in fmts:
+        self.forwardDeclareType('binary|serializersDecl', 'ostream', 'class std::ostream;')
 
     src = f'''
 
@@ -228,4 +249,4 @@ def genSerializerToBinary(self, enumName, enum):
 
 {it}{it}return out;
 {it}}}'''
-    self.appendSrc('enumSerializerDecls', src)
+    self.appendSrc('binary|serializersDecl', src)

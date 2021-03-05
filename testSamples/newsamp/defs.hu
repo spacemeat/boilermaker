@@ -33,16 +33,16 @@
                                         type: variant
                                         of: [ {
                                                 type: pair
-                                                of: [string_view, string]
+                                                of: [string, string]
                                             } {
                                                 type: tuple
                                                 of: [size_t, int, double]
                                             } {
                                                 type: map
-                                                of: [string_view, int]
+                                                of: [string, int]
                                             } {
                                                 type: unordered_map
-                                                of: [string_view, int]
+                                                of: [string, int]
                                             } {
                                                 type: set
                                                 of: [ {
@@ -53,7 +53,7 @@
                                                 isLess: "return lhs.begin()->second.get_a() < rhs.begin()->second.get_a();"
                                             } {
                                                 type: unordered_set
-                                                of: string_view
+                                                of: string
                                             } {
                                                 alias: setOfMaps
                                                 type: set
@@ -98,6 +98,7 @@
             serializeToBinary: true         // .
             comparable: true                // done
             diffable: true                  // done
+            caveperson: [serializeBinary, deserializeBinary]
         }
         app: {
             headerDir: gen-cpp/app/inc/boma

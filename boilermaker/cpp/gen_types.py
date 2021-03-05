@@ -425,7 +425,7 @@ def genDeserializer_binary(self, t):
     # ----- signature
     src = f'''
 
-{it}{t.name}::{t.name}(std::istream & in)
+{it}{typeDecl}::{t.name}(std::istream & in)
 '''
     # ----- member constructors
     firstMember = True
@@ -441,7 +441,21 @@ def genDeserializer_binary(self, t):
     src += f'''
 {it}{{
 {it}}}'''
-    self.appendSrc(f'{t.name}|binaryCtrDef', src + ';')
+    self.appendSrc(f'{t.name}|binaryCtrDef', src)
+
+    src = f'''
+
+    template <>
+    struct BinaryReader<{typeDecl}>
+    {{
+        static inline {typeDecl} extract(std::istream & in)
+        {{
+            return {typeDecl}(in);
+        }}
+    }};
+'''
+    self.appendSrc(f'{t.name}|binaryExtractor', src)
+
 
     # do container types
     for memberName, m in t.members.items():
@@ -546,7 +560,7 @@ def genSerializer_humon(self, t):
             src += f'''
 {it}{it}out << " {memberName}: " << HumonFormat(obj->{memberName});'''
     src += f'''
-{it}{it}out << '}}';
+{it}{it}out << " }}";
 {it}{it}return out;
 {it}}}'''
 

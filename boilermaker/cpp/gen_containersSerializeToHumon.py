@@ -280,7 +280,7 @@ def gen_variant(self):
 {it}{it}
 {it}{it}std::visit(
 {it}{it}{it}[&](auto && o) 
-{it}{it}{it}{it}{{ out << HumonFormat(o) << " @type: " << names[obj->index()] << " /* " << obj->index() << " */"; }},
+{it}{it}{it}{it}{{ out << HumonFormat(o) << " @type: " << names[obj->index()]; }},
 {it}{it}{it}* obj);
 
 {it}{it}return out;

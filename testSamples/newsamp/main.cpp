@@ -128,7 +128,7 @@ int testBinaryWut(string_view dir)
         out.close();
 
         auto in = ifstream("wutBinary.bin", std::ios::binary);
-        auto nuwut = BinaryReader<txtToBin::wut>::extract(in);
+        auto nuwut = txtToBin::wut(in);
         in.close();
 
         cout << HumonFormat(nuwut) << "\n\n";

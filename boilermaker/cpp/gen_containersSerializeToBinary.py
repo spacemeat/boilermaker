@@ -6,7 +6,8 @@ def gen_builtIn(self):
     self.includeFile('serializerFormatWrappersDecl', '<iomanip>')
 
     it = self.indent()
-
+    caveStream = self.d('caveStream') or 'cout'
+    
     src = f'''
 
 {it}template <class T>
@@ -19,15 +20,22 @@ def gen_builtIn(self):
 
 {it}template <class T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<T> const & obj)
-{it}{{
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        src += f'''
+
 {it}{it}auto up = reinterpret_cast<{self.const('uint8_t')} *>(&(* obj));
-        std::cout << "Writing " << sizeof(T) << " int bytes: ";
-        std::cout.flush();
-        for (std::size_t i = 0; i < sizeof(T); ++i)
-        {{
-            std::cout << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(up[i]);
-        }}
-        std::cout << '\\n';
+{it}{it}std::{caveStream} << "Writing " << sizeof(T) << " integ bytes: ";
+{it}{it}std::{caveStream}.flush();
+{it}{it}for (std::size_t i = 0; i < sizeof(T); ++i)
+{it}{it}{{
+{it}{it}{it}std::{caveStream} << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(up[i]);
+{it}{it}}}
+{it}{it}std::{caveStream} << '\\n';'''
+
+    src += f'''
 {it}{it}auto p = reinterpret_cast<{self.const('char')} *>(&(* obj));
 {it}{it}out.write(p, sizeof(T));
 
@@ -36,14 +44,19 @@ def gen_builtIn(self):
 
 {it}template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<T> const & obj)
-{it}{{
+{it}{{'''
+
+    if dbgs and 'serializeBinary' in dbgs:
+        src += f'''
 {it}{it}auto up = reinterpret_cast<{self.const('uint8_t')} *>(&(* obj));
-        std::cout << "Writing " << sizeof(T) << " float bytes: ";
-        for (std::size_t i = 0; i < sizeof(T); ++i)
-        {{
-            std::cout << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(up[i]);
-        }}
-        std::cout << '\\n';
+{it}{it}std::{caveStream} << "Writing " << sizeof(T) << " float bytes: ";
+{it}{it}for (std::size_t i = 0; i < sizeof(T); ++i)
+{it}{it}{{
+{it}{it}{it}std::{caveStream} << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(up[i]);
+{it}{it}}}
+{it}{it}std::{caveStream} << '\\n';'''
+
+    src += f'''
 {it}{it}auto p = reinterpret_cast<{self.const('char')} *>(&(* obj));
 {it}{it}out.write(p, sizeof(T));
 
@@ -57,30 +70,48 @@ def gen_builtIn(self):
     src = f'''
 
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::string_view> const & obj)
-{it}{{
-        std::cout << "Writing string_view:\\n";
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        src += f'''
+{it}{it}std::{caveStream} << "Writing string_view:\\n";
 {it}{it}out << BinaryFormat(obj->size());
-        std::cout << "           -- chars: ";
-        for (std::size_t i = 0; i < obj->size(); ++i)
-        {{
-            std::cout << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((*obj)[i]);
-        }}
-        std::cout << '\\n';
+{it}{it}std::{caveStream} << "             -- chars: ";
+{it}{it}for (std::size_t i = 0; i < obj->size(); ++i)
+{it}{it}{{
+{it}{it}{it}std::{caveStream} << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((*obj)[i]);
+{it}{it}}}
+{it}{it}std::{caveStream} << '\\n';'''
+    else:
+        src += f'''
+{it}{it}out << BinaryFormat(obj->size());'''
+
+    src += f'''
 {it}{it}out.write(obj->data(), obj->size());
 
 {it}{it}return out;
 {it}}}
 
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::string> const & obj)
-{it}{{
-        std::cout << "Writing string:\\n";
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        src += f'''
+{it}{it}std::{caveStream} << "Writing string:\\n";
 {it}{it}out << BinaryFormat(obj->size());
-        std::cout << "           -- chars: ";
-        for (std::size_t i = 0; i < obj->size(); ++i)
-        {{
-            std::cout << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((*obj)[i]);
-        }}
-        std::cout << '\\n';
+{it}{it}std::{caveStream} << "             -- chars: ";
+{it}{it}for (std::size_t i = 0; i < obj->size(); ++i)
+{it}{it}{{
+{it}{it}{it}std::{caveStream} << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((*obj)[i]);
+{it}{it}}}
+{it}{it}std::{caveStream} << '\\n';'''
+    else:
+        src += f'''
+{it}{it}out << BinaryFormat(obj->size());'''
+
+    src += f'''
 {it}{it}out.write(obj->data(), obj->size());
 
 {it}{it}return out;
@@ -100,17 +131,25 @@ def gen_array(self):
     self.includeForType('binary|serializersDecl', 'ostream', '#include <iostream>')
     self.includeOutputFile('binary|serializersDecl', 'commonHeader')
 
-    self.appendSrc('binary|serializersDecl', f'''
+    src = f'''
 
 {it}template <class T, unsigned long N>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::array<T, N>> const & obj)
-{it}{{
-        std::cout << "Writing array:\\n";
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Writing array:\\n";'''
+
+    src += f'''
 {it}{it}for (std::size_t i = 0; i < N; ++i)
 {it}{it}  {{ out << BinaryFormat( (* obj)[i] ); }}
 
 {it}{it}return out;
-{it}}}''')
+{it}}}'''
+    self.appendSrc('binary|serializersDecl', src)
 
 
 def gen_pair(self):
@@ -124,17 +163,25 @@ def gen_pair(self):
     self.includeForType('binary|serializersDecl', 'ostream', '#include <iostream>')
     self.includeOutputFile('binary|serializersDecl', 'commonHeader')
 
-    self.appendSrc('binary|serializersDecl', f'''
+    src = f'''
 
 {it}template <class T0, class T1>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::pair<T0, T1>> const & obj)
-{it}{{
-        std::cout << "Writing pair:\\n";
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Writing pair:\\n";'''
+
+    src += f'''
 {it}{it}out << BinaryFormat(obj->first);
 {it}{it}out << BinaryFormat(obj->second);
 
 {it}{it}return out;
-{it}}}''')
+{it}}}'''
+    self.appendSrc('binary|serializersDecl', src)
 
 
 def gen_tuple(self):
@@ -148,19 +195,27 @@ def gen_tuple(self):
     self.includeForType('binary|serializersDecl', 'ostream', '#include <iostream>')
     self.includeOutputFile('binary|serializersDecl', 'commonHeader')
 
-    self.appendSrc('binary|serializersDecl', f'''
+    src = f'''
 
 {it}template <class... Ts>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::tuple<Ts...>> const & obj)
-{it}{{
-        std::cout << "Writing tuple:\\n";
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Writing tuple:\\n";'''
+
+    src += f'''
 {it}{it}std::apply(
 {it}{it}{it}[&out](auto &&... args)
 {it}{it}{it}{it}{{ ((out << BinaryFormat(args)), ...); }},
 {it}{it}{it}* obj);
 
 {it}{it}return out;
-{it}}}''')
+{it}}}'''
+    self.appendSrc('binary|serializersDecl', src)
 
 
 def gen_vector(self):
@@ -174,18 +229,26 @@ def gen_vector(self):
     self.includeForType('binary|serializersDecl', 'ostream', '#include <iostream>')
     self.includeOutputFile('binary|serializersDecl', 'commonHeader')
 
-    self.appendSrc('binary|serializersDecl', f'''
+    src = f'''
 
 {it}template <class T, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::vector<T, A>> const & obj)
-{it}{{
-        std::cout << "Writing vector:\\n";
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Writing vector:\\n";'''
+
+    src += f'''
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & elem : * obj)
 {it}{it}  {{ out << BinaryFormat(elem); }}
 
 {it}{it}return out;
-{it}}}''')
+{it}}}'''
+    self.appendSrc('binary|serializersDecl', src)
 
 
 def gen_set(self):
@@ -199,18 +262,26 @@ def gen_set(self):
     self.includeForType('binary|serializersDecl', 'ostream', '#include <iostream>')
     self.includeOutputFile('binary|serializersDecl', 'commonHeader')
 
-    self.appendSrc('binary|serializersDecl', f'''
+    src = f'''
 
 {it}template <class K, class C, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::set<K, C, A>> const & obj)
-{it}{{
-        std::cout << "Writing set:\\n";
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Writing set:\\n";'''
+
+    src += f'''
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & elem : * obj)
 {it}{it}  {{ out << BinaryFormat(elem); }}
 
 {it}{it}return out;
-{it}}}''')
+{it}}}'''
+    self.appendSrc('binary|serializersDecl', src)
 
 
 def gen_unordered_set(self):
@@ -224,18 +295,26 @@ def gen_unordered_set(self):
     self.includeForType('binary|serializersDecl', 'ostream', '#include <iostream>')
     self.includeOutputFile('binary|serializersDecl', 'commonHeader')
 
-    self.appendSrc('binary|serializersDecl', f'''
+    src = f'''
 
 {it}template <class K, class H, class E, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::unordered_set<K, H, E, A>> const & obj)
-{it}{{
-        std::cout << "Writing unordered_set:\\n";
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Writing unordered_set:\\n";'''
+
+    src += f'''
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & elem : * obj)
 {it}{it}  {{ out << BinaryFormat(elem); }}
 
 {it}{it}return out;
-{it}}}''')
+{it}}}'''
+    self.appendSrc('binary|serializersDecl', src)
 
 
 def gen_map(self):
@@ -249,18 +328,26 @@ def gen_map(self):
     self.includeForType('binary|serializersDecl', 'ostream', '#include <iostream>')
     self.includeOutputFile('binary|serializersDecl', 'commonHeader')
 
-    self.appendSrc('binary|serializersDecl', f'''
+    src = f'''
 
 {it}template <class K, class T, class C, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::map<K, T, C, A>> const & obj)
-{it}{{
-        std::cout << "Writing map:\\n";
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Writing map:\\n";'''
+
+    src += f'''
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & [k, v] : * obj)
 {it}{it}  {{ out << BinaryFormat(k) << BinaryFormat(v); }}
 
 {it}{it}return out;
-{it}}}''')
+{it}}}'''
+    self.appendSrc('binary|serializersDecl', src)
 
 
 def gen_unordered_map(self):
@@ -274,18 +361,26 @@ def gen_unordered_map(self):
     self.includeForType('binary|serializersDecl', 'ostream', '#include <iostream>')
     self.includeOutputFile('binary|serializersDecl', 'commonHeader')
 
-    self.appendSrc('binary|serializersDecl', f'''
+    src = f'''
 
 {it}template <class K, class T, class H, class E, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::unordered_map<K, T, H, E, A>> const & obj)
-{it}{{
-        std::cout << "Writing unordered_map:\\n";
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Writing unordered_map:\\n";'''
+
+    src += f'''
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & [k, v] : * obj)
 {it}{it}  {{ out << BinaryFormat(k) << BinaryFormat(v); }}
 
 {it}{it}return out;
-{it}}}''')
+{it}}}'''
+    self.appendSrc('binary|serializersDecl', src)
 
 
 def gen_optional(self):
@@ -299,18 +394,26 @@ def gen_optional(self):
     self.includeForType('binary|serializersDecl', 'ostream', '#include <iostream>')
     self.includeOutputFile('binary|serializersDecl', 'commonHeader')
 
-    self.appendSrc('binary|serializersDecl', f'''
+    src = f'''
 
 {it}template <class T>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::optional<T>> const & obj)
-{it}{{
-        std::cout << "Writing optional:\\n";
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Writing optional:\\n";'''
+
+    src += f'''
 {it}{it}out << BinaryFormat(obj->has_value());
 {it}{it}if (obj->has_value())
 {it}{it}  {{ out << BinaryFormat(** obj); }}
 
 {it}{it}return out;
-{it}}}''')
+{it}}}'''
+    self.appendSrc('binary|serializersDecl', src)
 
 
 def gen_variant(self):
@@ -324,12 +427,19 @@ def gen_variant(self):
     self.includeForType('binary|serializersDecl', 'ostream', '#include <iostream>')
     self.includeOutputFile('binary|serializersDecl', 'commonHeader')
 
-    self.appendSrc('binary|serializersDecl', f'''
+    src = f'''
 
 {it}template <class... Ts>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::variant<Ts...>> const & obj)
-{it}{{
-        std::cout << "Writing variant:\\n";
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Writing variant:\\n";'''
+
+    src += f'''
 {it}{it}out << BinaryFormat(obj->index());
 {it}{it}std::visit(
 {it}{it}{it}[&](auto && o)
@@ -337,4 +447,5 @@ def gen_variant(self):
 {it}{it}{it}* obj);
 
 {it}{it}return out;
-{it}}}''')
+{it}}}'''
+    self.appendSrc('binary|serializersDecl', src)

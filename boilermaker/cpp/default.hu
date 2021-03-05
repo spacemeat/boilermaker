@@ -8,7 +8,8 @@
 
     const:          west
     outputForm:     headerOnly  // or compiled
-    cavepersonCtrs: false
+    caveperson:     [ctrs, dtrs]
+    caveStream:     cout
 
     mainHeaderTopComment: ^^
 
@@ -286,9 +287,10 @@
                     enumHeader|includes
                     enumHeaderForwardDecls
                     namespaceHuOpen
-                    enumDeserializerDecls
+                    humon|enumDeserializerDecls
                     namespaceClose
                     namespaceOpen
+                    binary|enumDeserializerDecls
                     enumSerializerDecls
                     namespaceClose
                 ]
@@ -344,6 +346,9 @@
                     namespaceHuOpen
                     $<type>|typeDeserializerDef
                     $<type>|containerDeserializerDefs
+                    namespaceClose
+                    namespaceOpen
+                    $<type>|binaryExtractor
                     namespaceClose
                 ]
             }
