@@ -98,7 +98,7 @@
             serializeToBinary: true         // .
             comparable: true                // done
             diffable: true                  // done
-            caveperson: [serializeBinary, deserializeBinary]
+            //caveperson: [serializeBinary, deserializeBinary]
         }
         app: {
             headerDir: gen-cpp/app/inc/boma

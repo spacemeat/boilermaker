@@ -135,15 +135,7 @@ def gen_array(self):
 
 {it}template <class T, unsigned long N>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::array<T, N>> const & obj)
-{it}{{'''
-
-    dbgs = self.d('caveperson')
-    if dbgs and 'serializeBinary' in dbgs:
-        caveStream = self.d('caveStream') or 'cout'
-        src += f'''
-{it}{it}std::{caveStream} << "Writing array:\\n";'''
-
-    src += f'''
+{it}{{{self.cave('serializeBinary', '"Writing array"')}
 {it}{it}for (std::size_t i = 0; i < N; ++i)
 {it}{it}  {{ out << BinaryFormat( (* obj)[i] ); }}
 
@@ -167,15 +159,7 @@ def gen_pair(self):
 
 {it}template <class T0, class T1>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::pair<T0, T1>> const & obj)
-{it}{{'''
-
-    dbgs = self.d('caveperson')
-    if dbgs and 'serializeBinary' in dbgs:
-        caveStream = self.d('caveStream') or 'cout'
-        src += f'''
-{it}{it}std::{caveStream} << "Writing pair:\\n";'''
-
-    src += f'''
+{it}{{{self.cave('serializeBinary', '"Writing pair"')}
 {it}{it}out << BinaryFormat(obj->first);
 {it}{it}out << BinaryFormat(obj->second);
 
@@ -199,15 +183,7 @@ def gen_tuple(self):
 
 {it}template <class... Ts>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::tuple<Ts...>> const & obj)
-{it}{{'''
-
-    dbgs = self.d('caveperson')
-    if dbgs and 'serializeBinary' in dbgs:
-        caveStream = self.d('caveStream') or 'cout'
-        src += f'''
-{it}{it}std::{caveStream} << "Writing tuple:\\n";'''
-
-    src += f'''
+{it}{{{self.cave('serializeBinary', '"Writing tuple"')}
 {it}{it}std::apply(
 {it}{it}{it}[&out](auto &&... args)
 {it}{it}{it}{it}{{ ((out << BinaryFormat(args)), ...); }},
@@ -233,15 +209,7 @@ def gen_vector(self):
 
 {it}template <class T, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::vector<T, A>> const & obj)
-{it}{{'''
-
-    dbgs = self.d('caveperson')
-    if dbgs and 'serializeBinary' in dbgs:
-        caveStream = self.d('caveStream') or 'cout'
-        src += f'''
-{it}{it}std::{caveStream} << "Writing vector:\\n";'''
-
-    src += f'''
+{it}{{{self.cave('serializeBinary', '"Writing vector"')}
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & elem : * obj)
 {it}{it}  {{ out << BinaryFormat(elem); }}
@@ -266,15 +234,7 @@ def gen_set(self):
 
 {it}template <class K, class C, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::set<K, C, A>> const & obj)
-{it}{{'''
-
-    dbgs = self.d('caveperson')
-    if dbgs and 'serializeBinary' in dbgs:
-        caveStream = self.d('caveStream') or 'cout'
-        src += f'''
-{it}{it}std::{caveStream} << "Writing set:\\n";'''
-
-    src += f'''
+{it}{{{self.cave('serializeBinary', '"Writing set"')}
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & elem : * obj)
 {it}{it}  {{ out << BinaryFormat(elem); }}
@@ -299,15 +259,7 @@ def gen_unordered_set(self):
 
 {it}template <class K, class H, class E, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::unordered_set<K, H, E, A>> const & obj)
-{it}{{'''
-
-    dbgs = self.d('caveperson')
-    if dbgs and 'serializeBinary' in dbgs:
-        caveStream = self.d('caveStream') or 'cout'
-        src += f'''
-{it}{it}std::{caveStream} << "Writing unordered_set:\\n";'''
-
-    src += f'''
+{it}{{{self.cave('serializeBinary', '"Writing unordered_set"')}
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & elem : * obj)
 {it}{it}  {{ out << BinaryFormat(elem); }}
@@ -332,15 +284,7 @@ def gen_map(self):
 
 {it}template <class K, class T, class C, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::map<K, T, C, A>> const & obj)
-{it}{{'''
-
-    dbgs = self.d('caveperson')
-    if dbgs and 'serializeBinary' in dbgs:
-        caveStream = self.d('caveStream') or 'cout'
-        src += f'''
-{it}{it}std::{caveStream} << "Writing map:\\n";'''
-
-    src += f'''
+{it}{{{self.cave('serializeBinary', '"Writing map"')}
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & [k, v] : * obj)
 {it}{it}  {{ out << BinaryFormat(k) << BinaryFormat(v); }}
@@ -365,15 +309,7 @@ def gen_unordered_map(self):
 
 {it}template <class K, class T, class H, class E, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::unordered_map<K, T, H, E, A>> const & obj)
-{it}{{'''
-
-    dbgs = self.d('caveperson')
-    if dbgs and 'serializeBinary' in dbgs:
-        caveStream = self.d('caveStream') or 'cout'
-        src += f'''
-{it}{it}std::{caveStream} << "Writing unordered_map:\\n";'''
-
-    src += f'''
+{it}{{{self.cave('serializeBinary', '"Writing unordered_map"')}
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & [k, v] : * obj)
 {it}{it}  {{ out << BinaryFormat(k) << BinaryFormat(v); }}
@@ -398,15 +334,7 @@ def gen_optional(self):
 
 {it}template <class T>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::optional<T>> const & obj)
-{it}{{'''
-
-    dbgs = self.d('caveperson')
-    if dbgs and 'serializeBinary' in dbgs:
-        caveStream = self.d('caveStream') or 'cout'
-        src += f'''
-{it}{it}std::{caveStream} << "Writing optional:\\n";'''
-
-    src += f'''
+{it}{{{self.cave('serializeBinary', '"Writing optional"')}
 {it}{it}out << BinaryFormat(obj->has_value());
 {it}{it}if (obj->has_value())
 {it}{it}  {{ out << BinaryFormat(** obj); }}
@@ -431,15 +359,7 @@ def gen_variant(self):
 
 {it}template <class... Ts>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::variant<Ts...>> const & obj)
-{it}{{'''
-
-    dbgs = self.d('caveperson')
-    if dbgs and 'serializeBinary' in dbgs:
-        caveStream = self.d('caveStream') or 'cout'
-        src += f'''
-{it}{it}std::{caveStream} << "Writing variant:\\n";'''
-
-    src += f'''
+{it}{{{self.cave('serializeBinary', '"Writing variant"')}
 {it}{it}out << BinaryFormat(obj->index());
 {it}{it}std::visit(
 {it}{it}{it}[&](auto && o)

@@ -8,7 +8,7 @@
 
     const:          west
     outputForm:     headerOnly  // or compiled
-    caveperson:     [ctrs, dtrs]
+    caveperson:     [ctr, dtr, ass, serializeBinary, deserializeBinary]
     caveStream:     cout
 
     mainHeaderTopComment: ^^

@@ -147,6 +147,17 @@ class Project(BaseProject):
             return f'const {type}'
     
 
+    def cave(self, category, message):
+        it = self.indent()
+        src = ''
+        dbgs = self.d('caveperson')
+        if dbgs and category in dbgs:
+            caveStream = self.d('caveStream') or 'cout'
+            src += f'''
+{it}{it}std::{caveStream} << {message} << "\\n";'''
+        return src
+            
+
     def makeNative(self, bomaName, useNamespace=False):
         if bomaName in ['less', 'monostate', 'size_t', 'string', 'string_view', 'array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
             return 'std::' + bomaName

@@ -120,7 +120,15 @@ def genDeserializeFromBinary(self, enumName, enum):
 {it}struct BinaryReader<T, typename std::enable_if_t<std::is_enum_v<T>>>
 {it}{{
 {it}{it}static inline T extract(std::istream & in)
-{it}{it}{{
+{it}{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Reading {enumName}:\\n";'''
+
+    src += f'''
 {it}{it}{it}T t;
 {it}{it}{it}in.read(reinterpret_cast<char *>(& t), sizeof(T));
 {it}{it}{it}return t;
@@ -243,7 +251,15 @@ def genSerializerToBinary(self, enumName, enum):
 
 {it}template <class T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
 {it}std::ostream & operator <<(std::ostream & out, {self.const('BinaryFormat<T>')} & obj)
-{it}{{
+{it}{{'''
+
+    dbgs = self.d('caveperson')
+    if dbgs and 'serializeBinary' in dbgs:
+        caveStream = self.d('caveStream') or 'cout'
+        src += f'''
+{it}{it}std::{caveStream} << "Writing {enumName}:\\n";'''
+
+    src += f'''
 {it}{it}using enumIntType = std::underlying_type<{enumDecl}>::type;
 {it}{it}out << BinaryFormat(static_cast<enumIntType>(* obj));
 

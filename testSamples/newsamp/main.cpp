@@ -37,32 +37,34 @@ int testWut(string_view dir)
     string path = string(dir) + string("/testSamples/newsamp/wut.hu");
     cout << "path = " << path << '\n';
     auto res = hu::Trove::fromFile(path);
+    cout << "Trove loaded." << '\n';
     if (auto t = get_if<hu::Trove>(&res))
     {
-        auto whaa = t->root() / "whaa" % hu::val<txtToBin::wut> {};
+        auto && whaa = t->root() / "whaa" % hu::val<txtToBin::wut> {};
+        cout << "Extracted." << '\n';
 
         auto & huh = whaa.get_huh();
-        auto & opt = huh[0][0];
-        auto & p = get<0>(*opt);
+        auto & opt0 = huh[0][0];
+        auto & p = get<0>(*opt0);
         cout << "pair: " << p.first << "; " << p.second << '\n';
-        opt = huh[0][1];
-        auto & tu = get<1>(*opt);
+        auto & opt1 = huh[0][1];
+        auto & tu = get<1>(*opt1);
         cout << "tuple: " << get<0>(tu) << "; " << get<1>(tu) << "; " << get<2>(tu) << '\n';
-        opt = huh[0][2];
-        auto & ma0 = get<2>(*opt);
+        auto & opt2 = huh[0][2];
+        auto & ma0 = get<2>(*opt2);
         for (auto const & [k, v] : ma0)
         {
             cout << "map entry: " << k << ": " << v << '\n';
         }
-        opt = huh[0][3];
-        auto & ma1 = get<3>(*opt);
+        auto & opt3 = huh[0][3];
+        auto & ma1 = get<3>(*opt3);
         for (auto const & [k, v] : ma1)
         {
             cout << "unordered_map entry: " << k << ": " << v << '\n';
         }
 
-        opt = huh[1][0];
-        auto & se = get<4>(*opt);
+        auto & opt4 = huh[1][0];
+        auto & se = get<4>(*opt4);
         for (auto const & e : se)
         {
             for (auto const & [k, v]: e)
@@ -71,16 +73,16 @@ int testWut(string_view dir)
             }
         }
 
-        opt = huh[1][1];
-        auto & use = get<5>(*opt);
+        auto & opt5 = huh[1][1];
+        auto & use = get<5>(*opt5);
         for (auto const & e : use)
         {
             cout << "unordered_set entry: " << e << '\n';
         }
 
 
-        opt = huh[1][2];
-        auto & som = get<6>(*opt);
+        auto & opt6 = huh[1][2];
+        auto & som = get<6>(*opt6);
         for (auto const & e : som)
         {
             for (auto const & [k, v]: e)
