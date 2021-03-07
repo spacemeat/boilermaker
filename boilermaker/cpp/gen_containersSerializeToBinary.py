@@ -31,7 +31,7 @@ def gen_builtIn(self):
 {it}{it}std::{caveStream}.flush();
 {it}{it}for (std::size_t i = 0; i < sizeof(T); ++i)
 {it}{it}{{
-{it}{it}{it}std::{caveStream} << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(up[i]);
+{it}{it}{it}std::{caveStream} << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(up[i]) << std::dec;
 {it}{it}}}
 {it}{it}std::{caveStream} << '\\n';'''
 
@@ -52,7 +52,7 @@ def gen_builtIn(self):
 {it}{it}std::{caveStream} << "Writing " << sizeof(T) << " float bytes: ";
 {it}{it}for (std::size_t i = 0; i < sizeof(T); ++i)
 {it}{it}{{
-{it}{it}{it}std::{caveStream} << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(up[i]);
+{it}{it}{it}std::{caveStream} << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(up[i]) << std::dec;
 {it}{it}}}
 {it}{it}std::{caveStream} << '\\n';'''
 
@@ -80,7 +80,7 @@ def gen_builtIn(self):
 {it}{it}std::{caveStream} << "             -- chars: ";
 {it}{it}for (std::size_t i = 0; i < obj->size(); ++i)
 {it}{it}{{
-{it}{it}{it}std::{caveStream} << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((*obj)[i]);
+{it}{it}{it}std::{caveStream} << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((*obj)[i]) << std::dec;
 {it}{it}}}
 {it}{it}std::{caveStream} << '\\n';'''
     else:
@@ -104,7 +104,7 @@ def gen_builtIn(self):
 {it}{it}std::{caveStream} << "             -- chars: ";
 {it}{it}for (std::size_t i = 0; i < obj->size(); ++i)
 {it}{it}{{
-{it}{it}{it}std::{caveStream} << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((*obj)[i]);
+{it}{it}{it}std::{caveStream} << ' ' << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>((*obj)[i]) << std::dec;
 {it}{it}}}
 {it}{it}std::{caveStream} << '\\n';'''
     else:

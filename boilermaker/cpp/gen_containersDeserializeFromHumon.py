@@ -33,7 +33,7 @@ def gen_array(self):
 {it}struct val<std::array<T, N>>
 {it}{{
 {it}{it}static inline std::array<T, N> extract({self.const('Node')} & node)
-{it}{it}{{{self.cave('deserializeHumon', f'Reading array')}
+{it}{it}{{{self.cave('deserializeHumon', f'"Reading array"')}
 {it}{it}{it}auto maker = [&node]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
 {it}{it}{it}{it}return std::array<T, N> {{ node / Seq % val<T> {{ }}... }};
@@ -61,7 +61,7 @@ def gen_pair(self):
 {it}struct val<std::pair<T0, T1>>
 {it}{{
 {it}{it}static inline std::pair<T0, T1> extract({self.const('Node')} & node)
-{it}{it}{{{self.cave('deserializeHumon', f'Reading pair')}
+{it}{it}{{{self.cave('deserializeHumon', f'"Reading pair"')}
 {it}{it}{it}return {{
 {it}{it}{it}{it}node / 0 % val<T0> {{ }},
 {it}{it}{it}{it}node / 1 % val<T1> {{ }}
@@ -87,7 +87,7 @@ def gen_tuple(self):
 {it}struct val<std::tuple<Ts...>>
 {it}{{
 {it}{it}static inline std::tuple<Ts...> extract({self.const('Node')} & node)
-{it}{it}{{{self.cave('deserializeHumon', f'Reading tuple')}
+{it}{it}{{{self.cave('deserializeHumon', f'"Reading tuple"')}
 {it}{it}{it}auto maker = [&node]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
 {it}{it}{it}{it}return std::tuple<Ts...> {{ node / Seq % val<Ts> {{ }}... }};
@@ -115,7 +115,7 @@ def gen_vector(self):
 {it}struct val<std::vector<T, A>>
 {it}{{
 {it}{it}static inline std::vector<T, A> extract({self.const('Node')} & node)
-{it}{it}{{{self.cave('deserializeHumon', f'Reading vector')}
+{it}{it}{{{self.cave('deserializeHumon', f'"Reading vector"')}
 {it}{it}{it}std::vector<T, A> rv;
 {it}{it}{it}for (size_t i = 0; i < node.numChildren(); ++i)
 {it}{it}{it}{{
@@ -143,7 +143,7 @@ def gen_set(self):
 {it}struct val<std::set<K, C, A>>
 {it}{{
 {it}{it}static inline std::set<K, C, A> extract({self.const('Node')} & node)
-{it}{it}{{{self.cave('deserializeHumon', f'Reading set')}
+{it}{it}{{{self.cave('deserializeHumon', f'"Reading set"')}
 {it}{it}{it}std::set<K, C, A> rv;
 {it}{it}{it}for (size_t i = 0; i < node.numChildren(); ++i)
 {it}{it}{it}{{
@@ -171,7 +171,7 @@ def gen_unordered_set(self):
 {it}struct val<std::unordered_set<K, H, E, A>>
 {it}{{
 {it}{it}static inline std::unordered_set<K, H, E, A> extract({self.const('Node')} & node)
-{it}{it}{{{self.cave('deserializeHumon', f'Reading unordered_set')}
+{it}{it}{{{self.cave('deserializeHumon', f'"Reading unordered_set"')}
 {it}{it}{it}std::unordered_set<K, H, E, A> rv;
 {it}{it}{it}for (size_t i = 0; i < node.numChildren(); ++i)
 {it}{it}{it}{{
@@ -199,7 +199,7 @@ def gen_map(self):
 {it}struct val<std::map<K, T, C, A>>
 {it}{{
 {it}{it}static inline std::map<K, T, C, A> extract({self.const('Node')} & node)
-{it}{it}{{{self.cave('deserializeHumon', f'Reading map')}
+{it}{it}{{{self.cave('deserializeHumon', f'"Reading map"')}
 {it}{it}{it}std::map<K, T, C, A> rv;
 {it}{it}{it}for (size_t i = 0; i < node.numChildren(); ++i)
 {it}{it}{it}{{
@@ -229,7 +229,7 @@ def gen_unordered_map(self):
 {it}struct val<std::unordered_map<K, T, H, E, A>>
 {it}{{
 {it}{it}static inline std::unordered_map<K, T, H, E, A> extract({self.const('Node')} & node)
-{it}{it}{{{self.cave('deserializeHumon', f'Reading unordered_map')}
+{it}{it}{{{self.cave('deserializeHumon', f'"Reading unordered_map"')}
 {it}{it}{it}std::unordered_map<K, T, H, E, A> rv;
 {it}{it}{it}for (size_t i = 0; i < node.numChildren(); ++i)
 {it}{it}{it}{{
@@ -259,7 +259,7 @@ def gen_optional(self):
 {it}struct val<std::optional<T>>
 {it}{{
 {it}{it}static inline std::optional<T> extract({self.const('Node')} & node)
-{it}{it}{{{self.cave('deserializeHumon', f'Reading optional')}
+{it}{it}{{{self.cave('deserializeHumon', f'"Reading optional"')}
 {it}{it}{it}if (! node)
 {it}{it}{it}{it}{{ return {{ }}; }}
 {it}{it}{it}else if (node.kind() == NodeKind::value && node.value().str() == "_")
@@ -303,7 +303,7 @@ def gen_variant(self):
 {it}{it}}};
 
 {it}{it}static inline std::variant<Ts...> extract({self.const('Node')} & node)
-{it}{it}{{{self.cave('deserializeHumon', f'Reading variant')}
+{it}{it}{{{self.cave('deserializeHumon', f'"Reading variant"')}
 {it}{it}{it}Token tok = node.annotation("type");
 {it}{it}{it}if (! tok)
 {it}{it}{it}{it}{{ return {{ }}; }}

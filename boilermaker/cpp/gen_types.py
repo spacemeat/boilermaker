@@ -340,15 +340,7 @@ def genDeserializer_humon(self, t):
             src += f', \n{it}  '
         src += decl
     src += f'''
-{it}{{'''
-
-    dbgs = self.d('caveperson')
-    if dbgs and 'ctr' in dbgs:
-        caveStream = self.d('caveStream') or 'cout'
-        src += f'''
-{it}{it}std::{caveStream} << "Humon ctr: {t.name}:\\n";'''
-
-    src += f'''
+{it}{{{self.cave('ctr', f'"Humon ctor: {t.name}"', 2)}
 {it}}}'''
 
     self.appendSrc(f'{t.name}|humonCtrDef', src)
@@ -419,12 +411,12 @@ def genDeserializer_binary(self, t):
 
     # ----- declaration
 
-    fmts = self.d('deserializeFrom')
-    if not fmts or 'binary' not in fmts:
-        self.forwardDeclareType(f'{t.name}|binaryCtrDecl', 'istream', 'namespace std { class istream; }')
+    #fmts = self.d('deserializeFrom')
+    #if not fmts or 'binary' not in fmts:
+    #    self.forwardDeclareType(f'{t.name}|binaryCtrDecl', 'istream', 'namespace std { class istream; }')
 
     src = f'''
-{it}{it}{t.name}(std::istream & in)'''
+{it}{it}{t.name}({self.const('char')} *& buffer, std::size_t & size)'''
     self.appendSrc(f'{t.name}|binaryCtrDecl', src + ';')
 
     # ----- definition
@@ -433,13 +425,13 @@ def genDeserializer_binary(self, t):
     # ----- signature
     src = f'''
 
-{it}{typeDecl}::{t.name}(std::istream & in)
+{it}{typeDecl}::{t.name}({self.const('char')} *& buffer, std::size_t & size)
 '''
     # ----- member constructors
     firstMember = True
     for memberName, m in t.members.items():
         memberDecl = self.makeNativeMemberType(m.properties)
-        decl = f'{memberName}(BinaryReader<{memberDecl}>::extract(in))'
+        decl = f'{memberName}(BinaryReader<{memberDecl}>::extract(buffer, size))'
         if firstMember:
             firstMember = False
             src += f'{it}: '
@@ -447,7 +439,7 @@ def genDeserializer_binary(self, t):
             src += f', \n{it}  '
         src += decl
     src += f'''
-{it}{{{self.cave('ctr', f'"Binary ctr: {t.name}"')}
+{it}{{{self.cave('ctr', f'"Binary ctr: {t.name}"', 2)}
 {it}}}'''
     self.appendSrc(f'{t.name}|binaryCtrDef', src)
 
@@ -456,9 +448,9 @@ def genDeserializer_binary(self, t):
 {it}template <>
 {it}struct BinaryReader<{typeDecl}>
 {it}{{
-{it}{it}static inline {typeDecl} extract(std::istream & in)
+{it}{it}static inline {typeDecl} extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{{self.cave('deserializeBinary', f'"Reading {t.name}"')}
-{it}{it}{it}return {typeDecl}(in);
+{it}{it}{it}return {typeDecl}(buffer, size);
 {it}{it}}}
 {it}}};
 '''
@@ -629,7 +621,7 @@ def genSerializer_binary(self, t):
     src = f'''
 
 {it}std::ostream & operator <<(std::ostream & out, BinaryFormat<{t.name}> const & obj)
-{it}{{{self.cave('serializeBinary', f'"Writing {t.name}"')}'''
+{it}{{{self.cave('serializeBinary', f'"Writing {t.name}"', 2)}'''
 
     for memberName, memberObj in t.members.items():
         src += f'''
@@ -687,7 +679,7 @@ def genDefaultConstructor(self, t):
     src = f'''
 
 {it}{t.name}::{t.name}()
-{it}{{{self.cave('ctr', f'"Default ctor: {t.name}"')}
+{it}{{{self.cave('ctr', f'"Default ctor: {t.name}"', 2)}
 {it}}}'''
     self.appendSrc(f'{t.name}|defaultCtrDef', src)
 
@@ -717,7 +709,7 @@ def genMemberwiseConstructor(self, t):
 
 {it}{t.name}::{t.name}({signature})
 {it} : {memberConstructors}
-{it}{{{self.cave('ctr', f'"Memberwise ctor: {t.name}"')}
+{it}{{{self.cave('ctr', f'"Memberwise ctor: {t.name}"', 2)}
 {it}}}'''
     self.appendSrc(f'{t.name}|memberwiseCtrDef', src)
 
@@ -746,7 +738,7 @@ def genCopyConstructor(self, t):
 
 {it}{typeDecl}::{t.name}({self.const(typeDecl)} & rhs)
 {it}: {memberConstructors}
-{it}{{{self.cave('ctr', f'"Copy ctor: {t.name}"')}
+{it}{{{self.cave('ctr', f'"Copy ctor: {t.name}"', 2)}
 {it}}}'''
 
         self.appendSrc(f'{t.name}|copyCtrDef', src)
@@ -782,7 +774,7 @@ def genMoveConstructor(self, t):
         src = f'''
 
 {it}{typeDecl}::{t.name}({typeDecl} && rhs) noexcept
-{it}{{{self.cave('ctr', f'"Move ctor: {t.name}"')}
+{it}{{{self.cave('ctr', f'"Move ctor: {t.name}"', 2)}
 {it}{it}using std::swap;
 {memberConstructors}
 {it}}}'''
@@ -803,7 +795,7 @@ def genCopyAssignment(self, t):
         src = f'''
 
 {it}{typeDecl} & {typeDecl}::operator =({self.const(typeDecl)} & rhs)
-{it}{{{self.cave('ass', f'"Copy assignment: {t.name}"')}'''
+{it}{{{self.cave('ass', f'"Copy assignment: {t.name}"', 2)}'''
 
         def foreachMemberName():
             for memberName, m in t.members.items():
@@ -847,7 +839,7 @@ def genMoveAssignment(self, t):
         src = f'''
 
 {it}{typeDecl} & {typeDecl}::operator =({typeDecl} && rhs) noexcept
-{it}{{{self.cave('ass', f'"Move assignment: {t.name}"')}
+{it}{{{self.cave('ass', f'"Move assignment: {t.name}"', 2)}
 {it}{it}using std::swap;
 {memberConstructors}
 {it}{it}return * this;
@@ -871,7 +863,7 @@ def genDestructor(self, t):
     src = f'''
 
 {it}{t.name}::~{t.name}()
-{it}{{{self.cave('dtr', f'"Destructor: {t.name}"')}
+{it}{{{self.cave('dtr', f'"Destructor: {t.name}"', 2)}
 {it}}}'''
     self.appendSrc(f'{t.name}|destructorDef', src)
   

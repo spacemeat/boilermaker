@@ -3,7 +3,13 @@ def gen_builtIn(self):
         return
     self.containersDeserializerTypes['binary|builtIn'] = None
 
-    self.includeForType('deserializerFormatWrappersDecl', 'istream', '#include <iostream>')
+    if self.dIs('checkBinaryOverruns'):
+        self.includeForType('deserializerFormatWrappersDecl', 'exception', '#include <exception>')
+        self.includeForType('deserializerFormatWrappersDecl', 'memcpy', '#include <cstring>')
+        self.includeForType('deserializerFormatWrappersDecl', 'string', '#include <string>')
+        self.includeForType('deserializerFormatWrappersDecl', 'string_view', '#include <string_view>')
+        self.includeForType('deserializerFormatWrappersDecl', 'cout', '#include <iostream>')
+        self.includeForType('deserializerFormatWrappersDecl', 'ifstream', '#include <fstream>')
 
     it = self.indent()
     src = f'''
@@ -13,14 +19,54 @@ def gen_builtIn(self):
 {it}{{
 {it}}};
 
+{it}class BinaryDeserializer
+{it}{{
+{it}public:
+{it}{it}BinaryDeserializer(std::string_view path)
+{it}{it}{{
+{it}{it}{it}std::ifstream in(path.data(), std::ios::binary);
+{it}{it}{it}in.seekg(0, std::ios::end);
+{it}{it}{it}size = in.tellg();
+{it}{it}{it}in.seekg(0, std::ios::beg);
+{it}{it}{it}char * newBuffer = new char[size];
+{it}{it}{it}buffer = newBuffer;
+{it}{it}{it}selfManaged = true;
+{it}{it}{it}in.read(newBuffer, size);
+{it}{it}}}
+
+{it}{it}BinaryDeserializer(char * data, std::size_t len)
+{it}{it}{{
+{it}{it}{it}buffer = data;
+{it}{it}{it}size = len;
+
+{it}{it}{it}selfManaged = false;
+{it}{it}}}
+
+{it}{it}~BinaryDeserializer()
+{it}{it}{{
+{it}{it}{it}if (selfManaged)
+{it}{it}{it}{it}{{ delete [] buffer; }}
+{it}{it}}}
+
+{it}{it}template <class T>
+{it}{it}T deserialize()
+{it}{it}{{
+{it}{it}{it}auto local = buffer;
+{it}{it}{it}return BinaryReader<T>::extract(local, size);
+{it}{it}}}
+
+{it}private:
+{it}{it}char const * buffer = nullptr;
+{it}{it}std::size_t size = 0;
+{it}{it}bool selfManaged = false;
+{it}}};
+
 {it}template <class T>
 {it}struct BinaryReader<T, typename std::enable_if_t<std::is_integral_v<T>>>
 {it}{{
-{it}{it}static inline T extract(std::istream & in)
+{it}{it}static inline T extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{
-{it}{it}{it}T t;
-{it}{it}{it}in.read(reinterpret_cast<char *>(& t), sizeof(T));
-{self.cave('deserializeBinary', '"Reading integ: " << t')}
+{it}{it}{it}auto t = * reinterpret_cast<{self.const('T')} *>(buffer);{self.cave('deserializeBinary', '"Reading integ"')}{self.checkBinaryBuffer()}{self.advanceBinaryBuffer()}
 {it}{it}{it}return t;
 {it}{it}}}
 {it}}};
@@ -28,11 +74,9 @@ def gen_builtIn(self):
 {it}template <class T>
 {it}struct BinaryReader<T, typename std::enable_if_t<std::is_floating_point_v<T>>>
 {it}{{
-{it}{it}static inline T extract(std::istream & in)
+{it}{it}static inline T extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{
-{it}{it}{it}T t;
-{it}{it}{it}in.read(reinterpret_cast<char *>(& t), sizeof(T));
-{self.cave('deserializeBinary', '"Reading float: " << t')}
+{it}{it}{it}auto t = * reinterpret_cast<{self.const('T')} *>(buffer);{self.cave('deserializeBinary', '"Reading float"')}{self.checkBinaryBuffer()}{self.advanceBinaryBuffer()}
 {it}{it}{it}return t;
 {it}{it}}}
 {it}}};
@@ -40,13 +84,12 @@ def gen_builtIn(self):
 {it}template <>
 {it}struct BinaryReader<std::string>
 {it}{{
-{it}{it}static inline std::string extract(std::istream & in)
+{it}{it}static inline std::string extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{{self.cave('deserializeBinary', '"Reading string"')}
 {it}{it}{it}std::string t;
-{it}{it}{it}auto size = BinaryReader<std::size_t>::extract(in);
-{it}{it}{it}t.resize(size);
-{it}{it}{it}in.read(reinterpret_cast<char *>(t.data()), size);
-{self.cave('deserializeBinary', '"           -- : " << t')}
+{it}{it}{it}auto strSize = BinaryReader<std::size_t>::extract(buffer, size);
+{it}{it}{it}t.resize(strSize);{self.checkBinaryBuffer('strSize')}
+{it}{it}{it}std::memcpy(t.data(), buffer, strSize);{self.cave('deserializeBinary', '"           -- : " << t')}{self.advanceBinaryBuffer('strSize')}
 {it}{it}{it}return t;
 {it}{it}}}
 {it}}};
@@ -54,13 +97,11 @@ def gen_builtIn(self):
 {it}template <>
 {it}struct BinaryReader<std::string_view>
 {it}{{  // NOTE: Returning std::string, until we get a string table
-{it}{it}static inline std::string extract(std::istream & in)
+{it}{it}static inline std::string_view extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{{self.cave('deserializeBinary', '"Reading string_view"')}
-{it}{it}{it}std::string t;
-{it}{it}{it}auto size = BinaryReader<std::size_t>::extract(in);
-{it}{it}{it}t.resize(size);
-{it}{it}{it}in.read(reinterpret_cast<char *>(t.data()), size);
-{self.cave('deserializeBinary', '"           -- : " << t')}
+{it}{it}{it}auto strSize = BinaryReader<std::size_t>::extract(buffer, size);
+{it}{it}{it}std::string_view t(buffer, strSize);{self.checkBinaryBuffer('strSize')}
+{self.cave('deserializeBinary', '"           -- : " << t')}{self.advanceBinaryBuffer('strSize')}
 {it}{it}{it}return t;
 {it}{it}}}
 {it}}};'''
@@ -81,11 +122,11 @@ def gen_array(self):
 {it}template <class T, unsigned long N>
 {it}struct BinaryReader<std::array<T, N>>
 {it}{{
-{it}{it}static inline std::array<T, N> extract(std::istream & in)
+{it}{it}static inline std::array<T, N> extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{{self.cave('deserializeBinary', '"Reading array"')}
 {it}{it}{it}auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
-{it}{it}{it}{it}return std::array<T, N> {{ ((void) Seq, BinaryReader<T>::extract(in))... }};
+{it}{it}{it}{it}return std::array<T, N> {{ ((void) Seq, BinaryReader<T>::extract(buffer, size))... }};
 {it}{it}{it}}};
 
 {it}{it}{it}return maker(std::make_index_sequence<N> {{}});
@@ -108,11 +149,11 @@ def gen_pair(self):
 {it}template <class T0, class T1>
 {it}struct BinaryReader<std::pair<T0, T1>>
 {it}{{
-{it}{it}static inline std::pair<T0, T1> extract(std::istream & in)
+{it}{it}static inline std::pair<T0, T1> extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{{self.cave('deserializeBinary', '"Reading pair"')}
 {it}{it}{it}return {{
-{it}{it}{it}{it}BinaryReader<T0>::extract(in),
-{it}{it}{it}{it}BinaryReader<T1>::extract(in)
+{it}{it}{it}{it}BinaryReader<T0>::extract(buffer, size),
+{it}{it}{it}{it}BinaryReader<T1>::extract(buffer, size)
 {it}{it}{it}}};
 {it}{it}}}
 {it}}};'''
@@ -133,11 +174,11 @@ def gen_tuple(self):
 {it}template <class... Ts>
 {it}struct BinaryReader<std::tuple<Ts...>>
 {it}{{
-{it}{it}static inline std::tuple<Ts...> extract(std::istream & in)
+{it}{it}static inline std::tuple<Ts...> extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{{self.cave('deserializeBinary', '"Reading tuple"')}
 {it}{it}{it}auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
-{it}{it}{it}{it}return std::tuple<Ts...> {{ ((void) Seq, BinaryReader<Ts>::extract(in))... }};
+{it}{it}{it}{it}return std::tuple<Ts...> {{ ((void) Seq, BinaryReader<Ts>::extract(buffer, size))... }};
 {it}{it}{it}}};
 
 {it}{it}{it}return maker(std::make_index_sequence<sizeof...(Ts)> {{ }});
@@ -160,13 +201,13 @@ def gen_vector(self):
 {it}template <class T, class A>
 {it}struct BinaryReader<std::vector<T, A>>
 {it}{{
-{it}{it}static inline std::vector<T, A> extract(std::istream & in)
+{it}{it}static inline std::vector<T, A> extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{{self.cave('deserializeBinary', '"Reading vector"')}
 {it}{it}{it}std::vector<T, A> rv;
-{it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
+{it}{it}{it}auto count = BinaryReader<std::size_t>::extract(buffer, size);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
 {it}{it}{it}{{
-{it}{it}{it}{it}rv.emplace_back(BinaryReader<T>::extract(in));
+{it}{it}{it}{it}rv.emplace_back(BinaryReader<T>::extract(buffer, size));
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
@@ -188,13 +229,13 @@ def gen_set(self):
 {it}template <class K, class C, class A>
 {it}struct BinaryReader<std::set<K, C, A>>
 {it}{{
-{it}{it}static inline std::set<K, C, A> extract(std::istream & in)
+{it}{it}static inline std::set<K, C, A> extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{{self.cave('deserializeBinary', '"Reading set"')}
 {it}{it}{it}std::set<K, C, A> rv;
-{it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
+{it}{it}{it}auto count = BinaryReader<std::size_t>::extract(buffer, size);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
 {it}{it}{it}{{
-{it}{it}{it}{it}rv.emplace(BinaryReader<K>::extract(in));
+{it}{it}{it}{it}rv.emplace(BinaryReader<K>::extract(buffer, size));
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
@@ -216,13 +257,13 @@ def gen_unordered_set(self):
 {it}template <class K, class H, class E, class A>
 {it}struct BinaryReader<std::unordered_set<K, H, E, A>>
 {it}{{
-{it}{it}static inline std::unordered_set<K, H, E, A> extract(std::istream & in)
+{it}{it}static inline std::unordered_set<K, H, E, A> extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{{self.cave('deserializeBinary', '"Reading unordered_set"')}
 {it}{it}{it}std::unordered_set<K, H, E, A> rv;
-{it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
+{it}{it}{it}auto count = BinaryReader<std::size_t>::extract(buffer, size);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
 {it}{it}{it}{{
-{it}{it}{it}{it}rv.emplace(BinaryReader<K>::extract(in));
+{it}{it}{it}{it}rv.emplace(BinaryReader<K>::extract(buffer, size));
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
@@ -244,15 +285,15 @@ def gen_map(self):
 {it}template <class K, class T, class C, class A>
 {it}struct BinaryReader<std::map<K, T, C, A>>
 {it}{{
-{it}{it}static inline std::map<K, T, C, A> extract(std::istream & in)
+{it}{it}static inline std::map<K, T, C, A> extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{{self.cave('deserializeBinary', '"Reading map"')}
 {it}{it}{it}std::map<K, T, C, A> rv;
-{it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
+{it}{it}{it}auto count = BinaryReader<std::size_t>::extract(buffer, size);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
 {it}{it}{it}{{
-{it}{it}{it}{it}auto key = BinaryReader<K>::extract(in);
+{it}{it}{it}{it}auto key = BinaryReader<K>::extract(buffer, size);
 {it}{it}{it}{it}rv.emplace(std::move(key),
-{it}{it}{it}{it}           BinaryReader<T>::extract(in));
+{it}{it}{it}{it}           BinaryReader<T>::extract(buffer, size));
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
@@ -274,15 +315,15 @@ def gen_unordered_map(self):
 {it}template <class K, class T, class H, class E, class A>
 {it}struct BinaryReader<std::unordered_map<K, T, H, E, A>>
 {it}{{
-{it}{it}static inline std::unordered_map<K, T, H, E, A> extract(std::istream & in)
+{it}{it}static inline std::unordered_map<K, T, H, E, A> extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{{self.cave('deserializeBinary', '"Reading unordered_map"')}
 {it}{it}{it}std::unordered_map<K, T, H, E, A> rv;
-{it}{it}{it}auto count = BinaryReader<std::size_t>::extract(in);
+{it}{it}{it}auto count = BinaryReader<std::size_t>::extract(buffer, size);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
 {it}{it}{it}{{
-{it}{it}{it}{it}auto key = BinaryReader<K>::extract(in);
+{it}{it}{it}{it}auto key = BinaryReader<K>::extract(buffer, size);
 {it}{it}{it}{it}rv.emplace(std::move(key),
-{it}{it}{it}{it}           BinaryReader<T>::extract(in));
+{it}{it}{it}{it}           BinaryReader<T>::extract(buffer, size));
 {it}{it}{it}}}
 {it}{it}{it}return rv;
 {it}{it}}}
@@ -304,11 +345,11 @@ def gen_optional(self):
 {it}template <class T>
 {it}struct BinaryReader<std::optional<T>>
 {it}{{
-{it}{it}static inline std::optional<T> extract(std::istream & in)
+{it}{it}static inline std::optional<T> extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{{self.cave('deserializeBinary', '"Reading optimal"')}
-{it}{it}{it}auto hasValue = BinaryReader<char>::extract(in);
+{it}{it}{it}auto hasValue = BinaryReader<char>::extract(buffer, size);
 {it}{it}{it}if (static_cast<bool>(hasValue))
-{it}{it}{it}{it}{{ return BinaryReader<T>::extract(in); }}
+{it}{it}{it}{it}{{ return BinaryReader<T>::extract(buffer, size); }}
 {it}{it}{it}else
 {it}{it}{it}{it}{{ return {{ }}; }}
 {it}{it}}}
@@ -335,20 +376,20 @@ def gen_variant(self):
 {it}{{
 {it}{it}// This checks if the type string matches a particular one in the defs.
 {it}{it}template <std::size_t I>
-{it}{it}static inline bool schecker(std::size_t idx, std::optional<std::variant<Ts...>> & obj, std::istream & in)
+{it}{it}static inline bool schecker(std::size_t idx, std::optional<std::variant<Ts...>> & obj, {self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{
 {it}{it}{it}using IndexedType = typename std::tuple_element<I, std::tuple<Ts...>>::type;
 {it}{it}{it}if (obj.has_value() == false && idx == I) 
 {it}{it}{it}{{
 {it}{it}{it}{it}// now we can make the correct variant
-{it}{it}{it}{it}obj = std::variant<Ts...> (std::in_place_index<I>, BinaryReader<IndexedType>::extract(in));
+{it}{it}{it}{it}obj = std::variant<Ts...> (std::in_place_index<I>, BinaryReader<IndexedType>::extract(buffer, size));
 {it}{it}{it}}}
 {it}{it}{it}return true;  // we don't actually care about the return value
 {it}{it}}};
 
-{it}{it}static inline std::variant<Ts...> extract(std::istream & in)
+{it}{it}static inline std::variant<Ts...> extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{{self.cave('deserializeBinary', '"Reading variant"')}
-{it}{it}{it}auto idx = BinaryReader<std::size_t>::extract(in);
+{it}{it}{it}auto idx = BinaryReader<std::size_t>::extract(buffer, size);
 
 {it}{it}{it}auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
@@ -358,7 +399,7 @@ def gen_variant(self):
 {it}{it}{it}{it}// foo is not used; we're relying on ordered initialization
 {it}{it}{it}{it}// to set the optional, but the initialization has to init
 {it}{it}{it}{it}// something. :)
-{it}{it}{it}{it}auto foo = {{ schecker<Seq>(idx, v, in)... }};
+{it}{it}{it}{it}auto foo = {{ schecker<Seq>(idx, v, buffer, size)... }};
 {it}{it}{it}{it}(void) foo;
 {it}{it}{it}{it}// whatever schecker found should be in v. Woe betide you if it is not.
 {it}{it}{it}{it}return * v;

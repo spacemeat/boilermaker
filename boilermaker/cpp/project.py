@@ -147,16 +147,33 @@ class Project(BaseProject):
             return f'const {type}'
     
 
-    def cave(self, category, message):
+    def cave(self, category, message, tabs=3):
         it = self.indent()
         src = ''
         dbgs = self.d('caveperson')
         if dbgs and category in dbgs:
             caveStream = self.d('caveStream') or 'cout'
             src += f'''
-{it}{it}std::{caveStream} << {message} << "\\n";'''
+{it * tabs}std::{caveStream} << {message} << "\\n";'''
         return src
-            
+    
+
+    def checkBinaryBuffer(self, sizeValue='sizeof(T)', sizeName = 'size'):
+        it = self.indent()
+        src = ''
+        if self.dIs('checkBinaryOverruns'):
+            src = f'''
+{it}{it}{it}if ({sizeName} < {sizeValue}) {{ throw std::runtime_error("Binary buffer too small."); }}'''
+        return src
+
+
+    def advanceBinaryBuffer(self, sizeValue='sizeof(T)', bufferName = 'buffer', sizeName = 'size'):
+        it = self.indent()
+        src = f'''
+{it}{it}{it}{bufferName} += {sizeValue};
+{it}{it}{it}{sizeName} -= {sizeValue};'''
+        return src
+
 
     def makeNative(self, bomaName, useNamespace=False):
         if bomaName in ['less', 'monostate', 'size_t', 'string', 'string_view', 'array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:

@@ -119,18 +119,9 @@ def genDeserializeFromBinary(self, enumName, enum):
 {it}template <class T>
 {it}struct BinaryReader<T, typename std::enable_if_t<std::is_enum_v<T>>>
 {it}{{
-{it}{it}static inline T extract(std::istream & in)
-{it}{it}{{'''
-
-    dbgs = self.d('caveperson')
-    if dbgs and 'serializeBinary' in dbgs:
-        caveStream = self.d('caveStream') or 'cout'
-        src += f'''
-{it}{it}std::{caveStream} << "Reading {enumName}:\\n";'''
-
-    src += f'''
-{it}{it}{it}T t;
-{it}{it}{it}in.read(reinterpret_cast<char *>(& t), sizeof(T));
+{it}{it}static inline T extract({self.const('char')} *& buffer, std::size_t & size)
+{it}{it}{{{self.cave('serializeBinary', f'"Reading enum {enumName}"')}{self.checkBinaryBuffer()}
+{it}{it}{it}auto t = * reinterpret_cast<{self.const('T')} *>(buffer);{self.advanceBinaryBuffer()}
 {it}{it}{it}return t;
 {it}{it}}}
 {it}}};'''

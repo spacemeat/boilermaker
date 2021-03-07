@@ -1,5 +1,6 @@
 #include "gen-cpp/txtToBin/inc/boma/txtToBin.hpp"
 #include <iostream>
+#include <fstream>
 #include <unistd.h>
 
 using namespace std;
@@ -116,6 +117,7 @@ int testPrintingWut(string_view dir)
     return 1;
 }
 
+
 int testBinaryWut(string_view dir)
 {
     string path = string(dir) + string("/testSamples/newsamp/wut.hu");
@@ -125,14 +127,14 @@ int testBinaryWut(string_view dir)
     {
         auto whaa = t->root() / "whaa" % hu::val<txtToBin::wut> {};
 
-        auto out = ofstream("wutBinary.bin", std::ios::binary);
+        string binPath = string(dir) + string("/testSamples/newsamp/wutBinary.bin");
+        auto out = ofstream(binPath, std::ios::binary);
         out << BinaryFormat(whaa);
         out.close();
 
-        auto in = ifstream("wutBinary.bin", std::ios::binary);
-        auto nuwut = txtToBin::wut(in);
-        in.close();
-
+        BinaryDeserializer bd(binPath);
+        auto nuwut = bd.deserialize<txtToBin::wut>();
+        
         cout << HumonFormat(nuwut) << "\n\n";
 
         return 0;
