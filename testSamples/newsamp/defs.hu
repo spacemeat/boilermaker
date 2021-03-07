@@ -101,9 +101,9 @@
             caveperson: []
         }
         app: {
-            headerDir: gen-cpp/app/inc/boma
-            inlineDir: gen-cpp/app/inc/boma/inl
-            sourceDir: gen-cpp/app/src/boma
+            headerDir: $<baseDir>/gen-cpp/app/inc/boma
+            inlineDir: $<baseDir>/gen-cpp/app/inc/boma/inl
+            sourceDir: $<baseDir>/gen-cpp/app/src/boma
 
             namespace: app
             initFromDefault: true

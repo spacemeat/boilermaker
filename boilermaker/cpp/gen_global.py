@@ -4,39 +4,18 @@ import os
 def genAll(self):
     self.gen_global.genPragma(self)
     self.gen_global.genTopComment(self)
-    self.gen_global.genNamespaces(self)
     self.gen_global.genCommonIncludes(self)
 
 
 def genPragma(self):
-    src = f'#pragma once\n'
-    self.setSrc('pragma', src)
+    self.setSrc('pragma', f'#pragma once\n', '')
 
 
 def genTopComment(self):
-    self.setSrc('mainHeaderTopComment', self.d('mainHeaderTopComment'))
-    self.setSrc('headerTopComment', self.d('headerTopComment'))
-    self.setSrc('inlineTopComment', self.d('inlineTopComment'))
-    self.setSrc('sourceTopComment', self.d('sourceTopComment'))
-
-
-def genNamespaces(self):
-    src = f'''
-
-namespace {self.d('namespace')}
-{{'''
-    self.setSrc('namespaceOpen', src)
-
-    src = f'''
-    
-namespace hu
-{{'''
-    self.setSrc('namespaceHuOpen', src)
-
-    src = f'''
-}}
-'''
-    self.setSrc('namespaceClose', src)
+    self.setSrc('mainHeaderTopComment', self.d('mainHeaderTopComment'), '')
+    self.setSrc('headerTopComment', self.d('headerTopComment'), '')
+    self.setSrc('inlineTopComment', self.d('inlineTopComment'), '')
+    self.setSrc('sourceTopComment', self.d('sourceTopComment'), '')
 
 
 def genCommonIncludes(self):
@@ -86,5 +65,5 @@ def genTypeDecls(self):
             if decl.declKind == 'include':
                 outputFile.includes[decl.decl] = None
             else:
-                outputFile.forwardDecls[decl.decl] = None
+                outputFile.forwardDecls[decl.decl] = decl.namespace
 

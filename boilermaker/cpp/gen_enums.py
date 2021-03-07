@@ -105,7 +105,7 @@ def genDeserializeFromHumon(self, enumName, enum):
     src += f'''
 {it}{it}}}
 {it}}};'''
-    self.appendSrc('humon|enumDeserializerDecls', src)
+    self.appendSrc('humon|enumDeserializerDecls', src, 'hu')
 
 
 def genDeserializeFromBinary(self, enumName, enum):
@@ -153,7 +153,7 @@ def genSerializerToHumon(self, enumName, enum):
     # This system could be improvd.
     fmts = self.d('deserializeFrom')
     if not fmts or 'humon' not in fmts:
-        self.forwardDeclareType('enumSerializerDecls', 'ostream', f'namespace std {{ class ostream; }}')
+        self.forwardDeclareType('enumSerializerDecls', 'ostream', f'{it}class ostream;', 'std')
 
     src = f'''
 {it}std::ostream & operator <<(std::ostream & out, {self.const(f'HumonFormat<{enumDecl}>')} & obj);'''
@@ -236,7 +236,7 @@ def genSerializerToBinary(self, enumName, enum):
 
     fmts = self.d('serializeTo')
     if not fmts or 'binary' not in fmts:
-        self.forwardDeclareType('binary|serializersDecl', 'ostream', 'class std::ostream;')
+        self.forwardDeclareType('binary|serializersDecl', 'ostream', 'class ostream;', 'std')
 
     src = f'''
 

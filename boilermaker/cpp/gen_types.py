@@ -48,55 +48,58 @@ def fwdDeclareType(self, section, t):
 
 def fwdDeclareSubtype(self, section, t, typeDict):
     baseType = typeDict['type']
+    it = self.indent()
 
     decl = None
 
     src = ''
+    namespace = 'std'
     if baseType == 'size_t':
         decl = f'''
-namespace std {{ class size_t; }}'''
+{it}class size_t;'''
     elif baseType == 'string':
         decl = f'''
-namespace std {{ class string; }}'''
+{it}class string;'''
     elif baseType == 'string_view':
         decl = f'''
-namespace std {{ class string_view; }}'''
+{it}class string_view;'''
     elif baseType == 'array':
         decl = f'''
-namespace std {{ template <class T, size_t N> class array; }}'''
+{it}template <class T, size_t N> class array;'''
     elif baseType == 'pair':
         decl = f'''
-namespace std {{ template <class T1, class T2> class pair; }}'''
+{it}template <class T1, class T2> class pair;'''
     elif baseType == 'tuple':
         decl = f'''
-namespace std {{ template <class... Types> class tuple; }}'''
+{it}template <class... Types> class tuple;'''
     elif baseType == 'vector':
         decl = f'''
-namespace std {{ template <class T, class Allocator = std::allocator<T>> class vector; }}'''
+{it}template <class T, class Allocator = std::allocator<T>> class vector;'''
     elif baseType == 'set':
          decl = f'''
-namespace std {{ template <class Key, class Compare = std::less<Key>, class Allocator = std::allocator<Key>> class set; }}'''
+{it}template <class Key, class Compare = std::less<Key>, class Allocator = std::allocator<Key>> class set;'''
     elif baseType == 'unordered_set':
         decl = f'''
-namespace std {{ template <class Key, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>, class Allocator = std::allocator<Key>> class unordered_set; }}'''
+{it}template <class Key, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>, class Allocator = std::allocator<Key>> class unordered_set;'''
     elif baseType == 'map':
         decl = f'''
-namespace std {{ template <class Key, class T, class Compare = std::less<Key>, class Allocator = std::allocator<Key>> class map; }}'''
+{it}template <class Key, class T, class Compare = std::less<Key>, class Allocator = std::allocator<Key>> class map;'''
     elif baseType == 'unordered_map':
         decl = f'''
-namespace std {{ template <class Key, class T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>, class Allocator = std::allocator<Key>> class unordered_map; }}'''
+{it}template <class Key, class T, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>, class Allocator = std::allocator<Key>> class unordered_map;'''
     elif baseType == 'optional':
         decl = f'''
-namespace std {{ template <class T> class optional; }}'''
+{it}template <class T> class optional;'''
     elif baseType == 'variant':
         decl = f'''
-namespace std {{ template <class... Types> class variant; }}'''
+{it}template <class... Types> class variant;'''
     elif baseType in self.types.keys():
+        namespace = self.d('namespace')
         decl = f'''
-namespace {self.d('namespace')} {{ class {baseType}; }}'''
+{it}class {baseType};'''
 
     if decl:
-        self.forwardDeclareType(section, baseType, decl)
+        self.forwardDeclareType(section, baseType, decl, namespace)
 
     if typeDict.get('of'):
         for subType in typeDict['of']:
@@ -314,7 +317,7 @@ def genDeserializer_humon(self, t):
 
     # ----- declaration
 
-    self.forwardDeclareType(f'{t.name}|humonCtrDecl', 'Node', 'namespace hu { class Node; }')
+    self.forwardDeclareType(f'{t.name}|humonCtrDecl', 'Node', f'{it}class Node;', 'hu')
 
     src = f'''
 {it}{it}{t.name}({self.const('hu::Node')} & node)'''
@@ -345,7 +348,7 @@ def genDeserializer_humon(self, t):
 
     self.appendSrc(f'{t.name}|humonCtrDef', src)
 
-    self.forwardDeclareType(f'{t.name}|typeDeserializerDecl', 'Node', 'namespace hu { class Node; }')
+    self.forwardDeclareType(f'{t.name}|typeDeserializerDecl', 'Node', f'{it}class Node;', 'hu')
     typeDecl = self.makeNative(t.name, True)
     src = f'''
 {it}template<>
@@ -354,7 +357,7 @@ def genDeserializer_humon(self, t):
 {it}{it}static inline {typeDecl} extract(Node const & node);
 {it}}};'''
 
-    self.appendSrc(f'{t.name}|typeDeserializerDecl', src)
+    self.appendSrc(f'{t.name}|typeDeserializerDecl', src, 'hu')
 
     self.includeForType(f'{t.name}|typeDeserializerDef', 'Node', '#include <humon/humon.hpp>')
     src = f'''
@@ -367,7 +370,7 @@ def genDeserializer_humon(self, t):
 {it}{it}}}
 {it}}};'''
 
-    self.appendSrc(f'{t.name}|typeDeserializerDef', src)
+    self.appendSrc(f'{t.name}|typeDeserializerDef', src, 'hu')
 
     # do container types
     for memberName, m in t.members.items():
@@ -410,10 +413,6 @@ def genDeserializer_binary(self, t):
     typeDecl = self.makeNative(t.name)
 
     # ----- declaration
-
-    #fmts = self.d('deserializeFrom')
-    #if not fmts or 'binary' not in fmts:
-    #    self.forwardDeclareType(f'{t.name}|binaryCtrDecl', 'istream', 'namespace std { class istream; }')
 
     src = f'''
 {it}{it}{t.name}({self.const('char')} *& buffer, std::size_t & size)'''
@@ -533,14 +532,14 @@ def genSerializer_humon(self, t):
 
     fmts = self.d('deserializeFrom')
     if not fmts or 'humon' not in fmts:
-        self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'''namespace std {{ class ostream; }}''')
+        self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'{it}class ostream;', 'std')
     src = f'''
 {it}std::ostream & operator <<(std::ostream & out, HumonFormat<{t.name}> const & obj);'''
     self.appendSrc(f'{t.name}|forwardDecls', src)
 
     fmts = self.d('deserializeFrom')
     if not fmts or 'humon' not in fmts:
-        self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'''namespace std {{ class ostream; }}''')
+        self.forwardDeclareType(f'{t.name}|serializerDecl', 'ostream', f'{it}class ostream;', 'std')
     src = f'''
 {it}{it}friend std::ostream & operator <<(std::ostream & out, HumonFormat<{t.name}> const & obj);'''
     self.appendSrc(f'{t.name}|serializerDecl', src)
@@ -606,13 +605,13 @@ def genSerializer_binary(self, t):
 
     fmts = self.d('deserializeFrom')
     if not fmts or 'binary' not in fmts:
-        self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'''namespace std {{ class ostream; }}''')
+        self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'{it}class ostream;', 'std')
     src = f'''
 {it}std::ostream & operator <<(std::ostream & out, BinaryFormat<{t.name}> const & obj);'''
     self.appendSrc(f'{t.name}|forwardDecls', src)
 
     if not fmts or 'binary' not in fmts:
-        self.forwardDeclareType(f'{t.name}|forwardDecls', 'ostream', f'''namespace std {{ class ostream; }}''')
+        self.forwardDeclareType(f'{t.name}|serializerDecl', 'ostream', f'{it}class ostream;', 'std')
     src = f'''
 {it}{it}friend std::ostream & operator <<(std::ostream & out, BinaryFormat<{t.name}> const & obj);'''
     self.appendSrc(f'{t.name}|serializerDecl', src)
@@ -875,7 +874,7 @@ def genSwap(self, t):
     it = self.indent()
     typeDecl = self.makeNative(t.name)
     
-    self.forwardDeclareType(f'{t.name}|forwardClassDecl', t.name, f'''namespace {self.d('namespace')} {{ class {t.name}; }}''')
+    self.forwardDeclareType(f'{t.name}|forwardClassDecl', t.name, f'''{it}class {t.name};''')
 
     src = f'''
 {it}void swap({typeDecl} & lhs, {typeDecl} & rhs) noexcept;'''
@@ -1025,10 +1024,10 @@ def genComparator(self, t):
     if not self.dIs('comparable'):
         return ''
 
-    self.forwardDeclareType(f'{t.name}|forwardClassDecl', t.name, f'''namespace {self.d('namespace')} {{ class {t.name}; }}''')
-
     it = self.indent()
     typeDecl = self.makeNative(t.name)
+
+    self.forwardDeclareType(f'{t.name}|forwardClassDecl', t.name, f'''{it}class {t.name};''')
 
     src = f'''
 {it}bool operator ==({self.const(typeDecl)} & lhs, {self.const(typeDecl)} & rhs);

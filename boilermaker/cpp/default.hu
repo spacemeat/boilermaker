@@ -85,12 +85,12 @@
     containersSourceFile:   containers.cpp
 
     output: {
-        headerOnly: {           // outputForm
-            mainHeader: {       // kind
+        headerOnlyOld: {
+            mainHeader: {
                 sourcePath: $<defsDir>/$<headerDir>/$<mainHeaderFile>
                 sections:
                 [
-                    pragma          // section
+                    pragma
                     mainHeaderTopComment
                     mainHeaderIncludes
                     bomaStreamClass
@@ -106,9 +106,7 @@
                     enumHeaderIncludes
                     enumHeaderForwardDecls
                     enumDeserializerDefs
-                    namespaceOpen
                     enumSerializerDecls
-                    namespaceClose
                     enumHeaderIncludeInline
                 ]
             }
@@ -119,9 +117,7 @@
                     pragma
                     inlineTopComment
                     enumSourceIncludes
-                    namespaceOpen
                     enumSerializerDefs
-                    namespaceClose
                 ]
             }
 
@@ -133,10 +129,7 @@
                     $<type>|typeHeaderIncludes
                     $<type>|typeHeaderLocalIncludes
                     allTypeForwardDecls
-                    namespaceStdOpen
                     $<type>|stdForwardDecls
-                    namespaceClose
-                    namespaceOpen
                     $<type>|containerDifferDecl
                     $<type>|forwardClassDecl
                     $<type>|forwardDecls
@@ -160,7 +153,6 @@
                     $<type>|classEnd
                     $<type>|typeSerializerDecls
                     $<type>|containerSerializerDecls
-                    namespaceClose
                     $<type>|typeDeserializerDef
                     $<type>|typeDeserializerDefs
                     $<type>|typeHeaderIncludeInline
@@ -174,7 +166,6 @@
                     inlineTopComment
                     $<type>|typeSourceIncludes
                     $<type>|typeSourceLocalIncludes
-                    namespaceOpen
                     $<type>|containerDifferDef
                     $<type>|defaultCtrDef
                     $<type>|memberwiseCtrDef
@@ -192,17 +183,16 @@
                     $<type>|comparatorDef
                     $<type>|differDef
                     $<type>|typeSerializerDefs
-                    namespaceClose
                 ]
             }
         }
 
-        compiled: {           // outputForm
-            mainHeader: {       // kind
+        compiled: {
+            mainHeader: {
                 sourcePath: $<headerDir>/$<mainHeaderFile>
                 sourceKind: header
                 sections: [
-                    pragma          // section
+                    pragma
                     mainHeaderTopComment
                     forwardDecls
                     mainHeader|includes
@@ -218,24 +208,18 @@
                     pragma
                     headerTopComment
                     commonHeader|includes
-                    namespaceOpen
                     isLessDecl
                     variantTypeNames
                     
                     deserializerFormatWrapperBase
                     deserializerFormatWrappersDecl                    
-                    namespaceClose
-                    namespaceHuOpen
                     humon|deserializersDecl
-                    namespaceClose
-                    namespaceOpen
                     binary|deserializersDecl
 
                     serializerFormatWrapperBase
                     serializerFormatWrappersDecl
                     humon|serializersDecl
                     binary|serializersDecl
-                    namespaceClose
                 ]
             }
 
@@ -245,16 +229,10 @@
                 sections: [
                     sourceTopComment
                     commonSource|includes
-                    namespaceOpen
                     isLessDef
-                    namespaceClose
-                    namespaceHuOpen
                     deserializersDef
-                    namespaceClose
-                    namespaceOpen
                     serializerFormatWrappersDef
                     binary|serializersDef
-                    namespaceClose
                 ]
             }
 
@@ -265,7 +243,6 @@
                     pragma
                     headerTopComment
                     diffsHeader|includes
-                    namespaceOpen
                     diffTemplateDecl
                     diffArray
                     diffPair
@@ -275,7 +252,6 @@
                     diffUnorderedSet
                     diffMap
                     diffUnorderedMap
-                    namespaceClose
                 ]
             }
 
@@ -287,13 +263,9 @@
                     headerTopComment
                     enumHeader|includes
                     enumHeaderForwardDecls
-                    namespaceHuOpen
                     humon|enumDeserializerDecls
-                    namespaceClose
-                    namespaceOpen
                     binary|enumDeserializerDecls
                     enumSerializerDecls
-                    namespaceClose
                 ]
             }
 
@@ -304,9 +276,7 @@
                     sourceTopComment
                     enumSource|includes
                     enumDeserializerDefs
-                    namespaceOpen
                     enumSerializerDefs
-                    namespaceClose
                 ]
             }
 
@@ -317,7 +287,6 @@
                     pragma
                     headerTopComment
                     $<type>|typeHeader|includes
-                    namespaceOpen
                     $<type>|containerDifferDecl
                     $<type>|forwardClassDecl
                     $<type>|forwardDecls
@@ -343,14 +312,9 @@
                     $<type>|classEnd
                     $<type>|typeSerializerDecls
                     $<type>|containerSerializerDecls
-                    namespaceClose
-                    namespaceHuOpen
                     $<type>|typeDeserializerDef
                     $<type>|containerDeserializerDefs
-                    namespaceClose
-                    namespaceOpen
                     $<type>|binaryExtractor
-                    namespaceClose
                 ]
             }
 
@@ -360,7 +324,6 @@
                 sections: [
                     sourceTopComment
                     $<type>|typeSource|includes
-                    namespaceOpen
                     $<type>|containerDifferDef
                     $<type>|defaultCtrDef
                     $<type>|memberwiseCtrDef
@@ -380,7 +343,6 @@
                     $<type>|differDef
                     $<type>|containerSerializerDefs
                     //$<type>|typeSerializerDef
-                    namespaceClose
                 ]
             }
         }

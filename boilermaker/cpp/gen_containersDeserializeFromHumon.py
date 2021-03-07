@@ -42,7 +42,7 @@ def gen_array(self):
 {it}{it}{it}return maker(std::make_index_sequence<N> {{}});
 {it}{it}}}
 {it}}};'''
-    self.appendSrc('humon|deserializersDecl', src)
+    self.appendSrc('humon|deserializersDecl', src, 'hu')
 
 
 def gen_pair(self):
@@ -68,7 +68,7 @@ def gen_pair(self):
 {it}{it}{it}}};
 {it}{it}}}
 {it}}};'''
-    self.appendSrc('humon|deserializersDecl', src)
+    self.appendSrc('humon|deserializersDecl', src, 'hu')
 
 
 def gen_tuple(self):
@@ -96,7 +96,7 @@ def gen_tuple(self):
 {it}{it}{it}return maker(std::make_index_sequence<sizeof...(Ts)> {{ }});
 {it}{it}}}
 {it}}};'''
-    self.appendSrc('humon|deserializersDecl', src)
+    self.appendSrc('humon|deserializersDecl', src, 'hu')
 
 
 def gen_vector(self):
@@ -124,7 +124,7 @@ def gen_vector(self):
 {it}{it}{it}return rv;
 {it}{it}}}
 {it}}};'''
-    self.appendSrc('humon|deserializersDecl', src)
+    self.appendSrc('humon|deserializersDecl', src, 'hu')
 
 
 def gen_set(self):
@@ -152,7 +152,7 @@ def gen_set(self):
 {it}{it}{it}return rv;
 {it}{it}}}
 {it}}};'''
-    self.appendSrc('humon|deserializersDecl', src)
+    self.appendSrc('humon|deserializersDecl', src, 'hu')
 
 
 def gen_unordered_set(self):
@@ -180,7 +180,7 @@ def gen_unordered_set(self):
 {it}{it}{it}return rv;
 {it}{it}}}
 {it}}};'''
-    self.appendSrc('humon|deserializersDecl', src)
+    self.appendSrc('humon|deserializersDecl', src, 'hu')
 
 
 def gen_map(self):
@@ -210,7 +210,7 @@ def gen_map(self):
 {it}{it}{it}return rv;
 {it}{it}}}
 {it}}};'''
-    self.appendSrc('humon|deserializersDecl', src)
+    self.appendSrc('humon|deserializersDecl', src, 'hu')
 
 
 def gen_unordered_map(self):
@@ -240,7 +240,7 @@ def gen_unordered_map(self):
 {it}{it}{it}return rv;
 {it}{it}}}
 {it}}};'''
-    self.appendSrc('humon|deserializersDecl', src)
+    self.appendSrc('humon|deserializersDecl', src, 'hu')
 
 
 def gen_optional(self):
@@ -268,7 +268,7 @@ def gen_optional(self):
 {it}{it}{it}{it}{{ return node % val<T>{{}}; }}
 {it}{it}}}
 {it}}};'''
-    self.appendSrc('humon|deserializersDecl', src)
+    self.appendSrc('humon|deserializersDecl', src, 'hu')
 
 
 def gen_variant(self):
@@ -327,4 +327,4 @@ def gen_variant(self):
 {it}{it}{it}return maker(std::make_index_sequence<sizeof...(Ts)> {{ }});
 {it}{it}}}
 {it}}};'''
-    self.appendSrc('humon|deserializersDecl', src)
+    self.appendSrc('humon|deserializersDecl', src, 'hu')

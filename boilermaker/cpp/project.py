@@ -6,14 +6,15 @@ from ..project import Project as BaseProject
 
 
 class DependentTypeDecl:
-    def __init__(self, declKind, decl):
+    def __init__(self, declKind, decl, namespace = ''):
         self.declKind = declKind
         self.decl = decl
+        self.namespace = namespace
 
     def __str__(self):
         dc = ansi.dk_blue_fg
         lc = ansi.lt_blue_fg
-        return f'''{lc}{self.declKind}{dc} = {lc}{self.decl}{ansi.all_off}'''
+        return f'''{lc}{self.declKind}{dc} = {lc}{self.namespace}.{self.decl}{ansi.all_off}'''
 
 
 class IncludeDecl:
@@ -60,10 +61,11 @@ class OutputFile:
 
 
 class OutputSection:
-    def __init__(self):
+    def __init__(self, defaultNamespace):
         self.dependentTypeDecls = {} 
         self.includes = {}
-        self.src = ''
+        self.srcs = []
+        self.defaultNamespace = defaultNamespace
 
     def __str__(self):
         dc = ansi.dk_blue_fg
@@ -75,14 +77,14 @@ class OutputSection:
         for incName, inco in self.includes.items():
             txt += f'''
 {dc}  includes: {lc}{incName}{dc}: {str(inco)}{ansi.all_off}'''
-        if len(txt) > 0:
+        srcLen = sum([len(src[0]) for src in self.srcs])
+        if srcLen > 0:
             txt += f'''
-{dc}  len: {lc}{len(txt)}{ansi.all_off}'''
+{dc}  len: {lc}{srcLen}{ansi.all_off}'''
         return txt
 
-
-    def forwardDeclareType(self, baseType, decl):
-        self.dependentTypeDecls.setdefault(baseType, DependentTypeDecl('forwardDecl', decl))
+    def forwardDeclareType(self, baseType, decl, namespace):
+        self.dependentTypeDecls.setdefault(baseType, DependentTypeDecl('forwardDecl', decl, namespace))
 
     def includeForType(self, baseType, includeFile):
         self.dependentTypeDecls[baseType] = DependentTypeDecl('include', includeFile)
@@ -93,15 +95,15 @@ class OutputSection:
     def includeFile(self, path, inPlace=False):
         self.includes[path] = IncludeDecl(False, path, inPlace)
 
-    def setSrc(self, src):
-        self.src = src
+    def setSrc(self, src, namespace):
+        self.srcs = [(src, namespace)]
     
-    def setSrcIfEmpty(self, src):
-        if len(self.src) == 0:
-            self.src = src
+    def setSrcIfEmpty(self, src, namespace):
+        if len(self.srcs) == 0:
+            self.srcs = [(src, namespace)]
 
-    def appendSrc(self, src):
-        self.src += src
+    def appendSrc(self, src, namespace):
+        self.srcs.append((src, namespace))
 
     def hasDecl(self, baseType):
         return baseType in self.dependentTypeDecls
@@ -130,8 +132,6 @@ class Project(BaseProject):
     def reset(self):
         self.outputFiles = {}
         self.outputSections = {}
-        self.includes = {}
-        self.sections = {}
         self.includeDiffTypes = {}
         self.serializerFormatWrappers = {}
         self.containersSerializerTypes = {}
@@ -213,7 +213,6 @@ class Project(BaseProject):
         self.gen_global.genAll(self)
         self.gen_enums.genAll(self)
         self.gen_types.genAll(self)
-        #self.gen_containers.genBuiltInSerializers(self)
 
         # we're doing includes last, since any other gen_ can add to includes and typedecls.
         self.gen_global.genTypeDecls(self)
@@ -259,7 +258,7 @@ class Project(BaseProject):
 
                     self.outputFiles[t_defsFileName] = OutputFile(t_sourcePath, t_sourceKind, t_sections)
                     for t_section in t_sections:
-                        self.outputSections[t_section] = OutputSection()
+                        self.outputSections[t_section] = OutputSection(self.d('namespace'))
             else:
                 defsFileName = self.replaceStringArgs(defsFileName)
                 sourcePath = self.replaceStringArgs(defsSourcePath)
@@ -268,31 +267,24 @@ class Project(BaseProject):
 
                 self.outputFiles[defsFileName] = OutputFile(sourcePath, sourceKind, sections)
                 for section in sections:
-                    self.outputSections[section] = OutputSection()
+                    self.outputSections[section] = OutputSection(self.d('namespace'))
 
 
-    def _appendToSection(self, section, src):
-        if section not in self.sections:
-            self.sections[section] = src
-        else:
-            self.sections[section] += src
-
-
-    def _addInclude(self, section, kindToInclude):
-        '''section is like 'enumDeserializers' or 'someType|typeInlineSourceLocalIncludes'.'''
-        '''kind is like 'containersInlineSource' or 'someType|typesSource'.'''
-        if section not in self.includes:
-            self.includes[section] = {kindToInclude: None}
-        else:
-            self.includes[section][kindToInclude] = None
-
-
-    def validateSection(self, section):
-        if section in self.outputSections:
-            return True
-        else:
-            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}Section "{section}" has no output in outputForm "{self.d("outputForm")}".')
-            return False
+    def getSection(self, sectionName, mustNotExist=False):
+        '''Returns the OutputSection object for sectionName. If the section
+        does not exist yet, a new one is created. If mustNotExist == True,
+        however, a new OutputSection is created only if one for sectionName
+        does not yet exist. If it does, None is returned. This is useful for
+        one-time section content that might get made multiple times.'''
+        section = self.outputSections.get(sectionName)
+        if section and mustNotExist:
+            return None
+        
+        if not section:
+            section = OutputSection(self.d('namespace'))
+            self.outputSections[sectionName] = section
+        
+        return section
 
 
     def validateOutputFile(self, outputFile):
@@ -303,49 +295,81 @@ class Project(BaseProject):
             return False
 
 
-    def setSrc(self, section, src):
-        section = self.replaceStringArgs(section)
-        if self.validateSection(section):
-            self.outputSections[section].setSrc(src)
+    def setSrc(self, sectionName, src, namespace='$<namespace>'):
+        sectionName = self.replaceStringArgs(sectionName)
+        if sectionName in self.outputSections:
+            s = self.getSection(sectionName)
+            if s:
+                namespace = self.replaceStringArgs(namespace)
+                s.setSrc(src, namespace)
+        else:
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}Section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
 
 
-    def setSrcIfEmpty(self, section, src):
-        section = self.replaceStringArgs(section)
-        if self.validateSection(section):
-            self.outputSections[section].setSrcIfEmpty(src)
+    def setSrcIfEmpty(self, sectionName, src, namespace='$<namespace>'):
+        sectionName = self.replaceStringArgs(sectionName)
+        if sectionName in self.outputSections:
+            s = self.getSection(sectionName)
+            if s:
+                namespace = self.replaceStringArgs(namespace)
+                s.setSrcIfEmpty(src, namespace)
+        else:
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
 
 
-    def appendSrc(self, section, src):
-        section = self.replaceStringArgs(section)
-        if self.validateSection(section):
-            self.outputSections[section].appendSrc(src)
+    def appendSrc(self, sectionName, src, namespace='$<namespace>'):
+        sectionName = self.replaceStringArgs(sectionName)
+        if sectionName in self.outputSections:
+            s = self.getSection(sectionName)
+            if s:
+                namespace = self.replaceStringArgs(namespace)
+                s.appendSrc(src, namespace)
+        else:
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
 
 
-    def forwardDeclareType(self, section, baseType, decl, inPlace=False):
+    def forwardDeclareType(self, sectionName, baseType, decl, namespace='$<namespace>', inPlace=False):
         '''baseType looks like 'vector'. decl looks like 'template <class T, class A> class std::vector<T, A>;'''
-        section = self.replaceStringArgs(section)
-        if self.validateSection(section):
-            self.outputSections[section].forwardDeclareType(baseType, decl)
+        sectionName = self.replaceStringArgs(sectionName)
+        if sectionName in self.outputSections:
+            s = self.getSection(sectionName)
+            if s:
+                namespace = self.replaceStringArgs(namespace)
+                s.forwardDeclareType(baseType, decl, namespace)
+        else:
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
 
     
-    def includeForType(self, section, baseType, includeFile, inPlace=False):
+    def includeForType(self, sectionName, baseType, includeFile, inPlace=False):
         '''baseType looks like 'vector'. includeFile looks like '#include <vector>'''
-        section = self.replaceStringArgs(section)
-        if self.validateSection(section):
-            self.outputSections[section].includeForType(baseType, includeFile)
+        sectionName = self.replaceStringArgs(sectionName)
+        if sectionName in self.outputSections:
+            s = self.getSection(sectionName)
+            if s:
+                s.includeForType(baseType, includeFile)
+        else:
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
     
     
-    def includeOutputFile(self, section, outputFile, inPlace=False):
-        section = self.replaceStringArgs(section)
+    def includeOutputFile(self, sectionName, outputFile, inPlace=False):
+        sectionName = self.replaceStringArgs(sectionName)
         outputFile = self.replaceStringArgs(outputFile)
-        if self.validateSection(section):
-            self.outputSections[section].includeOutputFile(outputFile, inPlace)
+        if sectionName in self.outputSections:
+            s = self.getSection(sectionName)
+            if s:
+                s.includeOutputFile(outputFile, inPlace)
+        else:
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
     
 
-    def includeFile(self, section, path, inPlace=False):
-        section = self.replaceStringArgs(section)
-        if self.validateSection(section):
-            self.outputSections[section].includeFile(path, inPlace)
+    def includeFile(self, sectionName, path, inPlace=False):
+        sectionName = self.replaceStringArgs(sectionName)
+        if sectionName in self.outputSections:
+            s = self.getSection(sectionName)
+            if s:
+                s.includeFile(path, inPlace)
+        else:
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
     
 
     def removeAllFiles(self, direc):
@@ -378,100 +402,47 @@ class Project(BaseProject):
         print (f'{ansi.dk_blue_fg}Writing {ansi.lt_yellow_fg}{path}{ansi.dk_blue_fg}...{ansi.all_off}')
 
         with open(path, 'wt') as f:
+            currentNamespace = ''
+            def updateNamespace(ns):
+                nonlocal currentNamespace
+                if ns != currentNamespace:
+                    if currentNamespace != '':
+                        f.write(f'''
+}}''')
+                    if ns != '':
+                        f.write(f'''
+
+namespace {ns}
+{{''')
+                    currentNamespace = ns
+
             for sectionName in outputFile.sections:
                 if sectionName == f'{outputFileName}|includes':
                     if len(outputFile.includes) > 0:
                         f.write('\n')
+                        updateNamespace('')
                         for decl in outputFile.includes.keys():
                             f.write(f'''
 {decl}''')
                     if len(outputFile.forwardDecls) > 0:
                         f.write('\n')
-                        for decl in outputFile.forwardDecls.keys():
+                        for decl, namespace in outputFile.forwardDecls.items():
+                            updateNamespace(namespace)
                             f.write(f'''
 {decl}''')
                 else:
                     section = self.outputSections.get(sectionName)
 
                     # drop in-place #includes here (rarely has any)
-                    for decl, include in section.includes.items():
-                        if include.inPlace:
-                            f.write(f'''
+                    if len(section.includes) > 0:
+                        for decl, include in section.includes.items():
+                            if include.inPlace:
+                                updateNamespace('')
+                                f.write(f'''
 {dependentTypeDecl.decl}''')
 
-                    f.write(section.src)
+                    for src, ns in section.srcs:
+                        updateNamespace(ns)
+                        f.write(src)
 
-
-    def writeCodeOld(self):
-        # clean any files in the target directories
-        self.removeAllFiles(self.d('headerDir'))
-        self.removeAllFiles(self.d('inlineDir'))
-        self.removeAllFiles(self.d('sourceDir'))
-
-        # spit out the contents
-        output = self.defsData.get('output', {})
-        for outputForm, kinds in output.items():
-            if outputForm != self.d('outputForm'):
-                continue
-
-            for kind, kindInfo in kinds.items():
-                if ('typeHeader' in kind or
-                    'typeSource' in kind):
-                    for typeName, typeObj in self.types.items():
-                        self.writeFile(kind, kindInfo, typeName)
-                elif kind == 'diffsHeader':
-                    if len(self.includeDiffTypes) > 0:
-                        self.writeFile(kind, kindInfo)
-                else:
-                    self.writeFile(kind, kindInfo)
-
-
-    def writeFileOld(self, kind, kindInfo, typeName = None):
-        # path will have $<> replacements done.
-        path = self._getPath(kind, kindInfo, typeName)
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        with open(path, 'wt') as f:
-            for section in kindInfo.get('sections', []):
-                # replace $<type> in section names
-                section = self.replaceStringArgs(section, {'type': typeName})
-
-                includeKinds = self.includes.get(section)
-                if includeKinds:
-                    for incTypeKind in includeKinds.keys():
-                        incType, *incKind = incTypeKind.split('|', 1)
-                        if len(incKind):
-                            incKind = incKind[0]
-                        else:
-                            incKind = incType
-                            incType = None
-                        
-                        if ((incKind.startswith('<') and incKind.endswith('>')) or
-                            (incKind.startswith('"') and incKind.endswith('"'))):
-                            relPath = incKind
-                        else:
-                            incKindInfo = self.defsData['output'][self.d('outputForm')][incKind]
-                            incPath = self._getPath(incKind, incKindInfo, incType)
-                            relPath = Path( os.path.relpath( incPath.parent, path.parent ), incPath.name )
-                            relPath = f'"{relPath}"'
-                        f.write(f'\n#include {relPath}')
-
-                content = self.sections.get(section)
-                if content:
-                    f.write(content)
-
-
-    def _getPath(self, kind, kindInfo, typeName = None):
-        '''kind is like 'mainHeader' or 'typesSource' '''
-
-        sourcePath = kindInfo.get('sourcePath')
-        if not sourcePath:
-            raise RuntimeError(f'Bad value for {kind}/sourcePath: {sourcePath}')
-
-        # we do this twice to resolve an arg replaced with a more different arg
-        sourcePath = self.replaceStringArgs(sourcePath)
-
-        repl = None if not typeName else { 'type': typeName }
-        sourcePath = self.replaceStringArgs(sourcePath, repl)
-
-        return Path(sourcePath)
+            updateNamespace('')
