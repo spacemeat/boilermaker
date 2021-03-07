@@ -9,8 +9,8 @@
     const:          west
     outputForm:     headerOnly  // or compiled
     caveperson:     [ctr, dtr, ass, serializeBinary, deserializeBinary]
-    checkBinaryOverruns: true
-    caveStream:     cout
+    checkBinaryOverruns: false
+    caveStream:     cerr
 
     mainHeaderTopComment: ^^
 
