@@ -1,4 +1,3 @@
-shopt -s nullglob
 if [ "${1}." != '-ho.' ]; then
     echo "Making build/bin/newsamp using generated .cpp source."
     srcFiles=(./testSamples/newsamp/gen-cpp/txtToBin/src/boma/*.cpp)

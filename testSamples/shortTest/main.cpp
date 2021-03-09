@@ -29,7 +29,7 @@ int main(int argc, char ** argv)
     if (auto t = std::get_if<hu::Trove>(&res))
     {
         auto ev = t->root() / "coup" % hu::val<shortTest::couple>();
-        std::cout << "Got value: '" << shortTest::HumonFormat(ev) << "'.\n";
+        std::cout << "Got value: '" << shortTest::HumonFormat(ev, 2) << "'.\n";
         auto ev2 = t->root() / "vacoup" % hu::val<shortTest::a_of_v_of_couples>();
         std::cout << "Got value: '" << shortTest::HumonFormat(ev2) << "'.\n";
     }
