@@ -16,7 +16,8 @@
     outputForm: compiled
     deserializeFrom: [humon]
     serializeTo: [humon]
- 
+    diffable: true
+
     types: {
         achievement: {
             titleId: int

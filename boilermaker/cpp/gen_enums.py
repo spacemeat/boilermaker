@@ -120,7 +120,7 @@ def genDeserializeFromBinary(self, enumName, enum):
 {it}struct BinaryReader<T, typename std::enable_if_t<std::is_enum_v<T>>>
 {it}{{
 {it}{it}static inline T extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('serializeBinary', f'"Reading enum {enumName}"')}{self.checkBinaryBuffer()}
+{it}{it}{{{self.cave('serializeBinary', f'"Reading enum {enumName}"', 'binary|enumDeserializerDecls')}{self.checkBinaryBuffer()}
 {it}{it}{it}auto t = * reinterpret_cast<{self.const('T')} *>(buffer);{self.advanceBinaryBuffer()}
 {it}{it}{it}return t;
 {it}{it}}}
@@ -188,7 +188,7 @@ def genSerializerToHumon(self, enumName, enum):
             scopePos = prefix.rfind('::')
             if scopePos >= 0:
                 prefix = prefix[:scopePos]
-        
+
         if enum.flags:
             src += f'''
 {it}{it}if (bits & static_cast<enumIntType>({prefix}::{declName}))
@@ -202,7 +202,7 @@ def genSerializerToHumon(self, enumName, enum):
         else:
             src += f'''
 {it}{it}case {prefix}::{declName}: out << "{modName}"; break;'''
-    
+
     if enum.flags:
         src += f'''
 {it}done:

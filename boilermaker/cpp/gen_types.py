@@ -4,7 +4,7 @@ from .. import utilities
 def genAll(self):
     if not self.dIs('computeTypes'):
         return ''
-    
+
     deserializeMemo = {}
     serializersMemo = {}
     for typeName, t in self.types.items():
@@ -60,9 +60,9 @@ def fwdDeclareSubtype(self, section, t, typeDict):
     elif baseType == 'string':
         decl = f'''
 {it}class string;'''
+        self.gen_types.includeForSubtype(self, section, t, typeDict)
     elif baseType == 'string_view':
-        decl = f'''
-{it}class string_view;'''
+        self.gen_types.includeForSubtype(self, section, t, typeDict)
     elif baseType == 'array':
         decl = f'''
 {it}template <class T, size_t N> class array;'''
@@ -165,7 +165,7 @@ def includeForSubtype(self, section, t, typeDict):
 
     if decl:
         self.includeForType(section, baseType, decl)
-    
+
     if removeSizetTypedef:
         # promotes size_t from typedef to #include, using the same
         # decl as above to make the typedef effectively disappear
@@ -174,7 +174,7 @@ def includeForSubtype(self, section, t, typeDict):
     if typeDict.get('of'):
         for subType in typeDict['of']:
             self.gen_types.includeForSubtype(self, section, t, subType)
-    
+
 
 def genIncludesInline(self, t):
     it = self.indent()
@@ -263,7 +263,7 @@ def genVariantTypeNamesForSubtype(self, typeDict):
 {it}{it}static constexpr std::size_t size = {len(subTypes)};
 {it}}};'''
         self.appendSrc(f'variantTypeNames', src)
-    
+
     if typeDict.get('of'):
         for chDict in typeDict['of']:
             self.gen_types.genVariantTypeNamesForSubtype(self, chDict)
@@ -299,7 +299,7 @@ def genDeserializers(self, t):
     fmts = self.d('deserializeFrom')
     if (not fmts):
         return
-    
+
     for fmt in fmts:
         if fmt == 'humon':
             self.gen_types.genDeserializer_humon(self, t)
@@ -343,7 +343,7 @@ def genDeserializer_humon(self, t):
             src += f', \n{it}  '
         src += decl
     src += f'''
-{it}{{{self.cave('ctr', f'"Humon ctor: {t.name}"', 2)}
+{it}{{{self.cave('ctr', f'"Humon ctor: {t.name}"', f'{t.name}|humonCtrDef', 2)}
 {it}}}'''
 
     self.appendSrc(f'{t.name}|humonCtrDef', src)
@@ -365,7 +365,7 @@ def genDeserializer_humon(self, t):
 {it}struct val<{typeDecl}>
 {it}{{
 {it}{it}static inline {typeDecl} extract(Node const & node)
-{it}{it}{{{self.cave('deserializeHumon', f'"Reading {t.name}"')}
+{it}{it}{{{self.cave('deserializeHumon', f'"Reading {t.name}"', f'{t.name}|typeDeserializerDef')}
 {it}{it}{it}return {typeDecl}(node);
 {it}{it}}}
 {it}}};'''
@@ -400,7 +400,7 @@ def genDeserializerSubtype_humon(self, typeDict):
         self.gen_containersDeserializeFromHumon.gen_optional(self)
     elif baseType == 'variant':
         self.gen_containersDeserializeFromHumon.gen_variant(self)
-    
+
     if typeDict.get('of'):
         for chDict in typeDict['of']:
             self.gen_types.genDeserializerSubtype_humon(self, chDict)
@@ -438,7 +438,7 @@ def genDeserializer_binary(self, t):
             src += f', \n{it}  '
         src += decl
     src += f'''
-{it}{{{self.cave('ctr', f'"Binary ctr: {t.name}"', 2)}
+{it}{{{self.cave('ctr', f'"Binary ctr: {t.name}"', f'{t.name}|binaryCtrDef', 2)}
 {it}}}'''
     self.appendSrc(f'{t.name}|binaryCtrDef', src)
 
@@ -448,7 +448,7 @@ def genDeserializer_binary(self, t):
 {it}struct BinaryReader<{typeDecl}>
 {it}{{
 {it}{it}static inline {typeDecl} extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('deserializeBinary', f'"Reading {t.name}"')}
+{it}{it}{{{self.cave('deserializeBinary', f'"Reading {t.name}"', f'{t.name}|binaryExtractor')}
 {it}{it}{it}return {typeDecl}(buffer, size);
 {it}{it}}}
 {it}}};
@@ -484,7 +484,7 @@ def genDeserializerSubtype_binary(self, typeDict):
         self.gen_containersDeserializeFromBinary.gen_optional(self)
     elif baseType == 'variant':
         self.gen_containersDeserializeFromBinary.gen_variant(self)
-    
+
     if typeDict.get('of'):
         for chDict in typeDict['of']:
             self.gen_types.genDeserializerSubtype_binary(self, chDict)
@@ -593,7 +593,7 @@ def genSerializerSubtype_humon(self, typeDict):
         self.gen_containersSerializeToHumon.gen_optional(self)
     elif baseType == 'variant':
         self.gen_containersSerializeToHumon.gen_variant(self)
-    
+
     if typeDict.get('of'):
         for chDict in typeDict['of']:
             self.gen_types.genSerializerSubtype_humon(self, chDict)
@@ -620,7 +620,7 @@ def genSerializer_binary(self, t):
     src = f'''
 
 {it}std::ostream & operator <<(std::ostream & out, BinaryFormat<{t.name}> const & obj)
-{it}{{{self.cave('serializeBinary', f'"Writing {t.name}"', 2)}'''
+{it}{{{self.cave('serializeBinary', f'"Writing {t.name}"', f'{t.name}|serialzierDef', 2)}'''
 
     for memberName, memberObj in t.members.items():
         src += f'''
@@ -659,7 +659,7 @@ def genSerializerSubtype_binary(self, typeDict):
         self.gen_containersSerializeToBinary.gen_optional(self)
     elif baseType == 'variant':
         self.gen_containersSerializeToBinary.gen_variant(self)
-    
+
     if typeDict.get('of'):
         for chDict in typeDict['of']:
             self.gen_types.genSerializerSubtype_binary(self, chDict)
@@ -678,7 +678,7 @@ def genDefaultConstructor(self, t):
     src = f'''
 
 {it}{t.name}::{t.name}()
-{it}{{{self.cave('ctr', f'"Default ctor: {t.name}"', 2)}
+{it}{{{self.cave('ctr', f'"Default ctor: {t.name}"', f'{t.name}|defaultCtrDef', 2)}
 {it}}}'''
     self.appendSrc(f'{t.name}|defaultCtrDef', src)
 
@@ -686,17 +686,17 @@ def genDefaultConstructor(self, t):
 def genMemberwiseConstructor(self, t):
     if not self.dIs('memberwiseConstructible'):
         return
-    
+
     if len(t.members) == 0:
         return
-        
+
     it = self.indent()
 
     def foreachMemberName():
         for memberName, m in t.members.items():
             memberDecl = self.makeNativeMemberType(m.properties)
             yield (memberName, memberDecl)
-    
+
     signature = ', '.join([f'{self.const(md)} & {mn}' for mn, md in foreachMemberName()])
     memberConstructors = ', '.join([f'{mn}({mn})' for mn, _ in foreachMemberName()])
 
@@ -708,7 +708,7 @@ def genMemberwiseConstructor(self, t):
 
 {it}{t.name}::{t.name}({signature})
 {it} : {memberConstructors}
-{it}{{{self.cave('ctr', f'"Memberwise ctor: {t.name}"', 2)}
+{it}{{{self.cave('ctr', f'"Memberwise ctor: {t.name}"', f'{t.name}|memberwiseCtrDef', 2)}
 {it}}}'''
     self.appendSrc(f'{t.name}|memberwiseCtrDef', src)
 
@@ -717,10 +717,7 @@ def genCopyConstructor(self, t):
     it = self.indent()
     typeDecl = self.makeNative(t.name)
 
-    dbgs = self.d('caveperson')
-    if dbgs and 'ctr' in dbgs and self.dIs('copyable'):
-        caveStream = self.d('caveStream') or 'cout'
-
+    if self.dIs('copyable'):
         src = f'''
 {it}{it}{t.name}({self.const(typeDecl)} & rhs);'''
 
@@ -730,14 +727,14 @@ def genCopyConstructor(self, t):
             for memberName, m in t.members.items():
                 memberDecl = self.makeNativeMemberType(m.properties)
                 yield (memberName, memberDecl)
-        
+
         memberConstructors = ', '.join([f'{mn}(rhs.{mn})' for mn, _ in foreachMemberName()])
 
         src = f'''
 
 {it}{typeDecl}::{t.name}({self.const(typeDecl)} & rhs)
 {it}: {memberConstructors}
-{it}{{{self.cave('ctr', f'"Copy ctor: {t.name}"', 2)}
+{it}{{{self.cave('ctr', f'"Copy ctor: {t.name}"', f'{t.name}|copyCtrDef', 2)}
 {it}}}'''
 
         self.appendSrc(f'{t.name}|copyCtrDef', src)
@@ -767,13 +764,13 @@ def genMoveConstructor(self, t):
             for memberName, m in t.members.items():
                 memberDecl = self.makeNativeMemberType(m.properties)
                 yield (memberName, memberDecl)
-        
+
         memberConstructors = f'\n'.join([f'{it}{it}swap({mn}, rhs.{mn});' for mn, _ in foreachMemberName()])
 
         src = f'''
 
 {it}{typeDecl}::{t.name}({typeDecl} && rhs) noexcept
-{it}{{{self.cave('ctr', f'"Move ctor: {t.name}"', 2)}
+{it}{{{self.cave('ctr', f'"Move ctor: {t.name}"', f'{t.name}|moveCtrDef', 2)}
 {it}{it}using std::swap;
 {memberConstructors}
 {it}}}'''
@@ -784,9 +781,7 @@ def genCopyAssignment(self, t):
     it = self.indent()
     typeDecl = self.makeNative(t.name)
 
-    dbgs = self.d('caveperson')
-    if dbgs and 'ass' in dbgs and self.dIs('movable'):
-        caveStream = self.d('caveStream') or 'cout'
+    if self.dIs('movable'):
         src = f'''
 {it}{it}{typeDecl} & operator =({self.const(typeDecl)} & rhs);'''
         self.appendSrc(f'{t.name}|copyAssignDecl', src)
@@ -794,7 +789,7 @@ def genCopyAssignment(self, t):
         src = f'''
 
 {it}{typeDecl} & {typeDecl}::operator =({self.const(typeDecl)} & rhs)
-{it}{{{self.cave('ass', f'"Copy assignment: {t.name}"', 2)}'''
+{it}{{{self.cave('ass', f'"Copy assignment: {t.name}"', f'{t.name}|copyAssignDef', 2)}'''
 
         def foreachMemberName():
             for memberName, m in t.members.items():
@@ -832,13 +827,13 @@ def genMoveAssignment(self, t):
             for memberName, m in t.members.items():
                 memberDecl = self.makeNativeMemberType(m.properties)
                 yield (memberName, memberDecl)
-        
+
         memberConstructors = f'\n'.join([f'{it}{it}swap({mn}, rhs.{mn});' for mn, _ in foreachMemberName()])
 
         src = f'''
 
 {it}{typeDecl} & {typeDecl}::operator =({typeDecl} && rhs) noexcept
-{it}{{{self.cave('ass', f'"Move assignment: {t.name}"', 2)}
+{it}{{{self.cave('ass', f'"Move assignment: {t.name}"', f'{t.name}|moveAssignDef', 2)}
 {it}{it}using std::swap;
 {memberConstructors}
 {it}{it}return * this;
@@ -862,10 +857,10 @@ def genDestructor(self, t):
     src = f'''
 
 {it}{t.name}::~{t.name}()
-{it}{{{self.cave('dtr', f'"Destructor: {t.name}"', 2)}
+{it}{{{self.cave('dtr', f'"Destructor: {t.name}"', f'{t.name}|destructorDef', 2)}
 {it}}}'''
     self.appendSrc(f'{t.name}|destructorDef', src)
-  
+
 
 def genSwap(self, t):
     if not self.dIs('movable'):
@@ -873,7 +868,7 @@ def genSwap(self, t):
 
     it = self.indent()
     typeDecl = self.makeNative(t.name)
-    
+
     self.forwardDeclareType(f'{t.name}|forwardClassDecl', t.name, f'''{it}class {t.name};''')
 
     src = f'''
@@ -907,7 +902,7 @@ def genGetters(self, t):
     inline = ''
     if self.d('outputForm') == 'headerOnly' and not self.dIs('inlineGetters'):
         inline = 'inline '
-    
+
     def foreachMemberName():
         for memberName, m in t.members.items():
             memberDecl = self.makeNativeMemberType(m.properties)
@@ -918,7 +913,7 @@ def genGetters(self, t):
     for memberName, memberDecl in foreachMemberName():
         maxMemberNameLen = max(len(memberName), maxMemberNameLen)
         maxMemberDeclLen = max(len(memberDecl), maxMemberDeclLen)
-    
+
     for memberName, memberDecl in foreachMemberName():
         namePad = maxMemberNameLen - len(memberName)
         declPad = maxMemberDeclLen - len(memberDecl)
@@ -940,7 +935,7 @@ def genGetters(self, t):
             if self.dIs('nonConstGetters'):
                 src += f'''
 {it}{it}{inline}{memberDecl}{' ' * declPad}       & get_{memberName}() &;'''
-            
+
         self.appendSrc(f'{t.name}|memberGettersDecl', src)
 
         if not self.dIs('inlineGetters'):
@@ -963,7 +958,7 @@ def genSetters(self, t):
     inline = ''
     if self.d('outputForm') == 'headerOnly' and not self.dIs('inlineSetters'):
         inline = 'inline '
-    
+
     def foreachMemberName():
         for memberName, m in t.members.items():
             memberDecl = self.makeNativeMemberType(m.properties)
@@ -974,7 +969,7 @@ def genSetters(self, t):
     for memberName, memberDecl in foreachMemberName():
         maxMemberNameLen = max(len(memberName), maxMemberNameLen)
         maxMemberDeclLen = max(len(memberDecl), maxMemberDeclLen)
-    
+
     for memberName, memberDecl in foreachMemberName():
         namePad = maxMemberNameLen - len(memberName)
         declPad = maxMemberDeclLen - len(memberDecl)
@@ -1049,7 +1044,7 @@ def genComparator(self, t):
 {it}{it}    && '''.join([f'lhs.{mn} == rhs.{mn}' for mn in t.members.keys()])
     else:
         src += 'true'
-    
+
     src += f''';
 {it}}}
 

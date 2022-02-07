@@ -66,7 +66,7 @@ def gen_builtIn(self):
 {it}{{
 {it}{it}static inline T extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{
-{it}{it}{it}auto t = * reinterpret_cast<{self.const('T')} *>(buffer);{self.cave('deserializeBinary', '"Reading integ"')}{self.checkBinaryBuffer()}{self.advanceBinaryBuffer()}
+{it}{it}{it}auto t = * reinterpret_cast<{self.const('T')} *>(buffer);{self.cave('deserializeBinary', '"Reading integ"', 'deserializerFormatWrapperBase')}{self.checkBinaryBuffer()}{self.advanceBinaryBuffer()}
 {it}{it}{it}return t;
 {it}{it}}}
 {it}}};
@@ -76,7 +76,7 @@ def gen_builtIn(self):
 {it}{{
 {it}{it}static inline T extract({self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{
-{it}{it}{it}auto t = * reinterpret_cast<{self.const('T')} *>(buffer);{self.cave('deserializeBinary', '"Reading float"')}{self.checkBinaryBuffer()}{self.advanceBinaryBuffer()}
+{it}{it}{it}auto t = * reinterpret_cast<{self.const('T')} *>(buffer);{self.cave('deserializeBinary', '"Reading float"', 'deserializerFormatWrapperBase')}{self.checkBinaryBuffer()}{self.advanceBinaryBuffer()}
 {it}{it}{it}return t;
 {it}{it}}}
 {it}}};
@@ -85,11 +85,11 @@ def gen_builtIn(self):
 {it}struct BinaryReader<std::string>
 {it}{{
 {it}{it}static inline std::string extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('deserializeBinary', '"Reading string"')}
+{it}{it}{{{self.cave('deserializeBinary', '"Reading string"', 'deserializerFormatWrapperBase')}
 {it}{it}{it}std::string t;
 {it}{it}{it}auto strSize = BinaryReader<std::size_t>::extract(buffer, size);
 {it}{it}{it}t.resize(strSize);{self.checkBinaryBuffer('strSize')}
-{it}{it}{it}std::memcpy(t.data(), buffer, strSize);{self.cave('deserializeBinary', '"           -- : " << t')}{self.advanceBinaryBuffer('strSize')}
+{it}{it}{it}std::memcpy(t.data(), buffer, strSize);{self.cave('deserializeBinary', '"           -- : " << t', 'deserializerFormatWrapperBase')}{self.advanceBinaryBuffer('strSize')}
 {it}{it}{it}return t;
 {it}{it}}}
 {it}}};
@@ -98,10 +98,10 @@ def gen_builtIn(self):
 {it}struct BinaryReader<std::string_view>
 {it}{{  // NOTE: Returning std::string, until we get a string table
 {it}{it}static inline std::string_view extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('deserializeBinary', '"Reading string_view"')}
+{it}{it}{{{self.cave('deserializeBinary', '"Reading string_view"', 'deserializerFormatWrapperBase')}
 {it}{it}{it}auto strSize = BinaryReader<std::size_t>::extract(buffer, size);
 {it}{it}{it}std::string_view t(buffer, strSize);{self.checkBinaryBuffer('strSize')}
-{self.cave('deserializeBinary', '"           -- : " << t')}{self.advanceBinaryBuffer('strSize')}
+{self.cave('deserializeBinary', '"           -- : " << t', 'deserializerFormatWrapperBase')}{self.advanceBinaryBuffer('strSize')}
 {it}{it}{it}return t;
 {it}{it}}}
 {it}}};'''
@@ -123,7 +123,7 @@ def gen_array(self):
 {it}struct BinaryReader<std::array<T, N>>
 {it}{{
 {it}{it}static inline std::array<T, N> extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('deserializeBinary', '"Reading array"')}
+{it}{it}{{{self.cave('deserializeBinary', '"Reading array"', 'deserializerFormatWrapperBase')}
 {it}{it}{it}auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
 {it}{it}{it}{it}return std::array<T, N> {{ ((void) Seq, BinaryReader<T>::extract(buffer, size))... }};
@@ -150,7 +150,7 @@ def gen_pair(self):
 {it}struct BinaryReader<std::pair<T0, T1>>
 {it}{{
 {it}{it}static inline std::pair<T0, T1> extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('deserializeBinary', '"Reading pair"')}
+{it}{it}{{{self.cave('deserializeBinary', '"Reading pair"', 'deserializerFormatWrapperBase')}
 {it}{it}{it}return {{
 {it}{it}{it}{it}BinaryReader<T0>::extract(buffer, size),
 {it}{it}{it}{it}BinaryReader<T1>::extract(buffer, size)
@@ -175,7 +175,7 @@ def gen_tuple(self):
 {it}struct BinaryReader<std::tuple<Ts...>>
 {it}{{
 {it}{it}static inline std::tuple<Ts...> extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('deserializeBinary', '"Reading tuple"')}
+{it}{it}{{{self.cave('deserializeBinary', '"Reading tuple"', 'deserializerFormatWrapperBase')}
 {it}{it}{it}auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
 {it}{it}{it}{it}return std::tuple<Ts...> {{ ((void) Seq, BinaryReader<Ts>::extract(buffer, size))... }};
@@ -202,7 +202,7 @@ def gen_vector(self):
 {it}struct BinaryReader<std::vector<T, A>>
 {it}{{
 {it}{it}static inline std::vector<T, A> extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('deserializeBinary', '"Reading vector"')}
+{it}{it}{{{self.cave('deserializeBinary', '"Reading vector"', 'deserializerFormatWrapperBase')}
 {it}{it}{it}std::vector<T, A> rv;
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(buffer, size);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
@@ -230,7 +230,7 @@ def gen_set(self):
 {it}struct BinaryReader<std::set<K, C, A>>
 {it}{{
 {it}{it}static inline std::set<K, C, A> extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('deserializeBinary', '"Reading set"')}
+{it}{it}{{{self.cave('deserializeBinary', '"Reading set"', 'deserializerFormatWrapperBase')}
 {it}{it}{it}std::set<K, C, A> rv;
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(buffer, size);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
@@ -258,7 +258,7 @@ def gen_unordered_set(self):
 {it}struct BinaryReader<std::unordered_set<K, H, E, A>>
 {it}{{
 {it}{it}static inline std::unordered_set<K, H, E, A> extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('deserializeBinary', '"Reading unordered_set"')}
+{it}{it}{{{self.cave('deserializeBinary', '"Reading unordered_set"', 'deserializerFormatWrapperBase')}
 {it}{it}{it}std::unordered_set<K, H, E, A> rv;
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(buffer, size);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
@@ -286,7 +286,7 @@ def gen_map(self):
 {it}struct BinaryReader<std::map<K, T, C, A>>
 {it}{{
 {it}{it}static inline std::map<K, T, C, A> extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('deserializeBinary', '"Reading map"')}
+{it}{it}{{{self.cave('deserializeBinary', '"Reading map"', 'deserializerFormatWrapperBase')}
 {it}{it}{it}std::map<K, T, C, A> rv;
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(buffer, size);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
@@ -316,7 +316,7 @@ def gen_unordered_map(self):
 {it}struct BinaryReader<std::unordered_map<K, T, H, E, A>>
 {it}{{
 {it}{it}static inline std::unordered_map<K, T, H, E, A> extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('deserializeBinary', '"Reading unordered_map"')}
+{it}{it}{{{self.cave('deserializeBinary', '"Reading unordered_map"', 'deserializerFormatWrapperBase')}
 {it}{it}{it}std::unordered_map<K, T, H, E, A> rv;
 {it}{it}{it}auto count = BinaryReader<std::size_t>::extract(buffer, size);
 {it}{it}{it}for (size_t i = 0; i < count; ++i)
@@ -346,7 +346,7 @@ def gen_optional(self):
 {it}struct BinaryReader<std::optional<T>>
 {it}{{
 {it}{it}static inline std::optional<T> extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('deserializeBinary', '"Reading optimal"')}
+{it}{it}{{{self.cave('deserializeBinary', '"Reading optimal"', 'deserializerFormatWrapperBase')}
 {it}{it}{it}auto hasValue = BinaryReader<char>::extract(buffer, size);
 {it}{it}{it}if (static_cast<bool>(hasValue))
 {it}{it}{it}{it}{{ return BinaryReader<T>::extract(buffer, size); }}
@@ -379,7 +379,7 @@ def gen_variant(self):
 {it}{it}static inline bool schecker(std::size_t idx, std::optional<std::variant<Ts...>> & obj, {self.const('char')} *& buffer, std::size_t & size)
 {it}{it}{{
 {it}{it}{it}using IndexedType = typename std::tuple_element<I, std::tuple<Ts...>>::type;
-{it}{it}{it}if (obj.has_value() == false && idx == I) 
+{it}{it}{it}if (obj.has_value() == false && idx == I)
 {it}{it}{it}{{
 {it}{it}{it}{it}// now we can make the correct variant
 {it}{it}{it}{it}obj = std::variant<Ts...> (std::in_place_index<I>, BinaryReader<IndexedType>::extract(buffer, size));
@@ -388,12 +388,12 @@ def gen_variant(self):
 {it}{it}}};
 
 {it}{it}static inline std::variant<Ts...> extract({self.const('char')} *& buffer, std::size_t & size)
-{it}{it}{{{self.cave('deserializeBinary', '"Reading variant"')}
+{it}{it}{{{self.cave('deserializeBinary', '"Reading variant"', 'deserializerFormatWrapperBase')}
 {it}{it}{it}auto idx = BinaryReader<std::size_t>::extract(buffer, size);
 
 {it}{it}{it}auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
 {it}{it}{it}{{
-{it}{it}{it}{it}// cycle through each type; when we find one we like, set the 
+{it}{it}{it}{it}// cycle through each type; when we find one we like, set the
 {it}{it}{it}{it}// optional to the correct type.
 {it}{it}{it}{it}std::optional<std::variant<Ts...>> v;
 {it}{it}{it}{it}// foo is not used; we're relying on ordered initialization

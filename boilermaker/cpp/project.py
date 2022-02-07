@@ -40,7 +40,7 @@ class OutputFile:
         self.dependentTypeDecls = {}    # these are filled in by gen_global.gen_typeDecls()
         self.includes = {}              # these are filled in by gen_global.gen_typeDecls()
         self.forwardDecls = {}          # these are filled in by gen_global.gen_typeDecls()
-    
+
     def __str__(self):
         dc = ansi.dk_magenta_fg
         lc = ansi.lt_magenta_fg
@@ -62,7 +62,7 @@ class OutputFile:
 
 class OutputSection:
     def __init__(self, defaultNamespace):
-        self.dependentTypeDecls = {} 
+        self.dependentTypeDecls = {}
         self.includes = {}
         self.srcs = []
         self.defaultNamespace = defaultNamespace
@@ -88,7 +88,7 @@ class OutputSection:
 
     def includeForType(self, baseType, includeFile):
         self.dependentTypeDecls[baseType] = DependentTypeDecl('include', includeFile)
-    
+
     def includeOutputFile(self, outputFile, inPlace=False):
         self.includes[outputFile] = IncludeDecl(True, outputFile, inPlace)
 
@@ -97,7 +97,7 @@ class OutputSection:
 
     def setSrc(self, src, namespace):
         self.srcs = [(src, namespace)]
-    
+
     def setSrcIfEmpty(self, src, namespace):
         if len(self.srcs) == 0:
             self.srcs = [(src, namespace)]
@@ -145,18 +145,24 @@ class Project(BaseProject):
             return f'{type} const'
         else:
             return f'const {type}'
-    
 
-    def cave(self, category, message, tabs=3):
+
+    def doingCaveman(self, category):
+        dbgs = self.d('caveperson')
+        return dbgs and category in dbgs
+
+
+    def cave(self, category, message, sectionName, tabs=3):
         it = self.indent()
         src = ''
-        dbgs = self.d('caveperson')
-        if dbgs and category in dbgs:
+        if self.doingCaveman(category):
+            self.includeForType(sectionName, 'ostream', f'''#include <iostream>''')
+
             caveStream = self.d('caveStream') or 'cout'
             src += f'''
 {it * tabs}std::{caveStream} << {message} << "\\n";'''
         return src
-    
+
 
     def checkBinaryBuffer(self, sizeValue='sizeof(T)', sizeName = 'size'):
         it = self.indent()
@@ -181,7 +187,7 @@ class Project(BaseProject):
         elif useNamespace and bomaName in self.types:
             bomaName = f'{self.d("namespace")}::{bomaName}'
         return bomaName.replace('.', '::')
-    
+
 
     def makeNativeSubtype(self, properties, useNamespace=False):
         builtType = self.makeNative(properties['type'], useNamespace)
@@ -248,7 +254,7 @@ class Project(BaseProject):
             defsSections = defsFile.get('sections')
             if not defsSections or type(defsSections) is not list:
                 raise RuntimeError(f'defs/output/{outputForm}/{defsFileName}/sections must be a list.')
-            
+
             if defsFileName.find('$<type>') >= 0:
                 for typeName in self.types.keys():
                     t_defsFileName = self.replaceStringArgs(defsFileName, {'type': typeName})
@@ -279,11 +285,11 @@ class Project(BaseProject):
         section = self.outputSections.get(sectionName)
         if section and mustNotExist:
             return None
-        
+
         if not section:
             section = OutputSection(self.d('namespace'))
             self.outputSections[sectionName] = section
-        
+
         return section
 
 
@@ -339,7 +345,7 @@ class Project(BaseProject):
         else:
             print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
 
-    
+
     def includeForType(self, sectionName, baseType, includeFile, inPlace=False):
         '''baseType looks like 'vector'. includeFile looks like '#include <vector>'''
         sectionName = self.replaceStringArgs(sectionName)
@@ -349,8 +355,8 @@ class Project(BaseProject):
                 s.includeForType(baseType, includeFile)
         else:
             print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
-    
-    
+
+
     def includeOutputFile(self, sectionName, outputFile, inPlace=False):
         sectionName = self.replaceStringArgs(sectionName)
         outputFile = self.replaceStringArgs(outputFile)
@@ -360,7 +366,7 @@ class Project(BaseProject):
                 s.includeOutputFile(outputFile, inPlace)
         else:
             print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
-    
+
 
     def includeFile(self, sectionName, path, inPlace=False):
         sectionName = self.replaceStringArgs(sectionName)
@@ -370,7 +376,7 @@ class Project(BaseProject):
                 s.includeFile(path, inPlace)
         else:
             print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
-    
+
 
     def removeAllFiles(self, direc):
         d = Path(self.d('defsDir'), direc)
@@ -393,7 +399,7 @@ class Project(BaseProject):
 
         for outputFileName, outputFile in self.outputFiles.items():
             self.writeFile(outputFileName, outputFile)
-    
+
 
     def writeFile(self, outputFileName, outputFile):
         path = Path(self.replaceStringArgs(outputFile.sourcePath))

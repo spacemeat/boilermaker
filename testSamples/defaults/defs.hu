@@ -1,0 +1,10 @@
+@{ app: boma, boma-version: 0.0.4 }
+{
+    inherit: c++|gnu
+    types: {
+        couple: {
+            a: string
+            b: int
+        }
+    }
+}

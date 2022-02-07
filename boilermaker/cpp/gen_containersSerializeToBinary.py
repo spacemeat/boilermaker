@@ -7,7 +7,7 @@ def gen_builtIn(self):
 
     it = self.indent()
     caveStream = self.d('caveStream') or 'cout'
-    
+
     src = f'''
 
 {it}template <class T>
@@ -135,7 +135,7 @@ def gen_array(self):
 
 {it}template <class T, unsigned long N>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::array<T, N>> const & obj)
-{it}{{{self.cave('serializeBinary', '"Writing array"')}
+{it}{{{self.cave('serializeBinary', f'"Writing array"', 'binary|serializersDecl')}
 {it}{it}for (std::size_t i = 0; i < N; ++i)
 {it}{it}  {{ out << BinaryFormat( (* obj)[i] ); }}
 
@@ -159,7 +159,7 @@ def gen_pair(self):
 
 {it}template <class T0, class T1>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::pair<T0, T1>> const & obj)
-{it}{{{self.cave('serializeBinary', '"Writing pair"')}
+{it}{{{self.cave('serializeBinary', f'"Writing pair"', 'binary|serializersDecl')}
 {it}{it}out << BinaryFormat(obj->first);
 {it}{it}out << BinaryFormat(obj->second);
 
@@ -183,7 +183,7 @@ def gen_tuple(self):
 
 {it}template <class... Ts>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::tuple<Ts...>> const & obj)
-{it}{{{self.cave('serializeBinary', '"Writing tuple"')}
+{it}{{{self.cave('serializeBinary', f'"Writing tuple"', 'binary|serializersDecl')}
 {it}{it}std::apply(
 {it}{it}{it}[&out](auto &&... args)
 {it}{it}{it}{it}{{ ((out << BinaryFormat(args)), ...); }},
@@ -209,7 +209,7 @@ def gen_vector(self):
 
 {it}template <class T, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::vector<T, A>> const & obj)
-{it}{{{self.cave('serializeBinary', '"Writing vector"')}
+{it}{{{self.cave('serializeBinary', f'"Writing vector"', 'binary|serializersDecl')}
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & elem : * obj)
 {it}{it}  {{ out << BinaryFormat(elem); }}
@@ -234,7 +234,7 @@ def gen_set(self):
 
 {it}template <class K, class C, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::set<K, C, A>> const & obj)
-{it}{{{self.cave('serializeBinary', '"Writing set"')}
+{it}{{{self.cave('serializeBinary', f'"Writing set"', 'binary|serializersDecl')}
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & elem : * obj)
 {it}{it}  {{ out << BinaryFormat(elem); }}
@@ -259,7 +259,7 @@ def gen_unordered_set(self):
 
 {it}template <class K, class H, class E, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::unordered_set<K, H, E, A>> const & obj)
-{it}{{{self.cave('serializeBinary', '"Writing unordered_set"')}
+{it}{{{self.cave('serializeBinary', f'"Writing unordered_set"', 'binary|serializersDecl')}
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & elem : * obj)
 {it}{it}  {{ out << BinaryFormat(elem); }}
@@ -284,7 +284,7 @@ def gen_map(self):
 
 {it}template <class K, class T, class C, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::map<K, T, C, A>> const & obj)
-{it}{{{self.cave('serializeBinary', '"Writing map"')}
+{it}{{{self.cave('serializeBinary', f'"Writing map"', 'binary|serializersDecl')}
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & [k, v] : * obj)
 {it}{it}  {{ out << BinaryFormat(k) << BinaryFormat(v); }}
@@ -309,7 +309,7 @@ def gen_unordered_map(self):
 
 {it}template <class K, class T, class H, class E, class A>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::unordered_map<K, T, H, E, A>> const & obj)
-{it}{{{self.cave('serializeBinary', '"Writing unordered_map"')}
+{it}{{{self.cave('serializeBinary', f'"Writing unordered_map"', 'binary|serializersDecl')}
 {it}{it}out << BinaryFormat(obj->size());
 {it}{it}for (auto const & [k, v] : * obj)
 {it}{it}  {{ out << BinaryFormat(k) << BinaryFormat(v); }}
@@ -334,7 +334,7 @@ def gen_optional(self):
 
 {it}template <class T>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::optional<T>> const & obj)
-{it}{{{self.cave('serializeBinary', '"Writing optional"')}
+{it}{{{self.cave('serializeBinary', f'"Writing optional"', 'binary|serializersDecl')}
 {it}{it}out << BinaryFormat(obj->has_value());
 {it}{it}if (obj->has_value())
 {it}{it}  {{ out << BinaryFormat(** obj); }}
@@ -359,7 +359,7 @@ def gen_variant(self):
 
 {it}template <class... Ts>
 {it}std::ostream & operator << (std::ostream & out, BinaryFormat<std::variant<Ts...>> const & obj)
-{it}{{{self.cave('serializeBinary', '"Writing variant"')}
+{it}{{{self.cave('serializeBinary', f'"Writing variant"', 'binary|serializersDecl')}
 {it}{it}out << BinaryFormat(obj->index());
 {it}{it}std::visit(
 {it}{it}{it}[&](auto && o)

@@ -7,8 +7,8 @@
     computeTypes:   true
 
     const:          west
-    outputForm:     headerOnly  // or compiled
-    caveperson:     [ctr, dtr, ass, serializeBinary, deserializeBinary]
+    outputForm:     compiled  // or headerOnly, or anything else in outupt
+    caveperson:     []// [ctr, dtr, ass, serializeBinary, deserializeBinary]
     checkBinaryOverruns: false
     caveStream:     cerr
 
@@ -39,7 +39,7 @@
     your changes. */
 ^^
 
-    deserializeFrom: [humon, binary]
+    deserializeFrom: [humon] // also accepts binary
     defaultConstructible: false
     memberwiseConstructible: false
     virtualDestructor: false
@@ -49,14 +49,14 @@
     inlineGetters: true     // requires getters
     constGetters: true      // requires getters
     nonConstGetters: true   // requires getters, privateMembers
-    setters: true       // requires copyable
+    setters: true
     inlineSetters: true // requires setters
-    setByCopy: true
+    setByCopy: true // requires copyable
     setByMove: true   // requires movable
     privateMembers: true
-    serializeTo: [humon, binary]
+    serializeTo: []
     comparable: true
-    diffable: true  // requires comparable
+    diffable: false  // requires comparable
 
     variants: {
         gnu: {
@@ -210,9 +210,9 @@
                     commonHeader|includes
                     isLessDecl
                     variantTypeNames
-                    
+
                     deserializerFormatWrapperBase
-                    deserializerFormatWrappersDecl                    
+                    deserializerFormatWrappersDecl
                     humon|deserializersDecl
                     binary|deserializersDecl
 

@@ -23,8 +23,8 @@
         }
 
         wut: {
-            huh: { 
-                type: vector 
+            huh: {
+                type: vector
                 of: [ {
                         type: array
                         of: [ {
@@ -75,7 +75,7 @@
             }
         }
     }
-    
+
     variants: {
         txtToBin: {
             headerDir: $<baseDir>/gen-cpp/txtToBin/inc/boma
@@ -84,8 +84,8 @@
 
             namespace: txtToBin
             outputForm: compiled
-            deserializeFromHumon: true      // done
-            deserializeFromBinary: true     // .
+            deserializeFrom: [humon, binary]
+            serializeTo: [humon, binary]
             defaultConstructible: true      // done
             memberwiseConstructible: true   // done
             virtualDestructor: false         // done
@@ -94,8 +94,6 @@
             getters: true                   // done
             setters: true                   // done
             privateMembers: true            // done
-            serializeToHumon: true          // done
-            serializeToBinary: true         // .
             comparable: true                // done
             diffable: true                  // done
             caveperson: []
@@ -107,7 +105,8 @@
 
             namespace: app
             initFromDefault: true
-            deserializeFromBinary: true
+            deserializeFrom: [humon, binary]
+            serializeTo: [humon, binary]
             copyable: true
             comparable: true
             diffable: true
