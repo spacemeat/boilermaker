@@ -43,8 +43,11 @@
     defaultConstructible: false
     memberwiseConstructible: false
     virtualDestructor: false
+    swap: true
+    copyByCopySwap: true    // requires swap
+    moveByCopySwap: true    // requires swap
     copyable: true
-    movable: true
+    movable: true       // i think requires virtualDestructor to be false
     getters: true
     inlineGetters: true     // requires getters
     constGetters: true      // requires getters
