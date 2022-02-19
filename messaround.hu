@@ -1370,3 +1370,41 @@ $<endif>
 $<delim skip space>
 $<endjoin>
 $<endfile>
+
+
+
+foo$<if $<if bar in $things>a$<else>b$<endif>>c$<else>d$<endif>baz
+
+text:
+    foo
+    if:
+        if:
+            ifcond:
+                bar in
+                expr:
+                    props["things"]
+            then:
+                a
+            elifcond:
+                aaa
+            then:
+                bbb
+            else: []
+            then:
+                b
+            endif: []
+        c
+        else: []
+        d
+        endif: []
+    baz
+
+    join:
+        joincond:
+            for x in xs
+        then:
+            a
+        delim:
+            joinEmpty
+        then:
+            b
