@@ -1,14 +1,14 @@
 ------------------ Building $<headerDir>/$<mainHeaderFile>.
-$<file $<headerDir>/$<mainHeaderFile>>#pragma once
+$<out $<headerDir>/$<mainHeaderFile>>#pragma once
 
 $<mainHeaderTopComment>
 
 $<join for header in $<includes.main.header>>
 #include $<header>$<endjoin>
-$<endfile>
+$<endout>
 
 ------------------ Building $<headerDir>/$<commonHeaderFile>.
-$<file $<headerDir>/$<commonHeaderFile>>#pragma once
+$<out $<headerDir>/$<commonHeaderFile>>#pragma once
 
 $<headerTopComment>
 
@@ -728,10 +728,10 @@ $<if $<serializeTo> contains humon>
 $<endif /* humon */>
 }
 $<endif /* binary or humon */>
-$<endfile>
+$<endout>
 
 ------------------ Building $<sourceDir>/$<commonSourceFile>.
-$<file $<sourceDir>/$<commonSourceFile>>$<sourceTopComment>
+$<out $<sourceDir>/$<commonSourceFile>>$<sourceTopComment>
 
 $<join for header in $<includes.common.source>>
 #include $<header>$<endjoin>
@@ -766,11 +766,11 @@ $<endif>
 }
 $<endif /* less or binary serialization */>
 
-$<endfile>
+$<endout>
 
 ------------------ Building $<headerDir>/$<diffsHeaderFile>.
 $<if $<diffable>>
-$<file $<headerDir>/$<diffsHeaderFile>>#pragma once
+$<out $<headerDir>/$<diffsHeaderFile>>#pragma once
 
 $<headerTopComment>
 
@@ -1046,10 +1046,10 @@ $<if $<allComponents.types> @.name contains unordered_map>
     };
 $<endif>
 }
-$<endfile>$<endif /* diffs */>
+$<endout>$<endif /* diffs */>
 
 ------------------ Building $<headerDir>/$<enumHeaderFile>.
-$<file $<headerDir>/$<enumHeaderFile>>#pragma once
+$<out $<headerDir>/$<enumHeaderFile>>#pragma once
 
 $<headerTopComment>
 
@@ -1108,10 +1108,10 @@ $<join for enum in $<enums>>
 }
 $<endif>
 $<endif /* humon */>
-$<endfile>
+$<endout>
 
 ------------------ Building $<sourceDir>/$<enumSourceFile>.
-$<file $<sourceDir>/$<enumSourceFile>>$<sourceTopComment>
+$<out $<sourceDir>/$<enumSourceFile>>$<sourceTopComment>
 
 $<join for header in $<includes.enums.source>>
 #include $<header>$<endjoin>
@@ -1145,11 +1145,11 @@ namespace $<namespace>
 $<endjoin /* enum */>
 }
 $<endif /* humon */>
-$<endfile>
+$<endout>
 
 $<join for type in $<types>>
 ------------------ Building $<headerDir>/$<typeHeaderFile>.
-$<file $<headerDir>/$<typeHeaderFile>>#pragma once
+$<out $<headerDir>/$<typeHeaderFile>>#pragma once
 
 $<headerTopComment>
 
@@ -1234,9 +1234,9 @@ namespace $<namespace>
         }
     };
 }
-$<endfile>
+$<endout>
 ------------------ Building $<sourceDir>/$<typeSourceFile>.
-$<file $<sourceDir>/$<typeSourceFile>>$<sourceTopComment>
+$<out $<sourceDir>/$<typeSourceFile>>$<sourceTopComment>
 
 $<join for header in $<includes.type.source>>
 #include $<header>$<endjoin>
@@ -1354,13 +1354,13 @@ $<t>              $<endjoin>)$<join for member in type.stdMembers>,
 }
 
 
-$<endfile>
+$<endout>
 $<endjoin>
 
 // $foo <=> $<$foo>
 // $foo -> props.get('foo')
 
-$<file trystuffout.hpp>
+$<out trystuffout.hpp>
 $<join for target in $serializeTo>$<if $<$<target>_is_supported>>Do $target stuff$<endif>$<delim skip empty>
 $<endjoin>
 
@@ -1369,42 +1369,13 @@ $<if $<$<target>_is_supported>>Do $target stuff
 $<endif>
 $<delim skip space>
 $<endjoin>
-$<endfile>
+$<endout>
 
 
-
-foo$<if $<if bar in $things>a$<else>b$<endif>>c$<else>d$<endif>baz
-
-text:
-    foo
-    if:
-        if:
-            ifcond:
-                bar in
-                expr:
-                    props["things"]
-            then:
-                a
-            elifcond:
-                aaa
-            then:
-                bbb
-            else: []
-            then:
-                b
-            endif: []
-        c
-        else: []
-        d
-        endif: []
-    baz
-
-    join:
-        joincond:
-            for x in xs
-        then:
-            a
-        delim:
-            joinEmpty
-        then:
-            b
+$<out $<sourceDir>/$<enumSourceFile>>$<sourceTopComment>...$<endout>
+Other file contents: $<in $<cppTemplates>/xamlgui.hu>
+Some crowded text: $<+>
+                $<if $a>   $'ignore spaces until the i'>$<else>Or the O$<endif>
+$<set foo as 'shibby'>... $<foo> ... $<endset>
+Tabulated data: $<join for date in $dates>$$$<fmt : =+8,.2f>$<$profits['$<date>']>$<endfmt>$delim>
+                $<endjoin>
