@@ -1,0 +1,1 @@
+$<join for cat in list(reversed($cats))>$cat$<delim>, $<endjoin>

@@ -2,5 +2,6 @@
 {
     namespace: boma
     indent: { type: space, num: 4 }
+    tab: ^^$<if $indent.type == 'space'>$<join for _ in range(0, $indent.num)> $<endjoin>$<else>$<'\t'>$<endif>^^
     baseDir: $<defsDir>
 }

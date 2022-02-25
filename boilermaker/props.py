@@ -8,7 +8,9 @@
 #props.pop()
 # # now props.movable == True again
 
+from enum import Enum, auto
 import re
+
 #from . import ansi
 class ansi:
     all_off = '\033[0m'
@@ -32,23 +34,25 @@ class ansi:
     lt_white_fg = '\033[97m'
 
 
-re_if = re.compile(r'^(\s*if)[^A-Za-z0-9_]?')
-re_elif = re.compile(r'^(\s*elif)[^A-Za-z0-9_]')
-re_else = re.compile(r'^(\s*else)\s*$')
-re_endif = re.compile(r'^(\s*endif)\s*$')
-re_join = re.compile(r'^(\s*join)[^A-Za-z0-9_]?')
-re_delim = re.compile(r'^(\s*delim)[^A-Za-z0-9_]?')
-re_endjoin = re.compile(r'^(\s*endjoin)\s*$')
-re_out = re.compile(r'^(\s*out\s+)[^A-Za-z0-9_]?')
-re_in = re.compile(r'^(\s*in\s+)[^A-Za-z0-9_]?')
-re_endout = re.compile(r'^(\s*endout)\s*$')
-re_set = re.compile(r'^(\s*set\s+)[^A-Za-z0-9_]?')
-re_endset = re.compile(r'^(\s*endset)\s*$')
-re_fmt = re.compile(r'^(\s*fmt\s+)[^A-Za-z0-9_]?')
-re_endfmt = re.compile(r'^(\s*endfmt)\s*$')
+re_comment = re.compile(r'^(#\s*)')
+re_if = re.compile(r'^(\s*if\s*)[^A-Za-z0-9_]?')
+re_elif = re.compile(r'^(\s*elif\s*)[^A-Za-z0-9_]?')
+re_else = re.compile(r'^(\s*else\s*)[^A-Za-z0-9_]?')
+re_endif = re.compile(r'^(\s*endif\s*)[^A-Za-z0-9_]?')
+re_join = re.compile(r'^(\s*join\s*)[^A-Za-z0-9_]?')
+re_delim = re.compile(r'^(\s*delim\s*)[^A-Za-z0-9_]?')
+re_endjoin = re.compile(r'^(\s*endjoin\s*)[^A-Za-z0-9_]?')
+re_out = re.compile(r'^(\s*out\s*)[^A-Za-z0-9_]?')
+re_in = re.compile(r'^(\s*in\s*)[^A-Za-z0-9_]?')
+re_endout = re.compile(r'^(\s*endout\s*)[^A-Za-z0-9_]?')
+re_set = re.compile(r'^(\s*set\s*)[^A-Za-z0-9_]?')
+re_endset = re.compile(r'^(\s*endset\s*)[^A-Za-z0-9_]?')
+re_fmt = re.compile(r'^(\s*fmt\s*)[^A-Za-z0-9_]?')
+re_endfmt = re.compile(r'^(\s*endfmt\s*)[^A-Za-z0-9_]?')
 
-re_joinexpr = re.compile(f'^(\s*for\s+)([A-Za-z_][A-Za-z0-9_]*)(\s+in\s+)')
+re_joinexpr = re.compile(f'^(for\s+)([A-Za-z_][A-Za-z0-9_]*)(\s+in\s+)')
 re_setexpr = re.compile(f'^([A-Za-z_][A-Za-z0-9_]*)(\s*as\s+)')
+re_fmtexpr = re.compile(f'(right|left|center\s*)')
 
 class Props:
     def __init__(self):
@@ -81,9 +85,9 @@ class Props:
         return s
 
 
-from enum import Enum, auto
 class ClauseKind(Enum):
     TEXT = auto(),
+    COMMENT = auto(),
     QUERY = auto(),
     EXPRESSION = auto(),
     IF = auto(),
@@ -99,14 +103,15 @@ class ClauseKind(Enum):
     ENDJOIN = auto(),
     PATH = auto(),
     OUT = auto(),
-    ENDOUT = auto()
+    ENDOUT = auto(),
     IN = auto(),
     SET = auto(),
     SETASSIGNMENT = auto(),
     ENDSET = auto(),
     FMT = auto(),
-    FMTCODE = auto()
-    ENDFMT = auto()
+    FMTCODE = auto(),
+    ENDFMT = auto(),
+    EATSPACE = auto()
 
 class Clause:
     def __init__(self):
@@ -183,7 +188,21 @@ class Clause:
 class Propmaster:
     def __init__(self):
         self.props = Props()
+        self.previousPaths = set()
 
+    def eval(self, expr):
+        print (f'{ansi.dk_red_fg} Eval expression: {ansi.lt_red_fg}{expr}{ansi.all_off}')
+        res = eval(expr, {}, {'props': self.props})
+        print (f'{ansi.dk_red_fg}      expression returned: {ansi.lt_red_fg}{res}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(res)}{ansi.dk_red_fg}){ansi.all_off}')
+        return res
+
+    def exec(self, stmnts):
+        res = ''
+        locs = { 'props': self.props, 'res': '' }
+        print (f'{ansi.dk_red_fg} Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
+        exec(stmnts, {}, locs)
+        print (f'{ansi.dk_red_fg}      statements returned: {ansi.lt_red_fg}{locs["res"]}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(locs["res"])}{ansi.dk_red_fg}){ansi.all_off}')
+        return locs['res']
 
     def parseText(self, val):
         clause = self.parseTagStructure(val)
@@ -209,11 +228,12 @@ class Propmaster:
                 if val[idx] == '\'' or val[idx] == '"' or val[idx] == '`':
                     quoteChar = val[idx]
                     idx += 1
-                    accum = f'${quoteChar}'
+                    accum = ''
+                    #accum = f'${quoteChar}'
                     while idx < end and val[idx] != quoteChar:
                         accum += val[idx]
                         idx += 1
-                    accum = f'{quoteChar}'
+                    #accum += f'{quoteChar}'
                     dbg(f'quote-tag: {accum}')
                     currentClause.append(accum)
 
@@ -233,6 +253,12 @@ class Propmaster:
                     idx += 1
                     dbg(f'$> tag')
                     currentClause.append('>')
+
+                elif val[idx] == '+':   #  $+ marks the next non-whitespace start
+                    idx += 1
+                    exprClause = currentClause.appendClause()
+                    exprClause.kind = ClauseKind.EATSPACE
+                    dbg(f'$+ tag')
 
                 elif val[idx].isalpha() or val[idx] == '_':
                     # eval props.get which must resolve to a string (because we are not inTag)
@@ -259,9 +285,18 @@ class Propmaster:
                     # just a way of pruning this clause really
                     currentClause = currentClause.mergeToParent()
 
+                # First token isn't text - might be an expression or query.
+                # Either way, skip it for now. We're just examining structure
+                # and looking for keywords or text patterns.
                 elif type(currentClause.terms[0]) is not str:
                     currentClause = currentClause.parent
                     dbg(f'tag')
+
+                elif m := re.match(re_comment, currentClause.terms[0]):
+                    currentClause.kind = ClauseKind.COMMENT
+                    currentClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
+                    currentClause = currentClause.parent
+                    dbg(f'comment tag')
 
                 elif m := re.match(re_if, currentClause.terms[0]):
                     ifClause = currentClause.insertClause()
@@ -407,7 +442,7 @@ class Propmaster:
                     currentClause = currentClause.parent
                     dbg(f'expr tag')
 
-            else:   # all other chars before $
+            else:   # all other chars before $ or >
                 accum = ''
                 while idx < end and val[idx] != '$' and val[idx] != '>':
                     accum += val[idx]
@@ -417,17 +452,31 @@ class Propmaster:
 
         return rootClause
 
+
     def parseClause(self, clause):
-        accum = ''
+        acc = ''
+        eatSpace = False
+        def accum(string):
+            nonlocal eatSpace, acc
+            if eatSpace:
+                string = string.lstrip(' \n\t')
+                if len(string) > 0:
+                    eatSpace = False
+            acc += string
+
         if type(clause) is str:
-            accum += clause
+            accum(clause)
+
+        elif clause.kind == ClauseKind.COMMENT:
+            pass
 
         elif (clause.kind == ClauseKind.TEXT or
-            clause.kind == ClauseKind.THEN):
-            expr = ''
+              clause.kind == ClauseKind.THEN):
             for tidx, t in enumerate(clause.terms):
-                expr += self.parseClause(t)
-            accum += expr
+                if type(t) is Clause and t.kind == ClauseKind.EATSPACE:
+                    eatSpace = True
+                else:
+                    accum(self.parseClause(t))
 
         elif clause.kind == ClauseKind.QUERY:
             expr = f'props.get("{clause.terms[0]}")'
@@ -436,45 +485,62 @@ class Propmaster:
                 clause.parent.kind == ClauseKind.ELIFCONDITIONAL or
                 clause.parent.kind == ClauseKind.ELSE or
                 clause.parent.kind == ClauseKind.JOINCOMPREHENSION or
-                clause.parent.kind == ClauseKind.SETASSIGNMENT):
-                accum += expr
+                clause.parent.kind == ClauseKind.SETASSIGNMENT or
+                clause.parent.kind == ClauseKind.FMTCODE):
+                newvar = f'boma_{clause.terms[0]}'
+                fullexpr = f'{newvar} = {expr}\n'
+                accum(fullexpr)
             else:
-                res = eval(expr, {}, {'props': self.props})
+                res = self.eval(expr)
                 if res:
-                    accum += str(res)
+                    accum(str(res))
                 else:
-                    accum += f'$<!{clause.terms[0]}>'
+                    accum(f'$<!{clause.terms[0]}>')
 
-        elif clause.kind == ClauseKind.EXPRESSION:
-            # parseClauses on expression contents
+        elif (clause.kind == ClauseKind.EXPRESSION or
+              clause.kind == ClauseKind.IFCONDITIONAL or
+              clause.kind == ClauseKind.ELIFCONDITIONAL or
+              clause.kind == ClauseKind.ELSE or
+              clause.kind == ClauseKind.JOINCOMPREHENSION or
+              clause.kind == ClauseKind.SETASSIGNMENT or
+              clause.kind == ClauseKind.FMTCODE):
+
+            setters = ''
             expr = ''
             for tidx, t in enumerate(clause.terms):
                 if type(t) is str:
                     expr += self.parseClause(t)
                 elif t.kind == ClauseKind.QUERY:
-                    expr += self.parseClause(t)
+                    setters += self.parseClause(t)
+                    expr += f'boma_{t.terms[0]}'
                 else:
                     text = self.parseClause(t)
                     expr += f'{text}'
 
-            # eval returned exression
             res = ''
             if expr.strip() != '':
-                res = str(eval(expr, {}, {'props': self.props}))
-            # return eval results
-            accum += self.parseClause(self.parseTagStructure(res))
+                if (clause.kind == ClauseKind.JOINCOMPREHENSION or
+                    clause.kind == ClauseKind.SETASSIGNMENT or
+                    clause.kind == ClauseKind.FMTCODE):
+                    expr = f'{setters}res = {expr}'
+                    res = expr
+                    accum(res)
+                else:
+                    expr = f'{setters}res = str({expr})'
+                    res = self.exec(expr)
+                    accum(self.parseClause(self.parseTagStructure(res)))
 
         elif (clause.kind == ClauseKind.IFCONDITIONAL or
-            clause.kind == ClauseKind.ELIFCONDITIONAL or
-            clause.kind == ClauseKind.ELSE or
-            clause.kind == ClauseKind.JOINCOMPREHENSION or
-            clause.kind == ClauseKind.SETASSIGNMENT):
+              clause.kind == ClauseKind.ELIFCONDITIONAL or
+              clause.kind == ClauseKind.ELSE or
+              clause.kind == ClauseKind.JOINCOMPREHENSION or
+              clause.kind == ClauseKind.SETASSIGNMENT or
+              clause.kind == ClauseKind.FMTCODE):
             # parseClauses on expression contents
             expr = ''
             for tidx, t in enumerate(clause.terms):
                 expr += self.parseClause(t)
-
-            accum += expr
+            accum(expr)
 
         elif clause.kind == ClauseKind.IF:
             condClauses = []
@@ -482,11 +548,11 @@ class Propmaster:
                 if type(t) is str:
                     continue
                 elif (t.kind == ClauseKind.IFCONDITIONAL or
-                    t.kind == ClauseKind.ELIFCONDITIONAL or
-                    t.kind == ClauseKind.ELSE):
+                      t.kind == ClauseKind.ELIFCONDITIONAL or
+                      t.kind == ClauseKind.ELSE):
                     condClauses.append(tidx)
                 elif (t.kind == ClauseKind.THEN or
-                    t.kind == ClauseKind.ENDIF):
+                      t.kind == ClauseKind.ENDIF):
                     pass
                 else:
                     raise RuntimeError(f'Found a clause of type {t.kind} in an $<if> tag.')
@@ -500,36 +566,34 @@ class Propmaster:
                 elif len(t.terms) > 0:
                     expr = f'True == ({"".join(t.terms)})'
                 #   eval to bool
-                #breakpoint()
-                res = eval(expr, {}, {'props': self.props})
+                res = self.eval(expr)
                 #   if eval is True:
                 assert(type(res) is bool)
                 if type(res) is bool and res == True:
                 #       gather each text clause after idx
                     i = tidx + 1
                     assert(clause.terms[i].kind == ClauseKind.THEN)
-                    accum += self.parseClause(clause.terms[i])
+                    accum(self.parseClause(clause.terms[i]))
                     break
 
         elif clause.kind == ClauseKind.JOIN:
-            compClause = -1
-            delimClause = -1
+            compIdx = -1
+            delimIdx = -1
             for tidx, t in enumerate(clause.terms):
                 if type(t) is str:
                     continue
                 elif t.kind == ClauseKind.JOINCOMPREHENSION:
-                    compClause = tidx
+                    compIdx = tidx
                 elif t.kind == ClauseKind.DELIM:
-                    delimClause = tidx
+                    delimIdx = tidx
                 elif (t.kind == ClauseKind.THEN or
                     t.kind == ClauseKind.ENDJOIN):
                     pass
                 else:
                     raise RuntimeError(f'Found a clause of type {t.kind} in an $<if> tag.')
 
-            if compClause < 0:
+            if compIdx < 0:
                 raise RuntimeError(f'No comprehension found for join tag.')
-            c = self.parseClause(clause.terms[compClause])
 
             # parse 'for x in y' to set up the loop on x, y
             # for must be 'for'
@@ -537,75 +601,134 @@ class Propmaster:
             # in must be 'in'
             # y is the rest is an expression for 'for foo in (y)'
 
-            if m := re.match(re_joinexpr, c):
+            forString = clause.terms[compIdx].terms[0]
+            if m := re.match(re_joinexpr, forString):
                 varname = m.group(2)
-                expr = c[len(m.group(0)):]
 
-                vals = eval(expr, {}, {'props': self.props})
+                tempClause = Clause()
+                tempClause.kind = ClauseKind.JOINCOMPREHENSION
+                tempClause.append(forString[len(m.group(0)):])
+                for t in clause.terms[compIdx].terms[1:]:
+                    tempClause.terms.append(t)
+                #c = self.parseClause(clause.terms[compIdx].terms[0])
+                expr = self.parseClause(tempClause)
+
+                vals = self.exec(expr)
 
                 for vidx, val in enumerate(vals):
                     self.props.push()
                     self.props.set(varname, val)
-                    th = self.parseClause(clause.terms[compClause + 1])
+                    th = self.parseClause(clause.terms[compIdx + 1])
                     d = ''
-                    if delimClause >= 0:
-                        d = self.parseClause(clause.terms[delimClause + 1])
+                    if delimIdx >= 0:
+                        d = self.parseClause(clause.terms[delimIdx + 1])
 
-                    accum += th
+                    accum(th)
                     if len(d) > 0 and vidx < len(vals) - 1:
-                        accum += d
+                        accum(d)
                     self.props.pop()
 
             else:
                 raise RuntimeError(f'malformed join tag')
 
         elif clause.kind == ClauseKind.IN:
-            accum += f'!<FILE IN: {clause.terms[0].terms[0]}>'
+            path = self.parseClause(clause.terms[0].terms[0])
+            try:
+                with open(path, 'r') as file:
+                    # TODO: set path to props?
+                    string = file.read()
+                    string = self.parseText(string)
+                    accum(string)
+            except EnvironmentError:
+                accum(f'!<File not found: {path}>')
 
         elif clause.kind == ClauseKind.OUT:
-            accum += f'<!FILE OUT: {clause.terms[0].terms[0]}>'
+            # TODO: set path to props?
+            string = self.parseClause(clause.terms[1])
+            path = clause.terms[0].terms[0]
+            openmode = 'w'
+            if path in self.previousPaths:
+                openmode = 'a'
+            try:
+                with open(path, openmode) as f:
+                    f.write(string)
+                    self.previousPaths.add(path)
+            except EnvironmentError:
+                accum(f'!<Could not open file {path}>')
 
         elif clause.kind == ClauseKind.SET:
-            keyClause = 0
+            keyIdx = 0
 
             # parse 'for x in y' to set up the loop on x, y
             # for must be 'for'
             # x must be a symbol-legal string
             # in must be 'in'
             # y is the rest is an expression for 'for foo in (y)'
-            k = self.parseClause(clause.terms[keyClause])
-            if m := re.match(re_setexpr, k):
+            setString = clause.terms[keyIdx].terms[0]
+            if m := re.match(re_setexpr, setString):
                 varname = m.group(1)
-                expr = k[len(m.group(0)):]
+                tempClause = Clause()
+                tempClause.kind = ClauseKind.SETASSIGNMENT
+                tempClause.append(setString[len(m.group(0)):])
+                for t in clause.terms[keyIdx].terms[1:]:
+                    tempClause.terms.append(t)
 
-                val = eval(expr, {}, {'props': self.props})
+                expr = self.parseClause(tempClause)
+
+                obj = self.exec(expr)
+                if expr.startswith('lambda'):
+                    breakpoint()
 
                 self.props.push()
-                self.props.set(varname, val)
-                th = self.parseClause(clause.terms[keyClause + 1])
-                accum += th
+                self.props.set(varname, obj)
+                th = self.parseClause(clause.terms[keyIdx + 1])
+                accum(th)
 
                 self.props.pop()
 
             else:
                 raise RuntimeError(f'malformed set tag')
 
-        # :[[<fill>]<align>][<sign>][#][0][<width>][<group>][.<prec>][<type>]
+        # (left|center|right) widthExpression
         elif clause.kind == ClauseKind.FMT:
-            fmtcodeKey = 0
-            fmtcode = clause.terms[fmtcodeKey].terms[0]
-            if fmtcode[0] == ':':
-                #breakpoint()
-                fmtcode = f'{{0{fmtcode}}}'
-                th = self.parseClause(clause.terms[fmtcodeKey + 1])
-                th = fmtcode.format(th)
-                accum += th
+            fmtcodeIdx = 0
 
-            else:
-                raise RuntimeError(f'malformed fmt tag')
+            # parse 'justification y' to set up the loop on x, y
+            # justification must be 'left' or 'right' or 'center'
+            # y is the rest is an expression for the format width
+            # and must resolve to an integer.
+            fmtcodeClause = clause.terms[fmtcodeIdx]
+            exprstart = 0
+            justification = 'left'
+            fmtString = fmtcodeClause.terms[0]
+            if m := re.match(re_fmtexpr, fmtString):
+                justification = m.group(1)
+                exprstart = len(m.group(0))
+
+            tempClause = Clause()
+            tempClause.kind = ClauseKind.FMTCODE
+            tempClause.append(fmtString[exprstart:])
+            for t in clause.terms[fmtcodeIdx].terms[1:]:
+                tempClause.terms.append(t)
+
+            expr = self.parseClause(tempClause)
+            breakpoint()
+
+            width = self.exec(expr)
+            if type(width) is not int:
+                raise RuntimeError(f'fmt width expression must resolve to int type')
+
+            if justification == 'left': j = '<'
+            elif justification == 'right': j = '>'
+            elif justification == 'center': j = '^'
+
+            fmtcode = f'{{0: {j}{width}}}'
+            th = self.parseClause(clause.terms[fmtcodeIdx + 1])
+            th = fmtcode.format(th)
+            accum(th)
 
         # replace myself with the joined text
-        return accum
+        return acc
 
 
 if __name__ == "__main__":
@@ -619,7 +742,11 @@ if __name__ == "__main__":
             'a': 'i',
             'b': 'f',
             'cats': ['Leo', 'Lilly', "Weeby", "Butters"],
-            'dollaz': [1.23, -2.34, 3.45]
+            'dollaz': [1.23, -2.34, 3.45],
+            'dataColumns': 8,
+            'constStyle': 'east',
+            'const': r"lambda t: f'{t} const' if '$constStyle' == 'east' else f'const {t}'",
+            'type': 'hu::Node'
     })
     src = f'One $<>two$<> three'
     print (str(p.parseText(src)))
@@ -643,15 +770,33 @@ if __name__ == "__main__":
     print (str(p.parseText(src)))
     src = f'Deserialize from: [$<join for method in $deserializeFrom> $method$<delim>,\n                    $<endjoin> ]'
     print (str(p.parseText(src)))
+    src = f'cats: $<in test_input.scribe> baz'
+    print (str(p.parseText(src)))
     src = f'foo $<out test_output>test $outputForm$<endout>bar'
-    print (p.parseTagStructure(src))
     print (str(p.parseText(src)))
     src = f'foo $<set test_output as $outputForm>test $test_output$<endset> bar'
+    print (p.parseTagStructure(src))
     print (str(p.parseText(src)))
     src = f'foo $<set test_output as $serializeTo>test $<$test_output[2]>$<endset> bar'
     print (str(p.parseText(src)))
-    # TODO NEXT: fmt needs a redesign. Just a width, centering and pad char.
-    src  = '''Tabulated data: $<join for pay in $dollaz>$$$<fmt : =+8,.2f>$pay$<endfmt>$<delim>
+    src  = '''Tabulated data: $<join for pay in $dollaz>$$$<fmt right $dataColumns>$pay$<endfmt>$<delim>
                 $<endjoin>'''
+    print (str(p.parseText(src)))
+    src  = '''Tabulated data: $<join for pay in $dollaz>$$$<r"$`{0:>8.1f}`".format($pay)>$<delim>
+                $<endjoin>'''
+    print (str(p.parseText(src)))
+    src = f'''$+
+Deserialize from: [ $+
+    $< join for method in $deserializeFrom >$+
+        $method$+
+        $<    delim   >,
+                    $+
+    $< endjoin > $+
+]'''
+    print (str(p.parseText(src)))
+    src = f'foo $<#if you see me you have FAILED>bar'
+    print (str(p.parseText(src)))
+    src = f"$<set const as $<$const>>$<$const($type + \"&\")> foo;$<endset>"
     print (p.parseTagStructure(src))
-    #print (str(p.parseText(src)))
+    print (str(p.parseText(src)))
+

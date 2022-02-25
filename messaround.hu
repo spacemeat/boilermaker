@@ -1,47 +1,47 @@
------------------- Building $<headerDir>/$<mainHeaderFile>.
-$<out $<headerDir>/$<mainHeaderFile>>#pragma once
+------------------ Building $headerDir/$mainHeaderFile.
+$<out $headerDir/$mainHeaderFile>#pragma once
 
-$<mainHeaderTopComment>
+$mainHeaderTopComment
 
-$<join for header in $<includes.main.header>>
-#include $<header>$<endjoin>
+$<join for header in $<$includes.main.header>>
+#include $header$<endjoin>
 $<endout>
 
------------------- Building $<headerDir>/$<commonHeaderFile>.
-$<out $<headerDir>/$<commonHeaderFile>>#pragma once
+------------------ Building $headerDir/$commonHeaderFile.
+$<out $headerDir/$commonHeaderFile>#pragma once
 
-$<headerTopComment>
+$headerTopComment
 
-$<join for header in $<includes.common.header>>
-#include $<header>$<endjoin>
+$<join for header in $<$includes.common.header>>
+#include $header$<endjoin>
 
-namespace $<namespace>
-{$<join for type in $<forwardDecls.common.header>>
-    $<type.typetype> $<type.name>;$<endjoin>
-$<join for isLessType in $<typesWithIsLess>>
-    struct $<isLessType.name>
+namespace $namespace
+{$<join for type in $<$forwardDecls.common.header>>
+    $<$type.typetype> $<$type.name>;$<endjoin>
+$<join for isLessType in $typesWithIsLess>
+    struct $<$isLessType.name>
     {
-        bool operator()($<const $<isLessType.ofType.name>> & lhs, $<const $<isLessType.ofType.name>> & rhs) const;
+        bool operator()($<$const($<$isLessType.ofType.name>)> & lhs, $<$const($<$isLessType.ofType.name>)> & rhs) const;
     };
 $<endjoin>
 
-$<if '$<variantTypeNames.length> > 0'>
+$<if len($variantTypeNames) $> 0>
     template <class T>
     struct VariantTypeNames
     {
-        static constexpr $<const char> * names[] = { };
+        static constexpr $<$const(char)> * names[] = { };
         static constexpr std::size_t size = 0;
     };
-$<join for vtn in $<variantTypeNames>>
+$<join for vtn in $variantTypeNames>
     template <>
-    struct VariantTypeNames<$<vtn.name>
+    struct VariantTypeNames<$<$vtn.name>
     {
-        static constexpr $<const char> * names[] = { $<join for subtype in $<vtn.subtypes>>$<subtype.name>$<delim>, $<endjoin> };
-        static constexpr std::size_t size = $<vtn.sbtypes.length>;
+        static constexpr $<$const(char)> * names[] = { $<join for subtype in $<$vtn.subtypes>>$<$subtype.name>$<delim>, $<endjoin> };
+        static constexpr std::size_t size = $<$vtn.sbtypes.length>;
     };
 <endjoin>
-<endif /*variantTypeNames*/ >
-$<if $<deserializeFrom> contains binary>
+<endif $<#variantTypeNames> >
+$<if 'binary' in $deserializeFrom>
     template <class T, typename V = void>
     struct BinaryReader
     {
@@ -62,7 +62,7 @@ $<if $<deserializeFrom> contains binary>
             in.read(newBuffer, size);
         }
 
-        BinaryDeserializer($<const char> * data, std::size_t len)
+        BinaryDeserializer($<$const(char)> * data, std::size_t len)
         {
             buffer = data;
             size = len;
@@ -89,7 +89,7 @@ $<if $<deserializeFrom> contains binary>
         bool selfManaged = false;
     };
 
-$<if $<allComponents.containsIntegralTypes>>
+$<if $allComponents.containsIntegralTypes>
     template <class T>
     struct BinaryReader<T, typename std::enable_if_t<std::is_integral_v<T>>>
     {
@@ -103,7 +103,7 @@ $<if $<allComponents.containsIntegralTypes>>
     };
 $<endif>
 
-$<if $<allComponents.containsFloatingPointTypes>>
+$<if $allComponents.containsFloatingPointTypes>
     template <class T>
     struct BinaryReader<T, typename std::enable_if_t<std::is_floating_point_v<T>>>
     {
@@ -117,7 +117,7 @@ $<if $<allComponents.containsFloatingPointTypes>>
     };
 $<endif>
 
-$<if $<allComponents.types> @.name contains string>
+$<if 'string' in [t.name for t in $allComponents.types]>
     template <>
     struct BinaryReader<std::string>
     {
@@ -134,7 +134,7 @@ $<if $<allComponents.types> @.name contains string>
     };
 $<endif>
 
-$<if $<allComponents.types> @.name contains string_view>
+$<if 'string_view' in [t.name for t in $<$allComponents.types>]>
     template <>
     struct BinaryReader<std::string_view>
     {  // NOTE: Returning std::string, until we get a string table
@@ -150,7 +150,7 @@ $<if $<allComponents.types> @.name contains string_view>
     };
 $<endif>
 
-$<if $<allComponents.types> @.name contains array>
+$<if 'array' in [t.name for t in $allComponents.types]>
     template <class T, unsigned long N>
     struct BinaryReader<std::array<T, N>>
     {
@@ -165,7 +165,7 @@ $<if $<allComponents.types> @.name contains array>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains pair>
+$<if 'pair' in [t.name for t in $allComponents.types]>
     template <class T0, class T1>
     struct BinaryReader<std::pair<T0, T1>>
     {
@@ -178,7 +178,7 @@ $<if $<allComponents.types> @.name contains pair>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains tuple>
+$<if 'tuple' in [t.name for t in $allComponents.types]>
     template <class... Ts>
     struct BinaryReader<std::tuple<Ts...>>
     {
@@ -193,7 +193,7 @@ $<if $<allComponents.types> @.name contains tuple>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains vector>
+$<if 'vector' in [t.name for t in $allComponents.types]>
     template <class T, class A>
     struct BinaryReader<std::vector<T, A>>
     {
@@ -209,7 +209,7 @@ $<if $<allComponents.types> @.name contains vector>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains set>
+$<if 'set' in [t.name for t in $allComponents.types]>
     template <class K, class C, class A>
     struct BinaryReader<std::set<K, C, A>>
     {
@@ -225,7 +225,7 @@ $<if $<allComponents.types> @.name contains set>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains unordered_set>
+$<if 'unordered_set' in [t.name for t in $allComponents.types]>
     template <class K, class H, class E, class A>
     struct BinaryReader<std::unordered_set<K, H, E, A>>
     {
@@ -241,7 +241,7 @@ $<if $<allComponents.types> @.name contains unordered_set>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains map>
+$<if 'map' in [t.name for t in $allComponents.types]>
     template <class K, class T, class C, class A>
     struct BinaryReader<std::map<K, T, C, A>>
     {
@@ -259,7 +259,7 @@ $<if $<allComponents.types> @.name contains map>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains unordered_map>
+$<if 'unordered_map' in [t.name for t in $allComponents.types]>
     template <class K, class T, class H, class E, class A>
     struct BinaryReader<std::unordered_map<K, T, H, E, A>>
     {
@@ -277,7 +277,7 @@ $<if $<allComponents.types> @.name contains unordered_map>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains optional>
+$<if 'optional' in [t.name for t in $allComponents.types]>
     template <class T>
     struct BinaryReader<std::optional<T>>
     {
@@ -291,7 +291,7 @@ $<if $<allComponents.types> @.name contains optional>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains variant>
+$<if 'variant' in [t.name for t in $allComponents.types]>
     template <class... Ts>
     struct BinaryReader<std::variant<Ts...>>
     {
@@ -333,11 +333,11 @@ $<if $<allComponents.types> @.name contains variant>
 $<endif>
 
 $<endif /* deserialize binary */>
-$<if $<deserializeFrom> contains humon>
+$<if 'humon' in $deserializeFrom>
 }
 namespace hu
 {
-$<if $<allComponents.types> @.name contains array>
+$<if 'array' in [t.name for t in $allComponents.types]>
     template <class T, unsigned long N>
     struct val<std::array<T, N>>
     {
@@ -352,7 +352,7 @@ $<if $<allComponents.types> @.name contains array>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains pair>
+$<if 'pair' in [t.name for t in $allComponents.types]>
     template <class T0, class T1>
     struct val<std::pair<T0, T1>>
     {
@@ -365,7 +365,7 @@ $<if $<allComponents.types> @.name contains pair>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains tuple>
+$<if 'tuple' in [t.name for t in $allComponents.types]>
     template <class... Ts>
     struct val<std::tuple<Ts...>>
     {
@@ -380,7 +380,7 @@ $<if $<allComponents.types> @.name contains tuple>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains vector>
+$<if 'vector' in [t.name for t in $allComponents.types]>
     template <class T, class A>
     struct val<std::vector<T, A>>
     {
@@ -395,7 +395,7 @@ $<if $<allComponents.types> @.name contains vector>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains set>
+$<if 'set' in [t.name for t in $allComponents.types]>
     template <class K, class C, class A>
     struct val<std::set<K, C, A>>
     {
@@ -411,7 +411,7 @@ $<if $<allComponents.types> @.name contains set>
     };
 
 $<endif>
-$<if $<allComponents.types> @.name contains unordered_set>
+$<if 'unordered_set' in [t.name for t in $allComponents.types]>
     template <class K, class H, class E, class A>
     struct val<std::unordered_set<K, H, E, A>>
     {
@@ -426,7 +426,7 @@ $<if $<allComponents.types> @.name contains unordered_set>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains map>
+$<if 'map' in [t.name for t in $allComponents.types]>
     template <class K, class T, class C, class A>
     struct val<std::map<K, T, C, A>>
     {
@@ -443,7 +443,7 @@ $<if $<allComponents.types> @.name contains map>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains unordered_map>
+$<if 'unordered_map' in [t.name for t in $allComponents.types]>
     template <class K, class T, class H, class E, class A>
     struct val<std::unordered_map<K, T, H, E, A>>
     {
@@ -460,7 +460,7 @@ $<if $<allComponents.types> @.name contains unordered_map>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains optional>
+$<if 'optional' in [t.name for t in $allComponents.types]>
     template <class T>
     struct val<std::optional<T>>
     {
@@ -475,7 +475,7 @@ $<if $<allComponents.types> @.name contains optional>
         }
     };
 $<endif>
-$<if $<allComponents.types> @.name contains variant>
+$<if 'variant' in [t.name for t in $allComponents.types]>
     template <class... Ts>
     struct val<std::variant<Ts...>>
     {
@@ -521,9 +521,9 @@ $<if $<allComponents.types> @.name contains variant>
     };
 $<endif>
 }
-$<endif /* deserialize humon */>
-$<if $<serializeTo> contains binary or $<serializeTo> contains humon>
-namespace $<namespace>
+$<endif $<# deserialize humon>>
+$<if 'humon' in $serializeTo contains binary or $serializeTo>
+namespace $namespace
 {
     template <class T>
     struct SerializedFormat
@@ -540,7 +540,7 @@ namespace $<namespace>
 
         const T & obj;
     };
-$<if $<serializeTo> contains binary>
+$<if 'binary' in $serializeTo>
     template <class T>
     struct BinaryFormat : public SerializedFormat<T>
     {
@@ -548,7 +548,7 @@ $<if $<serializeTo> contains binary>
         : SerializedFormat<T>(t)
         { }
     };
-$<if $<allComponents.types> containsIntegralTypes>
+$<if $allComponents.types.containsIntegralTypes()>
     template <class T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
     std::ostream & operator << (std::ostream & out, BinaryFormat<T> const & obj)
     {
@@ -558,7 +558,7 @@ $<if $<allComponents.types> containsIntegralTypes>
         return out;
     }
 $<endif>
-$<if $<allComponents.types> containsFloatingPointTypes>
+$<if $allComponents.types.containsFloatingPointTypes()>
     template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
     std::ostream & operator << (std::ostream & out, BinaryFormat<T> const & obj)
     {
@@ -568,13 +568,13 @@ $<if $<allComponents.types> containsFloatingPointTypes>
         return out;
     }
 $<endif>
-$<if $<allComponents.types> @.name contains string>
+$<if 'string' in [t.name for t in $allComponents.types]>
     std::ostream & operator << (std::ostream & out, BinaryFormat<std::string> const & obj);
 $<endif>
-$<if $<allComponents.types> @.name contains string_view>
+$<if 'string_view' in [t.name for t in $allComponents.types]>
     std::ostream & operator << (std::ostream & out, BinaryFormat<std::string_view> const & obj);
 $<endif>
-$<if $<allComponents.types> @.name contains array>
+$<if 'array' in [t.name for t in $allComponents.types]>
     template <class T, unsigned long N>
     std::ostream & operator << (std::ostream & out, HumonFormat<std::array<T, N>> const & obj)
     {
@@ -588,7 +588,7 @@ $<if $<allComponents.types> @.name contains array>
         return out;
     }
 $<endif>
-$<if $<allComponents.types> @.name contains pair>
+$<if 'pair' in [t.name for t in $allComponents.types]>
     template <class T0, class T1>
     std::ostream & operator << (std::ostream & out, HumonFormat<std::pair<T0, T1>> const & obj)
     {
@@ -598,7 +598,7 @@ $<if $<allComponents.types> @.name contains pair>
     }
 
 $<endif>
-$<if $<allComponents.types> @.name contains tuple>
+$<if 'tuple' in [t.name for t in $allComponents.types]>
     template <class... Ts>
     std::ostream & operator << (std::ostream & out, HumonFormat<std::tuple<Ts...>> const & obj)
     {
@@ -612,7 +612,7 @@ $<if $<allComponents.types> @.name contains tuple>
         return out;
     }
 $<endif>
-$<if $<allComponents.types> @.name contains vector>
+$<if 'vector' in [t.name for t in $allComponents.types]>
     template <class T, class A>
     std::ostream & operator << (std::ostream & out, HumonFormat<std::vector<T, A>> const & obj)
     {
@@ -626,7 +626,7 @@ $<if $<allComponents.types> @.name contains vector>
         return out;
     }
 $<endif>
-$<if $<allComponents.types> @.name contains set>
+$<if 'set' in [t.name for t in $allComponents.types]>
     template <class K, class C, class A>
     std::ostream & operator << (std::ostream & out, HumonFormat<std::set<K, C, A>> const & obj)
     {
@@ -640,7 +640,7 @@ $<if $<allComponents.types> @.name contains set>
         return out;
     }
 $<endif>
-$<if $<allComponents.types> @.name contains unordered_set>
+$<if 'unordered_set' in [t.name for t in $allComponents.types]>
     template <class K, class H, class E, class A>
     std::ostream & operator << (std::ostream & out, HumonFormat<std::unordered_set<K, H, E, A>> const & obj)
     {
@@ -654,7 +654,7 @@ $<if $<allComponents.types> @.name contains unordered_set>
         return out;
     }
 $<endif>
-$<if $<allComponents.types> @.name contains map>
+$<if 'map' in [t.name for t in $allComponents.types]>
     template <class K, class T, class C, class A>
     std::ostream & operator << (std::ostream & out, HumonFormat<std::map<K, T, C, A>> const & obj)
     {
@@ -668,7 +668,7 @@ $<if $<allComponents.types> @.name contains map>
         return out;
     }
 $<endif>
-$<if $<allComponents.types> @.name contains unordered_map>
+$<if 'unordered_map' in [t.name for t in $allComponents.types]>
     template <class K, class T, class H, class E, class A>
     std::ostream & operator << (std::ostream & out, HumonFormat<std::unordered_map<K, T, H, E, A>> const & obj)
     {
@@ -682,7 +682,7 @@ $<if $<allComponents.types> @.name contains unordered_map>
         return out;
     }
 $<endif>
-$<if $<allComponents.types> @.name contains optional>
+$<if 'optional' in [t.name for t in $allComponents.types]>
     template <class T>
     std::ostream & operator << (std::ostream & out, HumonFormat<std::optional<T>> const & obj)
     {
@@ -694,7 +694,7 @@ $<if $<allComponents.types> @.name contains optional>
         return out;
     }
 $<endif>
-$<if $<allComponents.types> @.name contains variant>
+$<if 'variant' in [t.name for t in $allComponents.types]>
     template <class... Ts>
     std::ostream & operator << (std::ostream & out, HumonFormat<std::variant<Ts...>> const & obj)
     {
@@ -709,7 +709,7 @@ $<if $<allComponents.types> @.name contains variant>
     }
 $<endif>
 $<endif /* binary */>
-$<if $<serializeTo> contains humon>
+$<if 'humon' in $serializeTo>
     template <class T>
     struct HumonFormat : public SerializedFormat<T>
     {
@@ -725,27 +725,27 @@ $<if $<serializeTo> contains humon>
 
         return out;
     }
-$<endif /* humon */>
+$<endif $<#/humon>>
 }
-$<endif /* binary or humon */>
+$<endif $<#binary or humon>>
 $<endout>
 
------------------- Building $<sourceDir>/$<commonSourceFile>.
-$<out $<sourceDir>/$<commonSourceFile>>$<sourceTopComment>
+------------------ Building $sourceDir/$commonSourceFile.
+$<out $sourceDir/$commonSourceFile>$sourceTopComment
 
-$<join for header in $<includes.common.source>>
-#include $<header>$<endjoin>
+$<join for header in $<$includes.common.source>>
+#include $header$<endjoin>
 
-$<if '$<typesWithIsLess.length> > 0 or $<serializeTo> contains binary'>
-namespace $<namespace>
+$<if len($typesWithIsLess) $> 0 or 'binary' in $serializeTo>
+namespace $namespace
 {
-$<join for isLessType in $<typesWithIsLess>>
-    bool IsLess_$<isLessType.name>::operator()($<const $<isLessType.ofType.name>> & lhs, $<const $<isLessType.ofType.name>> & rhs) const
+$<join for isLessType in $typesWithIsLess>
+    bool IsLess_$<$isLessType.name>::operator()($<$const($<$isLessType.ofType.name>)> & lhs, $<$const($<$isLessType.ofType.name>)> & rhs) const
     {
-        return $<isLessType.getLhs> < $<isLessType.getRhs>;
+        return $<$isLessType.getLhs> < $<$isLessType.getRhs>;
     }
 $<endjoin>
-$<if $<allComponents.types> @.name contains string>
+$<if 'string' in [t.name for t in $allComponents.types]>
     std::ostream & operator << (std::ostream & out, BinaryFormat<std::string> const & obj)
     {
         out << BinaryFormat(obj->size());
@@ -754,7 +754,7 @@ $<if $<allComponents.types> @.name contains string>
         return out;
     }
 $<endif>
-$<if $<allComponents.types> @.name contains string_view>
+$<if 'string_view' in [t.name for t in $allComponents.types]>
     std::ostream & operator << (std::ostream & out, BinaryFormat<std::string_view> const & obj)
     {
         out << BinaryFormat(obj->size());
@@ -764,20 +764,20 @@ $<if $<allComponents.types> @.name contains string_view>
     }
 $<endif>
 }
-$<endif /* less or binary serialization */>
+$<endif $<# less or binary serialization >>
 
 $<endout>
 
------------------- Building $<headerDir>/$<diffsHeaderFile>.
-$<if $<diffable>>
-$<out $<headerDir>/$<diffsHeaderFile>>#pragma once
+------------------ Building $headerDir/$diffsHeaderFile.
+$<if $diffable>
+$<out $headerDir/$diffsHeaderFile>#pragma once
 
-$<headerTopComment>
+$headerTopComment
 
-$<join for header in $<includes.diffs.header>>
-#include $<header>$<endjoin>
+$<join for header in $<$includes.diffs.header>>
+#include $header$<endjoin>
 
-namespace $<namespace>
+namespace $namespace
 {
     template <class StructType>
     struct Diff
@@ -790,7 +790,7 @@ namespace $<namespace>
 
         bool memberDiffs = false;
     };
-$<if $<allComponents.types> @.name contains array>
+$<if 'array' in [t.name for t in $allComponents.types]>
     template <class T, std::size_t Size>
     struct Diff<std::array<T, Size>>
     {
@@ -810,7 +810,7 @@ $<if $<allComponents.types> @.name contains array>
         std::vector<std::pair<std::size_t, Diff<T>>> elementDiffs;
     };
 $<endif>
-$<if $<allComponents.types> @.name contains pair>
+$<if 'pair' in [t.name for t in $allComponents.types]>
     template <class TF, class TS>
     struct Diff<std::pair<TF, TS>>
     {
@@ -825,7 +825,7 @@ $<if $<allComponents.types> @.name contains pair>
         std::pair<Diff<TF>, Diff<TS>> diffObjects;
     };
 $<endif>
-$<if $<allComponents.types> @.name contains tuple>
+$<if 'tuple' in [t.name for t in $allComponents.types]>
     // Calls func with tuple element.
     // https://stackoverflow.com/questions/28997271/c11-way-to-index-tuple-at-runtime-without-using-switch
     template <class Func, class Tuple, size_t N = 0>
@@ -865,7 +865,7 @@ $<if $<allComponents.types> @.name contains tuple>
         std::tuple<Diff<Args>...> diffObjects;
     };
 $<endif>
-$<if $<allComponents.types> @.name contains vector>
+$<if 'vector' in [t.name for t in $allComponents.types]>
     template <class T>
     struct Diff<std::vector<T>>
     {
@@ -899,7 +899,7 @@ $<if $<allComponents.types> @.name contains vector>
         std::vector<std::tuple<std::size_t, DiffKind, Diff<T>>> elementDiffs;
     };
 $<endif>
-$<if $<allComponents.types> @.name contains set>
+$<if 'set' in [t.name for t in $allComponents.types]>
     template <class T>
     struct Diff<std::set<T>>
     {
@@ -931,7 +931,7 @@ $<if $<allComponents.types> @.name contains set>
         std::vector<std::tuple<T, DiffKind, Diff<T>>> elementDiffs;
     };
 $<endif>
-$<if $<allComponents.types> @.name contains unordered_set>
+$<if 'unordered_set' in [t.name for t in $allComponents.types]>
     template <class T>
     struct Diff<std::unordered_set<T>>
     {
@@ -963,7 +963,7 @@ $<if $<allComponents.types> @.name contains unordered_set>
         std::vector<std::tuple<T, DiffKind, Diff<T>>> elementDiffs;
     };
 $<endif>
-$<if $<allComponents.types> @.name contains map>
+$<if 'map' in [t.name for t in $allComponents.types]>
     template <class Key, class T>
     struct Diff<std::map<Key, T>>
     {
@@ -1004,7 +1004,7 @@ $<if $<allComponents.types> @.name contains map>
         std::vector<std::tuple<Key, DiffKind, Diff<T>>> elementDiffs;
     };
 $<endif>
-$<if $<allComponents.types> @.name contains unordered_map>
+$<if 'unordered_map' in [t.name for t in $allComponents.types]>
     template <class Key, class T>
     struct Diff<std::unordered_map<Key, T>>
     {
@@ -1046,26 +1046,26 @@ $<if $<allComponents.types> @.name contains unordered_map>
     };
 $<endif>
 }
-$<endout>$<endif /* diffs */>
+$<endout>$<endif $<# diffs >>
 
------------------- Building $<headerDir>/$<enumHeaderFile>.
-$<out $<headerDir>/$<enumHeaderFile>>#pragma once
+------------------ Building $headerDir/$enumHeaderFile.
+$<out $headerDir/$enumHeaderFile>#pragma once
 
-$<headerTopComment>
+$headerTopComment
 
-$<join for header in $<includes.enums.header>>
-#include $<header>$<endjoin>
+$<join for header in $<$includes.enums.header>>
+#include $header$<endjoin>
 
-$<if $<deserializeFrom> contains humon>
+$<if 'humon' in $deserializeFrom>
 namespace hu
-{$<join for enum in $<enums>>
+{$<join for enum in $enums>
     template <>
-    struct val<$<enum.type.name>>
+    struct val<$<$enum.type.name>>
     {
-        static inline $<enum.type.name> extract(const Node & node) noexcept
-        {$<if $<enum.flags> == false>
-            auto nodeVal = node.value().str().data();$<join for val in $<enum.values>>
-            if (std::strncmp(nodeVal, "$<val.converted>", $<val.converted.length>) == 0) { return $<val.name>; }$<endjoin>
+        static inline $<$enum.type.name> extract(const Node & node) noexcept
+        {$<if $<$enum.flags> == false>
+            auto nodeVal = node.value().str().data();$<join for val in $<$enum.values>>
+            if (std::strncmp(nodeVal, "$<$val.converted>", $<len($val.converted)>) == 0) { return $<$val.name>; }$<endjoin>
             return {};$<else>
             using enumIntType = std::underlying_type<::VkIndirectStateFlagBitsNV>::type;
             enumIntType e = 0;
@@ -1076,20 +1076,20 @@ namespace hu
             do
             {
                 auto nodeVal = chNode.value().str().data();
-                if      $<join for val in $<enum.values>>(std::strncmp(nodeVal, "$<val.converted>", $<val.converted.length>) == 0) { e |= static_cast<enumIntType>($<val.name>); }$<delim>
+                if      $<join for val in $<$enum.values>>(std::strncmp(nodeVal, "$<$val.converted>", $<$val.converted.length>) == 0) { e |= static_cast<enumIntType>($<$val.name>); }$<delim>
                 else if $<endjoin>
                 chNode = chNode.nextSibling();
             }
             while(fromList && chNode);
 
-            return static_cast<::VkIndirectStateFlagBitsNV>(e);$<endif /* enum.flags */>
+            return static_cast<::VkIndirectStateFlagBitsNV>(e);$<endif $<# enum.flags >>
         }
     }
-$<endjoin /* enum */>
+$<endjoin $<# enum >>
 }
-$<endif /* humon */>
-$<if $<deserializeFrom> contains binary>
-namespace $<namespace>
+$<endif $<# humon >>
+$<if 'binary' in $deserializeFrom>
+namespace $namespace
 {
     template <class T>
     struct BinaryReader<T, typename std::enable_if_t<std::is_enum_v<T>>>
@@ -1102,37 +1102,38 @@ namespace $<namespace>
             return t;
         }
     };
-$<if $<serializeTo> contains humon>
-$<join for enum in $<enums>>
-    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<enum.name>> & obj);$<endjoin>
-}
+
 $<endif>
-$<endif /* humon */>
+$<if 'humon' in $serializeTo>
+$<join for enum in $enums>
+    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.name>> & obj);$<endjoin>
+}
+$<endif $<# humon >>
 $<endout>
 
------------------- Building $<sourceDir>/$<enumSourceFile>.
-$<out $<sourceDir>/$<enumSourceFile>>$<sourceTopComment>
+------------------ Building $sourceDir/$enumSourceFile.
+$<out $sourceDir/$enumSourceFile>$sourceTopComment
 
-$<join for header in $<includes.enums.source>>
-#include $<header>$<endjoin>
+$<join for header in $<$includes.enums.source>>
+#include $header$<endjoin>
 
-$<if $<serializeTo> contains humon>
-namespace $<namespace>
-{$<join for enum in $<enums>>
-    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<enum.type>> & obj)
+$<if 'humon' in $serializeTo>
+namespace $namespace
+{$<join for enum in $enums>
+    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.type>> & obj)
     {
         using enumIntType = std::underlying_type<::VkAccelerationStructureCompatibilityKHR>::type;<if $<enum.flags == false>
         switch(* obj)
-        {<join for val in $<enum.values>>
-        case $<val.name>: out << "$<val.converted>"; break;<endjoin>
+        {<join for val in $<$enum.values>>
+        case $<$val.name>: out << "$<$val.converted>"; break;<endjoin>
         default: out << static_cast<enumIntType>(* obj); break;
         }$<else>
         enumIntType bits = static_cast<enumIntType>(* obj);
-        out << "[";<join for val in $<enum.values>>
-        if (bits & static_cast<enumIntType>($<val.name>))
+        out << "[";<join for val in $<$enum.values>>
+        if (bits & static_cast<enumIntType>($<$val.name>))
         {
-            out << " $<val.converted>";
-            bits &= ~static_cast<enumIntType>($<val.name>);
+            out << " $<$val.converted>";
+            bits &= ~static_cast<enumIntType>($<$val.name>);
             if (! bits)
                 { goto done; }
         }
@@ -1142,213 +1143,213 @@ namespace $<namespace>
 
         return out;$<endif>
     }
-$<endjoin /* enum */>
+$<endjoin $<# enum >>
 }
-$<endif /* humon */>
+$<endif $<# humon >>
 $<endout>
 
-$<join for type in $<types>>
------------------- Building $<headerDir>/$<typeHeaderFile>.
-$<out $<headerDir>/$<typeHeaderFile>>#pragma once
+$<join for type in $types>
+------------------ Building $headerDir/$typeHeaderFile.
+$<out $headerDir/$typeHeaderFile>#pragma once
 
-$<headerTopComment>
+$headerTopComment
 
-$<join for header in $<includes.type.header>>
-#include $<header>$<endjoin>
+$<join for header in $<$includes.type.header>>
+#include $header$<endjoin>
 
-namespace $<namespace>
+namespace $namespace
 {
-    $<type.typetype> $<type.name>;$<if $<swap>>
-    void swap($<type.name> & lhs, $<type.name> & rhs) noexcept;$<endif>$<if $<serializeTo> contains humon>
-    std::ostream & operator <<(std::ostream & out, $<const HumonFormat<$<type.name>>> & obj);$<endif>$<if $<serializeTo> contains binary>
-    std::ostream & operator <<(std::ostream & out, $<const BinaryFormat<$<type.name>>> & obj);$<endif>$<if $<comparable>>
-    bool operator ==($<const $<type.name>> & lhs, $<const $<type.name>> & rhs);
-    bool operator !=($<const $<type.name>> & lhs, $<const $<type.name>> & rhs);$<endif>
-$<if $<diffable>>
+    $<$type.typetype> $<$type.name>;$<if $swap>
+    void swap($<$type.name> & lhs, $<$type.name> & rhs) noexcept;$<endif>$<if 'humon' in $serializeTo>
+    std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$type.name>>)> & obj');$<endif>$<if 'binary' in $serializeTo>
+    std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$type.name>>)> & obj');$<endif>$<if $comparable>
+    bool operator ==($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);
+    bool operator !=($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);$<endif>
+$<if $diffable>
     template<>
-    struct Diff<$<type.name>>
-    {$<if '$<type.members.length> > 0'>
+    struct Diff<$<$type.name>>
+    {$<if $type.members.length $> 0>
         enum class Members : std::size_t
         {
-$<join for member in type.members>$<t>$<t>$<t>$<member.name>,$<delim>
+$<join for member in type.members>$tab$tab$tab$<$member.name>,$<delim>
 $<endjoin>
             numMembers
         };
 
         Diff();
-        Diff($<const $<type.name>> & lhs, $<const $<type.name>> & rhs);
+        Diff($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);
 
         std::bitset<static<cast<std::size_t>(Members::numMembers)> memberDiffs;$<endif><join for member in type.members>
-        Diff<$<member.type> $<member.name>_diffs;<endjoin>
+        Diff<$<$member.type> $<$member.name>_diffs;<endjoin>
     };$<endif>
 
-    $<type.typetype> $<type.name>
-    {$<if $<type.typetype> == class>
-    public:$<endif>$<if $<defaultConstructible>>
-        $<type.name>();$<endif>$<if $<memberwiseConstructible>>
-        $<type.name>($<join for member in $<type.members>>$<const $<member.type.name>> & $<member.name>$<delim>, $<endjoin>);$<endif>$<if $<deserializeFrom> contains humon>
-        $<type.name>($<const hu::Node> & node);$<endif>$<if $<deserializeFrom> contains binary>
-        $<type.name>($<const char *> & buffer, std::size_t & size);$<endif>$<if $<copy> != omit>
-        $<type.name>($<const $<type.name>> & rhs)$<if $<copy> == default> default$<elif copy == delete> delete$<endif>;$<endif>$<if $<move> != omit>
-        $<type.name>($<type.name> && rhs)$<if $<move> == default> default$<elif move == delete> delete$<else> noexcept$<endif>;$<endif>$<if $<copy> != omit>
-        $<type.name> & operator =($<const $<type.name>> & rhs)$<if $<copy> == default> default$<elif copy == delete> delete$<endif>;$<endif>$<if $<move> != omit>
-        $<type.name> & operator =($<type.name> && rhs)$<if $<move> == default> default$<elif move == delete> delete$<else> noexcept$<endif>;$<endif>$<if $<destructor> != omit>
-        $<if $<destructor> == virtual>virtual $<endif>~$<type.name>()$<if $<destructor> == default> = default$<elif destructor == delete> = delete$<endif>;$<if $<swap>>
-        friend void swap($<type.name> & lhs, $<type.name> & rhs) noexcept;$<endif>$<join for member in $<type.members>>$<if $<getters>>
-        $<member.type.name>         get_$<member.name>() &&$<if $<inlineGetters>>      { return $<member.name>; }$<else>;$<endif>$<endif>$<if $<constGetters>>
-        $<const $<member.type.name> & get_$<member.name>() const &$<if $<inlineGetters>> { return $<member.name>; }$<else>;$<endif>$<endif>$<if $<nonConstGetters>>
-        $<member.type.name>       & get_$<member.name>() &$<if $<inlineGetters>>       { return $<member.name>; }$<else>;$<endif>$<endif>$<endjoin>$<join for member in $<type.members>>$<if $<setByCopy>>
-        void set_$<member.name>($<const $<member.type.name>> & new_$<member.name>)$<if $<inlineSetters>>  { $<if $<copyByCopySwap>>using std::swap; swap($<member.name>, new_$<member.name>);$<else>$<member.name> = new_$<member.name>;$<endif> }$<else>;$<endif>$<endif>$<if $<setByMove>>
-        void set_$<member.name>($<member.type.name> && new_$<member.name>)$<if $<inlineSetters>>         { $<if $<copyByCopySwap>>using std::swap; swap($<member.name>, new_$<member.name>);$<else>$<member.name> = std::move(new_$<member.name>);$<endif> }$<else>;$<endif>$<endjoin>$<if $<serializeTo> contains humon>
-        friend std::ostream & operator <<(std::ostream & out, $<const HumonFormat<$<type.name>>> & obj);$<endif>$<if $<serializeTo> contains binary>
-        friend std::ostream & operator <<(std::ostream & out, $<const BinaryFormat<$<type.name>>> & obj);$<endif>$<if $<comparable>>
-        friend bool operator ==($<const $<type.name>> & lhs, $<const $<type.name>> & rhs);
-        friend bool operator !=($<const $<type.name>> & lhs, $<const $<type.name>> & rhs);$<endif>$<if $<diffable>>
-        friend Diff<$<type.name>>::Diff();
-        friend Diff<$<type.name>>::Diff($<const $<type.name>> & lhs, $<const $<type.name>> & rhs);$<endif>
-$<if $<privateMembers>>
-    private:$<endif>$<join for member in $<type.members>>
-        $<member.type> $<member.name>;$<endjoin>
+    $<$type.typetype> $<$type.name>
+    {$<if $<$type.typetype> == 'class'>
+    public:$<endif>$<if $defaultConstructible>
+        $<$type.name>();$<endif>$<if $memberwiseConstructible>
+        $<$type.name>($<join for member in $<$type.members>>$<$const($<$member.type.name>)> & $<$member.name>$<delim>, $<endjoin>);$<endif>$<if 'humon' in $deserializeFrom>
+        $<$type.name>($<$const('hu::Node')> & node);$<endif>$<if 'binary' in $deserializeFrom>
+        $<$type.name>($<$const('char *')> & buffer, std::size_t & size);$<endif>$<if $copy != 'omit'>
+        $<$type.name>($<$const($<$type.name>)> & rhs)$<if $copy == 'default'> default$<elif copy == delete> delete$<endif>;$<endif>$<if $move != omit>
+        $<$type.name>($<$type.name> && rhs)$<if $move == 'default'> default$<elif move == 'delete'> delete$<else> noexcept$<endif>;$<endif>$<if $copy != omit>
+        $<$type.name> & operator =($<$const($<$type.name>)> & rhs)$<if $copy == 'default'> default$<elif copy == delete> delete$<endif>;$<endif>$<if $move != omit>
+        $<$type.name> & operator =($<$type.name> && rhs)$<if $move == 'default'> default$<elif move == 'delete'> delete$<else> noexcept$<endif>;$<endif>$<if $destructor != omit>
+        $<if $destructor == virtual>virtual $<endif>~$<$type.name>()$<if $destructor == 'default'> = default$<elif destructor == 'delete'> = delete$<endif>;$<if $swap>
+        friend void swap($<$type.name> & lhs, $<$type.name> & rhs) noexcept;$<endif>$<join for member in $<$type.members>>$<if $getters>
+        $<$member.type.name>         get_$<$member.name>() &&$<if $inlineGetters>      { return $<$member.name>; }$<else>;$<endif>$<endif>$<if $constGetters>
+        $<$const($<$member.type.name>) & get_$<$member.name>() const &$<if $inlineGetters> { return $<$member.name>; }$<else>;$<endif>$<endif>$<if $nonConstGetters>
+        $<$member.type.name>       & get_$<$member.name>() &$<if $inlineGetters>       { return $<$member.name>; }$<else>;$<endif>$<endif>$<endjoin>$<join for member in $<$type.members>>$<if $setByCopy>
+        void set_$<$member.name>($<$const($<$member.type.name>)> & new_$<$member.name>)$<if $inlineSetters>  { $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = new_$<$member.name>;$<endif> }$<else>;$<endif>$<endif>$<if $setByMove>
+        void set_$<$member.name>($<$member.type.name> && new_$<$member.name>)$<if 'humon' in $inlineSetters>         { $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = std::move(new_$<$member.name>);$<endif> }$<else>;$<endif>$<endjoin>$<if $serializeTo>
+        friend std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$type.name>>)> & obj')>;$<endif>$<if 'binary' in $serializeTo>
+        friend std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$type.name>>)> & obj')>;$<endif>$<if $comparable>
+        friend bool operator ==($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);
+        friend bool operator !=($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);$<endif>$<if $diffable>
+        friend Diff<$<$type.name>>::Diff();
+        friend Diff<$<$type.name>>::Diff($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);$<endif>
+$<if $privateMembers>
+    private:$<endif>$<join for member in $<$type.members>>
+        $<$member.type> $<$member.name>;$<endjoin>
     };
-$<if $<deserializeFrom> contains humon>
+$<if 'humon' in $deserializeFrom>
 namespace hu
 {
     template<>
-    struct val<$<namespace>::$<type.name>>
+    struct val<$namespace::$<$type.name>>
     {
-        static inline val<$<namespace>::$<type.name> extract(Node const & node)
+        static inline val<$namespace::$<$type.name> extract($<$const('Node')> & node)
         {
-            return val<$<namespace>::$<type.name>(node);
+            return val<$namespace::$<$type.name>(node);
         }
     };
 }
-$endif>$<if $<deserializeFrom> contains binary>
-namespace $<namespace>
+$endif>$<if 'binary' in $deserializeFrom>
+namespace $namespace
 {
     template <>
-    struct BinaryReader<$<type.name>>
+    struct BinaryReader<$<$type.name>>
     {
-        static inline $<type.name> extract(const char *& buffer, std::size_t & size)
+        static inline $<$type.name> extract($<$const('char *')& buffer, std::size_t & size)
         {
-            return $<type.name>(buffer, size);
+            return $<$type.name>(buffer, size);
         }
     };
 }
 $<endout>
------------------- Building $<sourceDir>/$<typeSourceFile>.
-$<out $<sourceDir>/$<typeSourceFile>>$<sourceTopComment>
+------------------ Building $sourceDir/$typeSourceFile.
+$<out $sourceDir/$typeSourceFile>$sourceTopComment
 
-$<join for header in $<includes.type.source>>
-#include $<header>$<endjoin>
+$<join for header in $<$includes.type.source>>
+#include $header$<endjoin>
 
-namespace $<namespace>
+namespace $namespace
 {
-$<if $<defaultConstructible>>
-    $<type.name>::$<type.name>()
+$<if $defaultConstructible>
+    $<$type.name>::$<$type.name>()
     {
     }
-$<endif>$<if $<memberwiseConstructible>>
-    $<type.name>::$<type.name>($<join for member in $<type.members>>$<const $<member.type.name>> & $<member.name>$<delim>, $<endjoin>)
-     : $<join for member in $<type.members>>$<member.name>($member.name>)$<delim>, $<endjoin>
+$<endif>$<if $memberwiseConstructible>
+    $<$type.name>::$<$type.name>($<join for member in $<$type.members>>$<$const($<$member.type.name>)> & $<$member.name>$<delim>, $<endjoin>)
+     : $<join for member in $<$type.members>>$<$member.name>($member.name>)$<delim>, $<endjoin>
     {
     }
-$<endif>$<if $<deserializeFrom> contains humon>
-    $<type.name>::$<type.name>($<const hu::Node> & node)
-     : $<join for member in $<type.members>>$<member.name>(node / "$<member.name>" % hu::val<$<member.type.name>>{})$<delim>,
+$<endif>$<if 'humon' in $deserializeFrom>
+    $<$type.name>::$<$type.name>($<$const('hu::Node')> & node)
+     : $<join for member in $<$type.members>>$<$member.name>(node / "$<$member.name>" % hu::val<$<$member.type.name>>{})$<delim>,
 $<endjoin>{
     }
-$<endif>$<if $<deserializeFrom> contains binary>
-    $<type.name>::$<type.name>($<const char *> & buffer, std::size_t & size)
-     : $<join for member in $<type.members>>$<member.name>(BinaryReader<$<member.type.name>>::extract(buffer, size))$<delim>,
+$<endif>$<if 'binary' in $deserializeFrom>
+    $<$type.name>::$<$type.name>($<$const('char *')> & buffer, std::size_t & size)
+     : $<join for member in $<$type.members>>$<$member.name>(BinaryReader<$<$member.type.name>>::extract(buffer, size))$<delim>,
 $<endjoin>{
     }
-$<endif>$<if $<copy> == source>$<if $<copyByCopySwap> == false>
-    $<type.name>::$<type.name>($<const $<type.name>> & rhs)
-     : $<join for member in $<type.members>>$<member.name>(rhs.$member.name>)$<delim>, $<endjoin>
+$<endif>$<if $copy == source>$<if $copyByCopySwap == False>
+    $<$type.name>::$<$type.name>($<$const($<$type.name>)> & rhs)
+     : $<join for member in $<$type.members>>$<$member.name>(rhs.$member.name>)$<delim>, $<endjoin>
     {
     }$<else>
     {
-        using std::swap;$<join for member in $<type.members>>
-        swap($<member.name>, rhs.$<member.name>);$<endjoin>
+        using std::swap;$<join for member in $<$type.members>>
+        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>
     }$<endif>
-$<endif>$<if $<move> == source>$<if $<moveByCopySwap> == false>
-    $<type.name>::$<type.name>($<type.name> && rhs) noexcept
-     : $<join for member in $<type.members>>$<member.name>(std::move(rhs.$member.name>))$<delim>, $<endjoin>
+$<endif>$<if $move == source>$<if $moveByCopySwap == False>
+    $<$type.name>::$<$type.name>($<$type.name> && rhs) noexcept
+     : $<join for member in $<$type.members>>$<$member.name>(std::move(rhs.$member.name>))$<delim>, $<endjoin>
     {
     }$<else>
     {
-        using std::swap;$<join for member in $<type.members>>
-        swap($<member.name>, rhs.$<member.name>);$<endjoin>
+        using std::swap;$<join for member in $<$type.members>>
+        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>
     }$<endif>
-$<endif>$<if $<copy> == source>
-    $<type.name> & $<type.name>::operator =($<const $<type.name>> & rhs)
-    {$<if $<copyByCopySwap> == false>$<join for member in $<type.members>>
-        $<member.name> = rhs.$<member.name>;$<endjoin>$<else>
-        using std::swap;$<join for member in $<type.members>>
-        swap($<member.name>, rhs.$<member.name>);$<endjoin>$<endif>
+$<endif>$<if $copy == source>
+    $<$type.name> & $<$type.name>::operator =($<$const($<$type.name>)> & rhs)
+    {$<if $copyByCopySwap == False>$<join for member in $<$type.members>>
+        $<$member.name> = rhs.$<$member.name>;$<endjoin>$<else>
+        using std::swap;$<join for member in $<$type.members>>
+        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>$<endif>
         return * this;
     }
-$<endif>$<if $<move> == source>
-    $<type.name> & $<type.name>::operator =($<type.name> && rhs)
-    {$<if $<moveByCopySwap> == false>$<join for member in $<type.members>>
-        $<member.name> = std::move(rhs.$<member.name>);$<endjoin>$<else>
-        using std::swap;$<join for member in $<type.members>>
-        swap($<member.name>, rhs.$<member.name>);$<endjoin>$<endif>
+$<endif>$<if $move == source>
+    $<$type.name> & $<$type.name>::operator =($<$type.name> && rhs)
+    {$<if $moveByCopySwap == False>$<join for member in $<$type.members>>
+        $<$member.name> = std::move(rhs.$<$member.name>);$<endjoin>$<else>
+        using std::swap;$<join for member in $<$type.members>>
+        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>$<endif>
         return * this;
     }
-$<endif>$<if $<destructor> == source>
-    $<type.name>::~$<type.name>()
+$<endif>$<if $destructor == source>
+    $<$type.name>::~$<$type.name>()
     {
     }
-$<endif>;$<if $<swap>>
-    void swap($<type.name> & lhs, $<type.name> & rhs) noexcept
+$<endif>;$<if $swap>
+    void swap($<$type.name> & lhs, $<$type.name> & rhs) noexcept
     {
-        using std::swap;$<join for member in $<type.members>>
-        swap(lhs.$<member.name>, rhs.$<member.name>);$<endjoin>
+        using std::swap;$<join for member in $<$type.members>>
+        swap(lhs.$<$member.name>, rhs.$<$member.name>);$<endjoin>
     }
-$<endif>$<if $<inlineGetters> == false>$<join for member in $<type.members>>$<if $<getters>>
-    $<member.type.name> $<type.name>::get_$<member.name>() && { return $<member.name>; }
-$<endif>$<if $<constGetters>>
-    $<const $<member.type.name> & $<type.name>::get_$<member.name>() const & { return $<member.name>; }
-$<endif>$<endif>$<if $<nonConstGetters>>
-    $<member.type.name> & $<type.name>::get_$<member.name>() &$ { return $<member.name>; }
-$<endif>$<endjoin>$<endif>$<if $<inlineSetters> == false>$<join for member in $<type.members>>$<if $<setByCopy>>
-    void $<type.name>::set_$<member.name>($<const $<member.type.name>> & new_$<member.name>) { $<if $<copyByCopySwap>>using std::swap; swap($<member.name>, new_$<member.name>);$<else>$<member.name> = new_$<member.name>;$<endif> }
-$<endif>$<if $<setByMove>>
-    void $<type.name>::set_$<member.name>($<member.type.name> && new_$<member.name>) noexcept { $<if $<moveByCopySwap>>using std::swap; swap($<member.name>, new_$<member.name>);$<else>$<member.name> = std::move(new_$<member.name>);$<endif> }
-$<endif>$<endjoin>$<endif>$<if $<serializeTo> contains humon>
-    std::ostream & operator <<(std::ostream & out, $<const HumonFormat<$<type.name>>> & obj)
+$<endif>$<if $inlineGetters == False>$<join for member in $<$type.members>>$<if $getters>
+    $<$member.type.name> $<$type.name>::get_$<$member.name>() && { return $<$member.name>; }
+$<endif>$<if $constGetters>
+    $<$const($<$member.type.name>) & $<$type.name>::get_$<$member.name>() const & { return $<$member.name>; }
+$<endif>$<endif>$<if $nonConstGetters>
+    $<$member.type.name> & $<$type.name>::get_$<$member.name>() &$ { return $<$member.name>; }
+$<endif>$<endjoin>$<endif>$<if $inlineSetters == False>$<join for member in $<$type.members>>$<if $setByCopy>
+    void $<$type.name>::set_$<$member.name>($<$const($<$member.type.name>)> & new_$<$member.name>) { $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = new_$<$member.name>;$<endif> }
+$<endif>$<if $setByMove>
+    void $<$type.name>::set_$<$member.name>($<$member.type.name> && new_$<$member.name>) noexcept { $<if $moveByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = std::move(new_$<$member.name>);$<endif> }
+$<endif>$<endjoin>$<endif>$<if 'humon' in $serializeTo>
+    std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$type.name>>')> & obj)
     {
-        out << '{'$<join for member in $<type.members>>
-            << " $<member.name>: " << HumonFormat(obj->$<member.name>);$<endjoin>
+        out << '{'$<join for member in $<$type.members>>
+            << " $<$member.name>: " << HumonFormat(obj->$<$member.name>);$<endjoin>
             << '}';
         return out;
     }
-$<endif>$<if $<serializeTo> contains binary>
-    std::ostream & operator <<(std::ostream & out, $<const BinaryFormat<$<type.name>>> & obj)
+$<endif>$<if 'binary' in $serializeTo>
+    std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$type.name>>')> & obj)
     {
-        out << $<join for member in $<type.members>>BinaryFormat(obj->$<member.name>)$<delim>
+        out << $<join for member in $<$type.members>>BinaryFormat(obj->$<$member.name>)$<delim>
             << $<endjoin>;
         return out;
     }
-$<endif>$<if $<comparable>>
-    bool operator ==($<const $<type.name>> & lhs, $<const $<type.name>> & rhs)
+$<endif>$<if $comparable>
+    bool operator ==($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs)
     {
-        return $<join for member in $<type.members>>lhs.$<member.name> == rhs.$<member.name>$<delim>
+        return $<join for member in $<$type.members>>lhs.$<$member.name> == rhs.$<$member.name>$<delim>
             && $<endjoin>;
     }
 
-    bool operator !=($<const $<type.name>> & lhs, $<const $<type.name>> & rhs)
+    bool operator !=($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs)
     {
         return !(lhs == rhs);
     }
-$<endif>$<if $<diffable>>
-    Diff<$<type.name>>::Diff() { }
+$<endif>$<if $diffable>
+    Diff<$<$type.name>>::Diff() { }
 
-    Diff<$<type.name>::Diff($<const $<type.name>> & lhs, $<const $<type.name>> & rhs)$<if $<type.members.length> > 0>
-    : memberDiffs($<join for member in type.members>(lhs.$<member.name> != rhs.$<member.name>) << static_cast<int>(Members::$<member.name>)$<delim> |
-$<t>              $<endjoin>)$<join for member in type.stdMembers>,
-      $<member.name>_diffs(lhs.$<member.name>, rhs.$<member.name>$<endjoin>)$<endif>
+    Diff<$<$type.name>::Diff($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs)$<if $type.members.length $> 0>
+    : memberDiffs($<join for member in $type.members>(lhs.$<$member.name> != rhs.$<$member.name>) << static_cast<int>(Members::$<$member.name>)$<delim> |
+$tab              $<endjoin>)$<join for member in type.stdMembers>,
+      $<$member.name>_diffs(lhs.$<$member.name>, rhs.$<$member.name>$<endjoin>)$<endif>
     {
     }$<endif>
 }
@@ -1356,26 +1357,3 @@ $<t>              $<endjoin>)$<join for member in type.stdMembers>,
 
 $<endout>
 $<endjoin>
-
-// $foo <=> $<$foo>
-// $foo -> props.get('foo')
-
-$<out trystuffout.hpp>
-$<join for target in $serializeTo>$<if $<$<target>_is_supported>>Do $target stuff$<endif>$<delim skip empty>
-$<endjoin>
-
-$<join for target in $serializeTo>
-$<if $<$<target>_is_supported>>Do $target stuff
-$<endif>
-$<delim skip space>
-$<endjoin>
-$<endout>
-
-
-$<out $<sourceDir>/$<enumSourceFile>>$<sourceTopComment>...$<endout>
-Other file contents: $<in $<cppTemplates>/xamlgui.hu>
-Some crowded text: $<+>
-                $<if $a>   $'ignore spaces until the i'>$<else>Or the O$<endif>
-$<set foo as 'shibby'>... $<foo> ... $<endset>
-Tabulated data: $<join for date in $dates>$$$<fmt : =+8,.2f>$<$profits['$<date>']>$<endfmt>$delim>
-                $<endjoin>

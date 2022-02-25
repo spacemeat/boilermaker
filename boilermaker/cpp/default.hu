@@ -6,37 +6,28 @@
     computeEnums:   true
     computeTypes:   true
 
-    const:          west
+    constStyle:     west
+    const:          $<lambda t: f'{t} const' if $constStyle == 'east' else 'const {t}'>
     outputForm:     compiled  // or headerOnly, or anything else in outupt
     caveperson:     []// [ctr, dtr, ass, serializeBinary, deserializeBinary]
     checkBinaryOverruns: false
     caveStream:     cerr
 
-    mainHeaderTopComment: ^^
-
+    generatedFileComment: ^^
 /*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
     Do not bother modifying this file, as your build process will overwrite
     your changes.
+^^
+
+    mainHeaderTopComment: ^^$generatedFileComment
 
     #include this header in your project to use boilermaker-generated code.*/
 ^^
-    headerTopComment: ^^
-
-/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
-    Do not bother modifying this file, as your build process will overwrite
-    your changes. */
+    headerTopComment: ^^$generatedFileComment */
 ^^
-    inlineTopComment: ^^
-
-/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
-    Do not bother modifying this file, as your build process will overwrite
-    your changes. */
+    inlineTopComment: ^^ */
 ^^
-    sourceTopComment: ^^
-
-/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
-    Do not bother modifying this file, as your build process will overwrite
-    your changes. */
+    sourceTopComment: ^^ */
 ^^
 
     deserializeFrom: [humon] // also accepts binary
