@@ -185,23 +185,29 @@ class Clause:
         return self.toStr()
 
 
-class Propmaster:
-    def __init__(self):
+class Scribe:
+    def __init__(self, initialProps = {}):
         self.props = Props()
+        self.props.setM(initialProps)
         self.previousPaths = set()
+        self.debug = False
 
     def eval(self, expr):
-        print (f'{ansi.dk_red_fg} Eval expression: {ansi.lt_red_fg}{expr}{ansi.all_off}')
+        if self.debug:
+            print (f'{ansi.dk_red_fg} Eval expression: {ansi.lt_red_fg}{expr}{ansi.all_off}')
         res = eval(expr, {}, {'props': self.props})
-        print (f'{ansi.dk_red_fg}      expression returned: {ansi.lt_red_fg}{res}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(res)}{ansi.dk_red_fg}){ansi.all_off}')
+        if self.debug:
+            print (f'{ansi.dk_red_fg}      expression returned: {ansi.lt_red_fg}{res}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(res)}{ansi.dk_red_fg}){ansi.all_off}')
         return res
 
     def exec(self, stmnts):
         res = ''
         locs = { 'props': self.props, 'res': '' }
-        print (f'{ansi.dk_red_fg} Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
+        if self.debug:
+            print (f'{ansi.dk_red_fg} Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
         exec(stmnts, {}, locs)
-        print (f'{ansi.dk_red_fg}      statements returned: {ansi.lt_red_fg}{locs["res"]}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(locs["res"])}{ansi.dk_red_fg}){ansi.all_off}')
+        if self.debug:
+            print (f'{ansi.dk_red_fg}      statements returned: {ansi.lt_red_fg}{locs["res"]}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(locs["res"])}{ansi.dk_red_fg}){ansi.all_off}')
         return locs['res']
 
     def parseText(self, val):
@@ -217,10 +223,12 @@ class Propmaster:
         rootClause = Clause()
         currentClause = rootClause
 
-        print (f'{ansi.lt_yellow_fg}Parsing {ansi.dk_yellow_fg}{val}{ansi.all_off}')
+        if self.debug:
+            print (f'{ansi.lt_yellow_fg}Parsing {ansi.dk_yellow_fg}{val}{ansi.all_off}')
 
         def dbg(msg):
-            print (f'{ansi.lt_magenta_fg}({idx}{ansi.dk_magenta_fg}/{len(val)}) {ansi.dk_blue_fg}"{ansi.lt_blue_fg}{msg}{ansi.dk_blue_fg}"{ansi.all_off} {ansi.dk_yellow_fg}Tag counter: {ansi.dk_yellow_fg}{inTagCounter}{ansi.all_off}')
+            if self.debug:
+                print (f'{ansi.lt_magenta_fg}({idx}{ansi.dk_magenta_fg}/{len(val)}) {ansi.dk_blue_fg}"{ansi.lt_blue_fg}{msg}{ansi.dk_blue_fg}"{ansi.all_off} {ansi.dk_yellow_fg}Tag counter: {ansi.dk_yellow_fg}{inTagCounter}{ansi.all_off}')
 
         while idx < end:
             if val[idx] == '$':
@@ -233,6 +241,7 @@ class Propmaster:
                     while idx < end and val[idx] != quoteChar:
                         accum += val[idx]
                         idx += 1
+                    idx += 1
                     #accum += f'{quoteChar}'
                     dbg(f'quote-tag: {accum}')
                     currentClause.append(accum)
@@ -512,35 +521,19 @@ class Propmaster:
                     expr += self.parseClause(t)
                 elif t.kind == ClauseKind.QUERY:
                     setters += self.parseClause(t)
-                    expr += f'boma_{t.terms[0]}'
+                    expr += f'(boma_{t.terms[0]})'
                 else:
                     text = self.parseClause(t)
                     expr += f'{text}'
 
             res = ''
             if expr.strip() != '':
-                if (clause.kind == ClauseKind.JOINCOMPREHENSION or
-                    clause.kind == ClauseKind.SETASSIGNMENT or
-                    clause.kind == ClauseKind.FMTCODE):
-                    expr = f'{setters}res = {expr}'
-                    res = expr
-                    accum(res)
-                else:
-                    expr = f'{setters}res = str({expr})'
-                    res = self.exec(expr)
-                    accum(self.parseClause(self.parseTagStructure(res)))
-
-        elif (clause.kind == ClauseKind.IFCONDITIONAL or
-              clause.kind == ClauseKind.ELIFCONDITIONAL or
-              clause.kind == ClauseKind.ELSE or
-              clause.kind == ClauseKind.JOINCOMPREHENSION or
-              clause.kind == ClauseKind.SETASSIGNMENT or
-              clause.kind == ClauseKind.FMTCODE):
-            # parseClauses on expression contents
-            expr = ''
-            for tidx, t in enumerate(clause.terms):
-                expr += self.parseClause(t)
-            accum(expr)
+                expr = f'{setters}res = ({expr})'
+                res = expr
+                if clause.kind == ClauseKind.EXPRESSION:
+                    res = str(self.exec(expr))
+                    res = self.parseText(res)
+                accum(res)
 
         elif clause.kind == ClauseKind.IF:
             condClauses = []
@@ -564,9 +557,9 @@ class Propmaster:
                 if type(t) is str:
                     expr = t
                 elif len(t.terms) > 0:
-                    expr = f'True == ({"".join(t.terms)})'
-                #   eval to bool
-                res = self.eval(expr)
+                    expr = "".join(t.terms)
+                #   exec
+                res = self.exec(expr)
                 #   if eval is True:
                 assert(type(res) is bool)
                 if type(res) is bool and res == True:
@@ -610,7 +603,6 @@ class Propmaster:
                 tempClause.append(forString[len(m.group(0)):])
                 for t in clause.terms[compIdx].terms[1:]:
                     tempClause.terms.append(t)
-                #c = self.parseClause(clause.terms[compIdx].terms[0])
                 expr = self.parseClause(tempClause)
 
                 vals = self.exec(expr)
@@ -640,7 +632,7 @@ class Propmaster:
                     string = self.parseText(string)
                     accum(string)
             except EnvironmentError:
-                accum(f'!<File not found: {path}>')
+                accum(f'!<Could not open file {path} for reading>')
 
         elif clause.kind == ClauseKind.OUT:
             # TODO: set path to props?
@@ -654,7 +646,7 @@ class Propmaster:
                     f.write(string)
                     self.previousPaths.add(path)
             except EnvironmentError:
-                accum(f'!<Could not open file {path}>')
+                accum(f'!<Could not open file {path} for writing>')
 
         elif clause.kind == ClauseKind.SET:
             keyIdx = 0
@@ -676,8 +668,8 @@ class Propmaster:
                 expr = self.parseClause(tempClause)
 
                 obj = self.exec(expr)
-                if expr.startswith('lambda'):
-                    breakpoint()
+                if type(obj) is str:
+                    obj = self.parseText(obj)
 
                 self.props.push()
                 self.props.set(varname, obj)
@@ -712,7 +704,6 @@ class Propmaster:
                 tempClause.terms.append(t)
 
             expr = self.parseClause(tempClause)
-            breakpoint()
 
             width = self.exec(expr)
             if type(width) is not int:
@@ -732,8 +723,11 @@ class Propmaster:
 
 
 if __name__ == "__main__":
-    p = Propmaster()
-    p.props.setM({
+
+    passStr = f'{ansi.lt_green_fg}pass{ansi.all_off}'
+    failStr = f'{ansi.lt_red_fg}fail{ansi.all_off}'
+
+    p = Scribe({
             'outputForm': 'compiled',
             'defaultConstructible': True,
             'selector': 1,
@@ -748,55 +742,75 @@ if __name__ == "__main__":
             'const': r"lambda t: f'{t} const' if '$constStyle' == 'east' else f'const {t}'",
             'type': 'hu::Node'
     })
-    src = f'One $<>two$<> three'
-    print (str(p.parseText(src)))
-    src = f'One $< >two$< > three'
-    print (str(p.parseText(src)))
-    src = f'Output form: $outputForm'
-    print (str(p.parseText(src)))
-    src = f'Deserialize from: $<$deserializeFrom [ $selector ]>'
-    print (str(p.parseText(src)))
-    src = f'Deserialize from: $<$deserializeFrom [$selector+1]>'
-    print (str(p.parseText(src)))
-    src = f'Script: $<$< len(props.get("deserializeFrom"))> * ($selector+1)>'
-    print (str(p.parseText(src)))
-    src = f'Deserialize from humon: $<if "humon" in $deserializeFrom>yes$<else>no$<endif>'
-    print (str(p.parseText(src)))
-    src = f'Deserialize from telepathy: $<if "telepathy" in $deserializeFrom>yes$<else>no$<endif>'
-    print (str(p.parseText(src)))
-    src = f'Deserialize from preferred method: $<if "telepathy" in $deserializeFrom>telepathy$<elif "binary" in $deserializeFrom>binary$<else>humon$<endif>'
-    print (str(p.parseText(src)))
-    src = f'$<if $<if "binary" in $deserializeFrom>"Weeby"$<else>"Rude"$<endif> in $cats>Treats!$<else>Snacks!$<endif>'
-    print (str(p.parseText(src)))
-    src = f'Deserialize from: [$<join for method in $deserializeFrom> $method$<delim>,\n                    $<endjoin> ]'
-    print (str(p.parseText(src)))
-    src = f'cats: $<in test_input.scribe> baz'
-    print (str(p.parseText(src)))
-    src = f'foo $<out test_output>test $outputForm$<endout>bar'
-    print (str(p.parseText(src)))
-    src = f'foo $<set test_output as $outputForm>test $test_output$<endset> bar'
-    print (p.parseTagStructure(src))
-    print (str(p.parseText(src)))
-    src = f'foo $<set test_output as $serializeTo>test $<$test_output[2]>$<endset> bar'
-    print (str(p.parseText(src)))
-    src  = '''Tabulated data: $<join for pay in $dollaz>$$$<fmt right $dataColumns>$pay$<endfmt>$<delim>
-                $<endjoin>'''
-    print (str(p.parseText(src)))
-    src  = '''Tabulated data: $<join for pay in $dollaz>$$$<r"$`{0:>8.1f}`".format($pay)>$<delim>
-                $<endjoin>'''
-    print (str(p.parseText(src)))
-    src = f'''$+
+
+    def test(src, exp, debug = False):
+        p.debug = debug
+        print (f'Test src: {ansi.dk_cyan_fg}{src}{ansi.all_off}')
+        try:
+            res = p.parseText(src)
+            if res == exp:
+                print (f'  {passStr}')
+            else:
+                print (f'  expected:\n{ansi.lt_blue_fg}{exp}{ansi.all_off}\n  {failStr}\n  result:\n{res}')
+        except BaseException as e:
+            print (f'  expected:\n{ansi.lt_blue_fg}{exp}{ansi.all_off}\n  {failStr}\n  result:\n  Exception thrown: {e}')
+
+        p.debug = False
+
+    test('One $<>two$<> three',
+         'One two three')
+    test('One $< >two$< > three',
+         'One two three')
+    test('Output form: $outputForm',
+         'Output form: compiled')
+    test('Deserialize from: $<$deserializeFrom [ $selector ]>',
+         'Deserialize from: binary')
+    test('Deserialize from: $<$deserializeFrom [$selector+1]>',
+         'Deserialize from: dna')
+    test('Script: $<$< len(props.get("deserializeFrom"))> * ($selector+1)>',
+         'Script: 6')
+    test('Deserialize from humon: $<if "humon" in $deserializeFrom>yes$<else>no$<endif>',
+         'Deserialize from humon: yes')
+    test('Deserialize from telepathy: $<if "telepathy" in $deserializeFrom>yes$<else>no$<endif>',
+         'Deserialize from telepathy: no')
+    test('Deserialize from preferred method: $<if "telepathy" in $deserializeFrom>telepathy$<elif "binary" in $deserializeFrom>binary$<else>humon$<endif>',
+         'Deserialize from preferred method: binary')
+    test('$<if $<if "binary" in $deserializeFrom>"Weeby"$<else>"Rude"$<endif> in $cats>Treats!$<else>Snacks!$<endif>',
+         'Treats!')
+    test('Deserialize from: [$<join for method in $deserializeFrom> $method$<delim>,\n                   $<endjoin> ]',
+         '''Deserialize from: [ humon,
+                    binary,
+                    dna ]''')
+    test('cats: $<in test_input.scribe> baz',
+         'cats: Butters, Weeby, Lilly, Leo')
+    test('foo $<out test_output>test $outputForm$<endout>bar',
+         'foo bar')
+    test('foo $<set test_output as $outputForm>test $test_output$<endset> bar',
+         'foo test compiled bar')
+    test('foo $<set test_output as $serializeTo>test $<$test_output[2]>$<endset> bar',
+         'foo test dna bar')
+    test('''Tabulated data: $<join for pay in $dollaz>$$$<fmt right $dataColumns>$pay$<endfmt>$<delim>
+                $<endjoin>''',
+         '''Tabulated data: $    1.23
+                $   -2.34
+                $    3.45''')
+    test('''Tabulated data: $<join for pay in $dollaz>$$$<r"$`{0:>8.1f}`".format($pay)>$<delim>
+                $<endjoin>''',
+         '''Tabulated data: $     1.2
+                $    -2.3
+                $     3.5''')
+    test('''$+
 Deserialize from: [ $+
     $< join for method in $deserializeFrom >$+
         $method$+
         $<    delim   >,
                     $+
     $< endjoin > $+
-]'''
-    print (str(p.parseText(src)))
-    src = f'foo $<#if you see me you have FAILED>bar'
-    print (str(p.parseText(src)))
-    src = f"$<set const as $<$const>>$<$const($type + \"&\")> foo;$<endset>"
-    print (p.parseTagStructure(src))
-    print (str(p.parseText(src)))
-
+]''',
+         '''Deserialize from: [ humon,
+                    binary,
+                    dna ]''')
+    test('foo $<#if you see me you have FAILED>bar',
+         'foo bar')
+    test('$<set const as $<$const>>$<$const($type + "&")> foo;$<endset>', \
+         'hu::Node& const foo;')

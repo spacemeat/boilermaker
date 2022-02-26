@@ -7,7 +7,7 @@
     computeTypes:   true
 
     constStyle:     west
-    const:          $<lambda t: f'{t} const' if $constStyle == 'east' else 'const {t}'>
+    const:          `$<lambda t: f'{t} const' if '$constStyle' == 'east' else 'const {t}'>`
     outputForm:     compiled  // or headerOnly, or anything else in outupt
     caveperson:     []// [ctr, dtr, ass, serializeBinary, deserializeBinary]
     checkBinaryOverruns: false
