@@ -54,35 +54,92 @@ re_joinexpr = re.compile(f'^(for\s+)([A-Za-z_][A-Za-z0-9_]*)(\s+in\s+)')
 re_setexpr = re.compile(f'^([A-Za-z_][A-Za-z0-9_]*)(\s*as\s+)')
 re_fmtexpr = re.compile(f'(right|left|center\s*)')
 
-class Props:
-    def __init__(self):
-        self.props = [{}]
+class PropertyBag:
+    def __init__(self, initialProps = {}):
+        self.props = initialProps
+        self.parents = [ ]  # other PropertyBags
 
-    def set(self, key, value):
-        self.props[-1][key] = value
+    def setProp(self, key, value):
+        self.props[key] = value
 
-    def setM(self, values):
-        for k, v in values.items():
-            self.set(k, v)
+    def getProp(self, key):
+        if key in self.props:
+            return self.props[key]
+        for inh in reversed(self.parents):
+            v = inh.getProp(key)
+            if v:
+                return v
 
-    def get(self, key):
-        for ps in reversed(self.props):
-            if key in ps:
-                return ps[key]
-        return None
+    def getAll(self, key):
+        vs = []
+        if key in self.props:
+            vs.append(self.props[key])
+        for inh in reversed(self.parents):
+            v = inh.getAll(key)
+            if len(v):
+                vs.extend(v)
+        return vs
 
-    def push(self):
-        self.props.append({})
+    def inherit(self, ancestorBag):
+        self.parents.append(ancestorBag)
 
-    def pop(self):
-        self.props = self.props[:-1 or [{}] ]
+    def toStr(self, depth):
+        s = ' ' * depth
+        for [k, v] in self.props.items():
+            s += f'{ansi.dk_blue_fg}{k}{ansi.all_off}: {ansi.lt_blue_fg}{v}{ansi.all_off}\n'
+        for inh in reversed(self.parents):
+            s += inh.toStr(depth + 1)
+        return s
 
     def __str__(self):
-        s = 'props: '
-        for ps in reversed(self.props):
-            for k, v, in ps.items():
-                s += f'{k}: {v}  '
+        return self.toStr(0)
+
+    def toRepr(self, depth):
+        s = ''
+        for [k, v] in self.props.items():
+            s += ' ' * depth + f'{k}: {v}\n'
+        for inh in reversed(self.parents):
+            s += inh.toRepr(depth + 1)
         return s
+
+    def __repr__(self):
+        return self.toRepr(0)
+
+
+class Props:
+    def __init__(self, initialProps = {}):
+        self.props = PropertyBag(initialProps)
+
+    def setProp(self, key, value):
+        self.props.setProp(key, value)
+
+    def setDict(self, props):
+        for k, v in props.items():
+            self.props.setProp(k, v)
+
+    def getProp(self, key):
+        return self.props.getProp(key)
+
+    def getAll(self, key):
+        return self.props.getAll(key)
+
+    def push(self, newProps = {}):
+        np = PropertyBag(newProps)
+        np.inherit(self.props)
+        self.props = np
+
+    def pop(self):
+        # if you use this right, there should be only one parent via push()
+        self.props = self.props.parents[0]
+
+    def inherit(self, ancestorBag):
+        self.props.inherit(ancestorBag)
+
+    def __str__(self):
+        return str(self.props)
+
+    def __repr__(self):
+        return repr(self.props)
 
 
 class ClauseKind(Enum):
@@ -188,7 +245,7 @@ class Clause:
 class Scribe:
     def __init__(self, initialProps = {}):
         self.props = Props()
-        self.props.setM(initialProps)
+        self.props.setDict(initialProps)
         self.previousPaths = set()
         self.debug = False
 
@@ -488,7 +545,7 @@ class Scribe:
                     accum(self.parseClause(t))
 
         elif clause.kind == ClauseKind.QUERY:
-            expr = f'props.get("{clause.terms[0]}")'
+            expr = f'props.getProp("{clause.terms[0]}")'
             if (clause.parent.kind == ClauseKind.EXPRESSION or
                 clause.parent.kind == ClauseKind.IFCONDITIONAL or
                 clause.parent.kind == ClauseKind.ELIFCONDITIONAL or
@@ -609,7 +666,7 @@ class Scribe:
 
                 for vidx, val in enumerate(vals):
                     self.props.push()
-                    self.props.set(varname, val)
+                    self.props.setProp(varname, val)
                     th = self.parseClause(clause.terms[compIdx + 1])
                     d = ''
                     if delimIdx >= 0:
@@ -671,11 +728,9 @@ class Scribe:
                 if type(obj) is str:
                     obj = self.parseText(obj)
 
-                self.props.push()
-                self.props.set(varname, obj)
+                self.props.push({varname: obj})
                 th = self.parseClause(clause.terms[keyIdx + 1])
                 accum(th)
-
                 self.props.pop()
 
             else:
@@ -754,6 +809,7 @@ if __name__ == "__main__":
                 print (f'  expected:\n{ansi.lt_blue_fg}{exp}{ansi.all_off}\n  {failStr}\n  result:\n{res}')
         except BaseException as e:
             print (f'  expected:\n{ansi.lt_blue_fg}{exp}{ansi.all_off}\n  {failStr}\n  result:\n  Exception thrown: {e}')
+            raise e
 
         p.debug = False
 
@@ -767,7 +823,7 @@ if __name__ == "__main__":
          'Deserialize from: binary')
     test('Deserialize from: $<$deserializeFrom [$selector+1]>',
          'Deserialize from: dna')
-    test('Script: $<$< len(props.get("deserializeFrom"))> * ($selector+1)>',
+    test('Script: $<$< len(props.getProp("deserializeFrom"))> * ($selector+1)>',
          'Script: 6')
     test('Deserialize from humon: $<if "humon" in $deserializeFrom>yes$<else>no$<endif>',
          'Deserialize from humon: yes')
@@ -787,6 +843,8 @@ if __name__ == "__main__":
          'foo bar')
     test('foo $<set test_output as $outputForm>test $test_output$<endset> bar',
          'foo test compiled bar')
+    test('foo $<set test_output as $outputForm>$test_output $<set test_output as "zing">$test_output$<endset> $test_output$<endset> bar',
+         'foo compiled zing compiled bar')
     test('foo $<set test_output as $serializeTo>test $<$test_output[2]>$<endset> bar',
          'foo test dna bar')
     test('''Tabulated data: $<join for pay in $dollaz>$$$<fmt right $dataColumns>$pay$<endfmt>$<delim>

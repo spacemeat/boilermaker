@@ -1,5 +1,11 @@
 @{ app: boma, boma-version: 0.0.4 }
 {
+    source: [<vulkan/vulkan.h>]
+    language: c
+    tools: gnu
+    languageVersion: gnu17
+    platform: vulkan
+
     flags: {
         nameContains: FlagBits
     }

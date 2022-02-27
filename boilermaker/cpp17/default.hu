@@ -1,0 +1,70 @@
+@{ app: boma, boma-version: 0.0.4 }
+{
+    language:       c++
+    languageVersion: 17
+
+    inherit:        boilermaker
+
+    computeEnums:   true
+    computeTypes:   true
+
+    constStyle:     west
+    const:          `$<lambda t: f'{t} const' if '$constStyle' == 'east' else 'const {t}'>`
+    outputForm:     compiled  // or headerOnly, or anything else in outupt
+    caveperson:     []// [ctr, dtr, ass, serializeBinary, deserializeBinary]
+    checkBinaryOverruns: false
+    caveStream:     cerr
+
+    generatedFileComment: ^^
+/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
+    Do not bother modifying this file, as your build process will overwrite
+    your changes.
+^^
+
+    mainHeaderTopComment: ^^$generatedFileComment
+
+    #include this header in your project to use boilermaker-generated code.*/
+^^
+    headerTopComment: ^^$generatedFileComment */
+^^
+    inlineTopComment: ^^ */
+^^
+    sourceTopComment: ^^ */
+^^
+
+    deserializeFrom: [humon] // also accepts binary
+    defaultConstructible: false
+    memberwiseConstructible: false
+    virtualDestructor: false
+    privateMembers: true
+    swap: $<$copyByCopySwap or $moveByCopySwap>
+    copyByCopySwap: true    // requires swap and copyable
+    moveByCopySwap: true    // requires swap and copyable
+    copyable: true
+    movable: true       // i think requires virtualDestructor to be false
+    getters: $<$inlineGetters or $constGetters or $nonConstGetters>
+    inlineGetters: true     // requires getters
+    constGetters: true      // requires getters
+    nonConstGetters: true   // requires getters, privateMembers
+    setters: true
+    inlineSetters: true // requires setters
+    setByCopy: true // requires copyable
+    setByMove: true   // requires movable
+    serializeTo: []
+    comparable: true
+    diffable: false  // requires comparable
+
+    headerDir:              $baseDir/gen-cpp/$namespace/inc
+    inlineDir:              $baseDir/gen-cpp/$namespace/inc/inl
+    sourceDir:              $baseDir/gen-cpp/$namespace/src
+    mainHeaderFile:         $namespace.hpp
+    commonHeaderFile:       common.hpp
+    commonSourceFile:       common.cpp
+    diffsHeaderFile:        diffs.hpp
+    enumHeaderFile:         enums.hpp
+    enumInlineFile:         enums.inl.hpp
+    enumSourceFile:         enums.cpp
+    typeHeaderFile:         $<$type.name>.hpp
+    typeInlineFile:         $<$type.name>.inl.hpp
+    typeSourceFile:         $<$type.name>.cpp
+}

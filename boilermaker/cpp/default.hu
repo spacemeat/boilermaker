@@ -1,8 +1,9 @@
 @{ app: boma, boma-version: 0.0.4 }
 {
+    targetLanguageVersion: 17
+
     inherit: boilermaker
 
-    targetLanguage: c++
     computeEnums:   true
     computeTypes:   true
 
