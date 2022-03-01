@@ -1,8 +1,8 @@
 from pathlib import Path
 import os
-from .. import ansi
-from .. import utilities
-from ..project import Project as BaseProject
+from ... import ansi
+from ... import utilities
+from ...project import Project as Project
 
 
 class DependentTypeDecl:
@@ -109,24 +109,17 @@ class OutputSection:
         return baseType in self.dependentTypeDecls
 
 
-class Project(BaseProject):
+class CppProject:
     from . import gen_enums
     from . import gen_global
     from . import gen_types
-    from . import gen_containers
-    from . import gen_containersDeserializeFromHumon
-    from . import gen_containersDeserializeFromBinary
-    from . import gen_containersSerializeToHumon
-    from . import gen_containersSerializeToBinary
-    from . import gen_diffs
 
-
-    def __init__(self, defsData):
-        super().__init__(defsData)
+    def __init__(self, props):
+        self.props = props
         self.reset()
-        self.defsData['headerToInl'] = os.path.relpath(self.d('inlineDir'), self.d('headerDir'))
-        self.defsData['srcToHeader'] = os.path.relpath(self.d('headerDir'), self.d('sourceDir'))
-        self.defsData['srcToInl'] = os.path.relpath(self.d('inlineDir'), self.d('sourceDir'))
+        self.props['headerToInl'] = os.path.relpath(self.d('inlineDir'), self.d('headerDir'))
+        self.props['srcToHeader'] = os.path.relpath(self.d('headerDir'), self.d('sourceDir'))
+        self.props['srcToInl'] = os.path.relpath(self.d('inlineDir'), self.d('sourceDir'))
 
 
     def reset(self):
@@ -233,7 +226,7 @@ class Project(BaseProject):
 
 
     def makeOutputForm(self):
-        defsOutput = self.defsData.get('output', {})
+        defsOutput = self.props.get('output', {})
         if not defsOutput or type(defsOutput) is not dict:
             raise RuntimeError('defs/output must be a dict.')
 
@@ -386,9 +379,9 @@ class Project(BaseProject):
                     os.unlink(f)
 
 
-    def writeCode(self):
+    def write(self):
         '''By now, all the sections have their includes and forward decls resolved into src.'''
-        super().writeCode()
+        super().write()
 
         self.generateCode()
 
@@ -445,7 +438,7 @@ namespace {ns}
                             if include.inPlace:
                                 updateNamespace('')
                                 f.write(f'''
-{dependentTypeDecl.decl}''')
+{self.dependentTypeDecl.decl}''')
 
                     for src, ns in section.srcs:
                         updateNamespace(ns)

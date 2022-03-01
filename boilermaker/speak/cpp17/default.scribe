@@ -1,0 +1,1359 @@
+------------------ Building $headerDir/$mainHeaderFile.
+$<out $headerDir/$mainHeaderFile>#pragma once
+
+$mainHeaderTopComment
+
+$<join for header in $<$includes.main.header>>
+#include $header$<endjoin>
+$<endout>
+
+------------------ Building $headerDir/$commonHeaderFile.
+$<out $headerDir/$commonHeaderFile>#pragma once
+
+$headerTopComment
+
+$<join for header in $<$includes.common.header>>
+#include $header$<endjoin>
+
+namespace $namespace
+{$<join for type in $<$forwardDecls.common.header>>
+    $<$type.typetype> $<$type.name>;$<endjoin>
+$<join for isLessType in $typesWithIsLess>
+    struct $<$isLessType.name>
+    {
+        bool operator()($<$const($<$isLessType.ofType.name>)> & lhs, $<$const($<$isLessType.ofType.name>)> & rhs) const;
+    };
+$<endjoin>
+
+$<if len($variantTypeNames) $> 0>
+    template <class T>
+    struct VariantTypeNames
+    {
+        static constexpr $<$const(char)> * names[] = { };
+        static constexpr std::size_t size = 0;
+    };
+$<join for vtn in $variantTypeNames>
+    template <>
+    struct VariantTypeNames<$<$vtn.name>
+    {
+        static constexpr $<$const(char)> * names[] = { $<join for subtype in $<$vtn.subtypes>>$<$subtype.name>$<delim>, $<endjoin> };
+        static constexpr std::size_t size = $<$vtn.sbtypes.length>;
+    };
+<endjoin>
+<endif $<#variantTypeNames> >
+$<if 'binary' in $deserializeFrom>
+    template <class T, typename V = void>
+    struct BinaryReader
+    {
+    };
+
+    class BinaryDeserializer
+    {
+    public:
+        BinaryDeserializer(std::string_view path)
+        {
+            std::ifstream in(path.data(), std::ios::binary);
+            in.seekg(0, std::ios::end);
+            size = in.tellg();
+            in.seekg(0, std::ios::beg);
+            char * newBuffer = new char[size];
+            buffer = newBuffer;
+            selfManaged = true;
+            in.read(newBuffer, size);
+        }
+
+        BinaryDeserializer($<$const(char)> * data, std::size_t len)
+        {
+            buffer = data;
+            size = len;
+
+            selfManaged = false;
+        }
+
+        ~BinaryDeserializer()
+        {
+            if (selfManaged)
+                { delete [] buffer; }
+        }
+
+        template <class T>
+        T deserialize()
+        {
+            auto local = buffer;
+            return BinaryReader<T>::extract(local, size);
+        }
+
+    private:
+        char const * buffer = nullptr;
+        std::size_t size = 0;
+        bool selfManaged = false;
+    };
+
+$<if $allComponents.containsIntegralTypes>
+    template <class T>
+    struct BinaryReader<T, typename std::enable_if_t<std::is_integral_v<T>>>
+    {
+        static inline T extract(const char *& buffer, std::size_t & size)
+        {
+            auto t = * reinterpret_cast<const T *>(buffer);
+            buffer += sizeof(T);
+            size -= sizeof(T);
+            return t;
+        }
+    };
+$<endif>
+
+$<if $allComponents.containsFloatingPointTypes>
+    template <class T>
+    struct BinaryReader<T, typename std::enable_if_t<std::is_floating_point_v<T>>>
+    {
+        static inline T extract(const char *& buffer, std::size_t & size)
+        {
+            auto t = * reinterpret_cast<const T *>(buffer);
+            buffer += sizeof(T);
+            size -= sizeof(T);
+            return t;
+        }
+    };
+$<endif>
+
+$<if 'string' in [t.name for t in $allComponents.types]>
+    template <>
+    struct BinaryReader<std::string>
+    {
+        static inline std::string extract(const char *& buffer, std::size_t & size)
+        {
+            std::string t;
+            auto strSize = BinaryReader<std::size_t>::extract(buffer, size);
+            t.resize(strSize);
+            std::memcpy(t.data(), buffer, strSize);
+            buffer += strSize;
+            size -= strSize;
+            return t;
+        }
+    };
+$<endif>
+
+$<if 'string_view' in [t.name for t in $<$allComponents.types>]>
+    template <>
+    struct BinaryReader<std::string_view>
+    {  // NOTE: Returning std::string, until we get a string table
+        static inline std::string_view extract(const char *& buffer, std::size_t & size)
+        {
+            auto strSize = BinaryReader<std::size_t>::extract(buffer, size);
+            std::string_view t(buffer, strSize);
+
+            buffer += strSize;
+            size -= strSize;
+            return t;
+        }
+    };
+$<endif>
+
+$<if 'array' in [t.name for t in $allComponents.types]>
+    template <class T, unsigned long N>
+    struct BinaryReader<std::array<T, N>>
+    {
+        static inline std::array<T, N> extract(const char *& buffer, std::size_t & size)
+        {
+            auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
+            {
+                return std::array<T, N> { ((void) Seq, BinaryReader<T>::extract(buffer, size))... };
+            };
+
+            return maker(std::make_index_sequence<N> {});
+        }
+    };
+$<endif>
+$<if 'pair' in [t.name for t in $allComponents.types]>
+    template <class T0, class T1>
+    struct BinaryReader<std::pair<T0, T1>>
+    {
+        static inline std::pair<T0, T1> extract(const char *& buffer, std::size_t & size)
+        {
+            return {
+                BinaryReader<T0>::extract(buffer, size),
+                BinaryReader<T1>::extract(buffer, size)
+            };
+        }
+    };
+$<endif>
+$<if 'tuple' in [t.name for t in $allComponents.types]>
+    template <class... Ts>
+    struct BinaryReader<std::tuple<Ts...>>
+    {
+        static inline std::tuple<Ts...> extract(const char *& buffer, std::size_t & size)
+        {
+            auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
+            {
+                return std::tuple<Ts...> { ((void) Seq, BinaryReader<Ts>::extract(buffer, size))... };
+            };
+
+            return maker(std::make_index_sequence<sizeof...(Ts)> { });
+        }
+    };
+$<endif>
+$<if 'vector' in [t.name for t in $allComponents.types]>
+    template <class T, class A>
+    struct BinaryReader<std::vector<T, A>>
+    {
+        static inline std::vector<T, A> extract(const char *& buffer, std::size_t & size)
+        {
+            std::vector<T, A> rv;
+            auto count = BinaryReader<std::size_t>::extract(buffer, size);
+            for (size_t i = 0; i < count; ++i)
+            {
+                rv.emplace_back(BinaryReader<T>::extract(buffer, size));
+            }
+            return rv;
+        }
+    };
+$<endif>
+$<if 'set' in [t.name for t in $allComponents.types]>
+    template <class K, class C, class A>
+    struct BinaryReader<std::set<K, C, A>>
+    {
+        static inline std::set<K, C, A> extract(const char *& buffer, std::size_t & size)
+        {
+            std::set<K, C, A> rv;
+            auto count = BinaryReader<std::size_t>::extract(buffer, size);
+            for (size_t i = 0; i < count; ++i)
+            {
+                rv.emplace(BinaryReader<K>::extract(buffer, size));
+            }
+            return rv;
+        }
+    };
+$<endif>
+$<if 'unordered_set' in [t.name for t in $allComponents.types]>
+    template <class K, class H, class E, class A>
+    struct BinaryReader<std::unordered_set<K, H, E, A>>
+    {
+        static inline std::unordered_set<K, H, E, A> extract(const char *& buffer, std::size_t & size)
+        {
+            std::unordered_set<K, H, E, A> rv;
+            auto count = BinaryReader<std::size_t>::extract(buffer, size);
+            for (size_t i = 0; i < count; ++i)
+            {
+                rv.emplace(BinaryReader<K>::extract(buffer, size));
+            }
+            return rv;
+        }
+    };
+$<endif>
+$<if 'map' in [t.name for t in $allComponents.types]>
+    template <class K, class T, class C, class A>
+    struct BinaryReader<std::map<K, T, C, A>>
+    {
+        static inline std::map<K, T, C, A> extract(const char *& buffer, std::size_t & size)
+        {
+            std::map<K, T, C, A> rv;
+            auto count = BinaryReader<std::size_t>::extract(buffer, size);
+            for (size_t i = 0; i < count; ++i)
+            {
+                auto key = BinaryReader<K>::extract(buffer, size);
+                rv.emplace(std::move(key),
+                           BinaryReader<T>::extract(buffer, size));
+            }
+            return rv;
+        }
+    };
+$<endif>
+$<if 'unordered_map' in [t.name for t in $allComponents.types]>
+    template <class K, class T, class H, class E, class A>
+    struct BinaryReader<std::unordered_map<K, T, H, E, A>>
+    {
+        static inline std::unordered_map<K, T, H, E, A> extract(const char *& buffer, std::size_t & size)
+        {
+            std::unordered_map<K, T, H, E, A> rv;
+            auto count = BinaryReader<std::size_t>::extract(buffer, size);
+            for (size_t i = 0; i < count; ++i)
+            {
+                auto key = BinaryReader<K>::extract(buffer, size);
+                rv.emplace(std::move(key),
+                           BinaryReader<T>::extract(buffer, size));
+            }
+            return rv;
+        }
+    };
+$<endif>
+$<if 'optional' in [t.name for t in $allComponents.types]>
+    template <class T>
+    struct BinaryReader<std::optional<T>>
+    {
+        static inline std::optional<T> extract(const char *& buffer, std::size_t & size)
+        {
+            auto hasValue = BinaryReader<char>::extract(buffer, size);
+            if (static_cast<bool>(hasValue))
+                { return BinaryReader<T>::extract(buffer, size); }
+            else
+                { return { }; }
+        }
+    };
+$<endif>
+$<if 'variant' in [t.name for t in $allComponents.types]>
+    template <class... Ts>
+    struct BinaryReader<std::variant<Ts...>>
+    {
+        // This checks if the type string matches a particular one in the defs.
+        template <std::size_t I>
+        static inline bool schecker(std::size_t idx, std::optional<std::variant<Ts...>> & obj, const char *& buffer, std::size_t & size)
+        {
+            using IndexedType = typename std::tuple_element<I, std::tuple<Ts...>>::type;
+            if (obj.has_value() == false && idx == I)
+            {
+                // now we can make the correct variant
+                obj = std::variant<Ts...> (std::in_place_index<I>, BinaryReader<IndexedType>::extract(buffer, size));
+            }
+            return true;  // we don't actually care about the return value
+        };
+
+        static inline std::variant<Ts...> extract(const char *& buffer, std::size_t & size)
+        {
+            auto idx = BinaryReader<std::size_t>::extract(buffer, size);
+
+            auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
+            {
+                // cycle through each type; when we find one we like, set the
+                // optional to the correct type.
+                std::optional<std::variant<Ts...>> v;
+                // foo is not used; we're relying on ordered initialization
+                // to set the optional, but the initialization has to init
+                // something. :)
+                auto foo = { schecker<Seq>(idx, v, buffer, size)... };
+                (void) foo;
+                // whatever schecker found should be in v. Woe betide you if it is not.
+                return * v;
+            };
+
+            // We make a sequence of type indices for compile-time tomfoolery.
+            return maker(std::make_index_sequence<sizeof...(Ts)> { });
+        }
+    };
+$<endif>
+
+$<endif /* deserialize binary */>
+$<if 'humon' in $deserializeFrom>
+}
+namespace hu
+{
+$<if 'array' in [t.name for t in $allComponents.types]>
+    template <class T, unsigned long N>
+    struct val<std::array<T, N>>
+    {
+        static inline std::array<T, N> extract(const Node & node)
+        {
+            auto maker = [&node]<std::size_t... Seq>(std::index_sequence<Seq...>)
+            {
+                return std::array<T, N> { node / Seq % val<T> { }... };
+            };
+
+            return maker(std::make_index_sequence<N> {});
+        }
+    };
+$<endif>
+$<if 'pair' in [t.name for t in $allComponents.types]>
+    template <class T0, class T1>
+    struct val<std::pair<T0, T1>>
+    {
+        static inline std::pair<T0, T1> extract(const Node & node)
+        {
+            return {
+                node / 0 % val<T0> { },
+                node / 1 % val<T1> { }
+            };
+        }
+    };
+$<endif>
+$<if 'tuple' in [t.name for t in $allComponents.types]>
+    template <class... Ts>
+    struct val<std::tuple<Ts...>>
+    {
+        static inline std::tuple<Ts...> extract(const Node & node)
+        {
+            auto maker = [&node]<std::size_t... Seq>(std::index_sequence<Seq...>)
+            {
+                return std::tuple<Ts...> { node / Seq % val<Ts> { }... };
+            };
+
+            return maker(std::make_index_sequence<sizeof...(Ts)> { });
+        }
+    };
+$<endif>
+$<if 'vector' in [t.name for t in $allComponents.types]>
+    template <class T, class A>
+    struct val<std::vector<T, A>>
+    {
+        static inline std::vector<T, A> extract(const Node & node)
+        {
+            std::vector<T, A> rv;
+            for (size_t i = 0; i < node.numChildren(); ++i)
+            {
+                rv.emplace_back(node / i % val<T> { } );
+            }
+            return rv;
+        }
+    };
+$<endif>
+$<if 'set' in [t.name for t in $allComponents.types]>
+    template <class K, class C, class A>
+    struct val<std::set<K, C, A>>
+    {
+        static inline std::set<K, C, A> extract(const Node & node)
+        {
+            std::set<K, C, A> rv;
+            for (size_t i = 0; i < node.numChildren(); ++i)
+            {
+                rv.emplace(node / i % val<K> { } );
+            }
+            return rv;
+        }
+    };
+
+$<endif>
+$<if 'unordered_set' in [t.name for t in $allComponents.types]>
+    template <class K, class H, class E, class A>
+    struct val<std::unordered_set<K, H, E, A>>
+    {
+        static inline std::unordered_set<K, H, E, A> extract(const Node & node)
+        {
+            std::unordered_set<K, H, E, A> rv;
+            for (size_t i = 0; i < node.numChildren(); ++i)
+            {
+                rv.emplace(node / i % val<K> { } );
+            }
+            return rv;
+        }
+    };
+$<endif>
+$<if 'map' in [t.name for t in $allComponents.types]>
+    template <class K, class T, class C, class A>
+    struct val<std::map<K, T, C, A>>
+    {
+        static inline std::map<K, T, C, A> extract(const Node & node)
+        {
+            std::map<K, T, C, A> rv;
+            for (size_t i = 0; i < node.numChildren(); ++i)
+            {
+                Node elemNode = node / i;
+                rv.emplace(std::move(val<K>::extract(elemNode.key().str())),
+                           std::move(elemNode % val<T> { } ));
+            }
+            return rv;
+        }
+    };
+$<endif>
+$<if 'unordered_map' in [t.name for t in $allComponents.types]>
+    template <class K, class T, class H, class E, class A>
+    struct val<std::unordered_map<K, T, H, E, A>>
+    {
+        static inline std::unordered_map<K, T, H, E, A> extract(const Node & node)
+        {
+            std::unordered_map<K, T, H, E, A> rv;
+            for (size_t i = 0; i < node.numChildren(); ++i)
+            {
+                Node elemNode = node / i;
+                rv.emplace(std::move(val<K>::extract(elemNode.key().str())),
+                           std::move(elemNode % val<T> { } ));
+            }
+            return rv;
+        }
+    };
+$<endif>
+$<if 'optional' in [t.name for t in $allComponents.types]>
+    template <class T>
+    struct val<std::optional<T>>
+    {
+        static inline std::optional<T> extract(const Node & node)
+        {
+            if (! node)
+                { return { }; }
+            else if (node.kind() == NodeKind::value && node.value().str() == "_")
+                { return { }; }
+            else
+                { return node % val<T>{}; }
+        }
+    };
+$<endif>
+$<if 'variant' in [t.name for t in $allComponents.types]>
+    template <class... Ts>
+    struct val<std::variant<Ts...>>
+    {
+        // This checks if the type string matches a particular one in the defs.
+        template <std::size_t I>
+        static inline bool schecker(std::string_view tokStr, std::optional<std::variant<Ts...>> & obj, const Node & node)
+        {
+            // This holds the type names / aliases for each of the variant types.
+            using IndexedType = typename std::tuple_element<I, std::tuple<Ts...>>::type;
+            auto names = txtToBin::VariantTypeNames<std::variant<Ts...>>::names;
+            if (obj.has_value() == false && tokStr == names[I])
+            {
+                // now we can make the correct variant and give it the node as a ctr arg
+                obj = std::variant<Ts...>(std::in_place_index<I>, node % val<IndexedType> { } );
+            }
+            return true;
+        };
+
+        static inline std::variant<Ts...> extract(const Node & node)
+        {
+            Token tok = node.annotation("type");
+            if (! tok)
+                { return { }; }
+            auto tokStr = tok.str();
+
+            auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
+            {
+                // cycle through each type; when we find one we like, set the
+                // optional to the correct type.
+                std::optional<std::variant<Ts...>> v;
+                // foo is not used; we're relying on ordered initialization
+                // to set the optional, but the initialization has to init
+                // something. :)
+                auto foo = { schecker<Seq>(tokStr, v, node)... };
+                (void) foo;
+                // whatever schecker found should be in v. Woe betide you if it is not.
+                return * v;
+            };
+
+            // We make a sequence of type indices for compile-time tomfoolery.
+            return maker(std::make_index_sequence<sizeof...(Ts)> { });
+        }
+    };
+$<endif>
+}
+$<endif $<# deserialize humon>>
+$<if 'humon' in $serializeTo contains binary or $serializeTo>
+namespace $namespace
+{
+    template <class T>
+    struct SerializedFormat
+    {
+        SerializedFormat(const T & obj)
+        : obj(obj)
+        { }
+
+        T const & operator *() const
+            { return obj; }
+
+        T const * operator ->() const
+            { return & obj; }
+
+        const T & obj;
+    };
+$<if 'binary' in $serializeTo>
+    template <class T>
+    struct BinaryFormat : public SerializedFormat<T>
+    {
+        BinaryFormat(T const & t)
+        : SerializedFormat<T>(t)
+        { }
+    };
+$<if $allComponents.types.containsIntegralTypes()>
+    template <class T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<T> const & obj)
+    {
+        auto p = reinterpret_cast<const char *>(&(* obj));
+        out.write(p, sizeof(T));
+
+        return out;
+    }
+$<endif>
+$<if $allComponents.types.containsFloatingPointTypes()>
+    template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<T> const & obj)
+    {
+        auto p = reinterpret_cast<const char *>(&(* obj));
+        out.write(p, sizeof(T));
+
+        return out;
+    }
+$<endif>
+$<if 'string' in [t.name for t in $allComponents.types]>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::string> const & obj);
+$<endif>
+$<if 'string_view' in [t.name for t in $allComponents.types]>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::string_view> const & obj);
+$<endif>
+$<if 'array' in [t.name for t in $allComponents.types]>
+    template <class T, unsigned long N>
+    std::ostream & operator << (std::ostream & out, HumonFormat<std::array<T, N>> const & obj)
+    {
+        out << "[ ";
+        for (std::size_t i = 0; i < N; ++i)
+        {
+            out << HumonFormat( (* obj)[i] ) << " ";
+        }
+        out << "]";
+
+        return out;
+    }
+$<endif>
+$<if 'pair' in [t.name for t in $allComponents.types]>
+    template <class T0, class T1>
+    std::ostream & operator << (std::ostream & out, HumonFormat<std::pair<T0, T1>> const & obj)
+    {
+        out << '[' << HumonFormat(std::get<0>(* obj)) << ' ' << HumonFormat(std::get<1>(* obj)) << ']';
+
+        return out;
+    }
+
+$<endif>
+$<if 'tuple' in [t.name for t in $allComponents.types]>
+    template <class... Ts>
+    std::ostream & operator << (std::ostream & out, HumonFormat<std::tuple<Ts...>> const & obj)
+    {
+        out << "[ ";
+        apply(
+            [&out](auto &&... args)
+                { ((out << HumonFormat(args) << ' '), ...); },
+            * obj);
+        out << "]";
+
+        return out;
+    }
+$<endif>
+$<if 'vector' in [t.name for t in $allComponents.types]>
+    template <class T, class A>
+    std::ostream & operator << (std::ostream & out, HumonFormat<std::vector<T, A>> const & obj)
+    {
+        out << "[ ";
+        for (auto const & elem : * obj)
+        {
+            out << HumonFormat(elem) << ' ';
+        }
+        out << ']';
+
+        return out;
+    }
+$<endif>
+$<if 'set' in [t.name for t in $allComponents.types]>
+    template <class K, class C, class A>
+    std::ostream & operator << (std::ostream & out, HumonFormat<std::set<K, C, A>> const & obj)
+    {
+        out << "[ ";
+        for (auto const & elem : * obj)
+        {
+            out << HumonFormat(elem) << ' ';
+        }
+        out << ']';
+
+        return out;
+    }
+$<endif>
+$<if 'unordered_set' in [t.name for t in $allComponents.types]>
+    template <class K, class H, class E, class A>
+    std::ostream & operator << (std::ostream & out, HumonFormat<std::unordered_set<K, H, E, A>> const & obj)
+    {
+        out << "[ ";
+        for (auto const & elem : * obj)
+        {
+            out << HumonFormat(elem) << ' ';
+        }
+        out << ']';
+
+        return out;
+    }
+$<endif>
+$<if 'map' in [t.name for t in $allComponents.types]>
+    template <class K, class T, class C, class A>
+    std::ostream & operator << (std::ostream & out, HumonFormat<std::map<K, T, C, A>> const & obj)
+    {
+        out << "{ ";
+        for (auto const & elem : * obj)
+        {
+            out << HumonFormat(elem.first) << ": " << HumonFormat(elem.second) << ' ';
+        }
+        out << '}';
+
+        return out;
+    }
+$<endif>
+$<if 'unordered_map' in [t.name for t in $allComponents.types]>
+    template <class K, class T, class H, class E, class A>
+    std::ostream & operator << (std::ostream & out, HumonFormat<std::unordered_map<K, T, H, E, A>> const & obj)
+    {
+        out << "{ ";
+        for (auto const & elem : * obj)
+        {
+            out << HumonFormat(elem.first) << ": " << HumonFormat(elem.second) << ' ';
+        }
+        out << '}';
+
+        return out;
+    }
+$<endif>
+$<if 'optional' in [t.name for t in $allComponents.types]>
+    template <class T>
+    std::ostream & operator << (std::ostream & out, HumonFormat<std::optional<T>> const & obj)
+    {
+        if (obj->has_value())
+            { out << HumonFormat(** obj); }
+        else
+            { out << '_'; }
+
+        return out;
+    }
+$<endif>
+$<if 'variant' in [t.name for t in $allComponents.types]>
+    template <class... Ts>
+    std::ostream & operator << (std::ostream & out, HumonFormat<std::variant<Ts...>> const & obj)
+    {
+        constexpr auto const names =  VariantTypeNames<std::variant<Ts...>>::names;
+
+        std::visit(
+            [&](auto && o)
+                { out << HumonFormat(o) << " @type: " << names[obj->index()]; },
+            * obj);
+
+        return out;
+    }
+$<endif>
+$<endif /* binary */>
+$<if 'humon' in $serializeTo>
+    template <class T>
+    struct HumonFormat : public SerializedFormat<T>
+    {
+        HumonFormat(T const & t)
+        : SerializedFormat<T>(t)
+        { }
+    };
+
+    template <class T>
+    std::ostream & operator << (std::ostream & out, HumonFormat<T> const & obj)
+    {
+        out << * obj;
+
+        return out;
+    }
+$<endif $<#/humon>>
+}
+$<endif $<#binary or humon>>
+$<endout>
+
+------------------ Building $sourceDir/$commonSourceFile.
+$<out $sourceDir/$commonSourceFile>$sourceTopComment
+
+$<join for header in $<$includes.common.source>>
+#include $header$<endjoin>
+
+$<if len($typesWithIsLess) $> 0 or 'binary' in $serializeTo>
+namespace $namespace
+{
+$<join for isLessType in $typesWithIsLess>
+    bool IsLess_$<$isLessType.name>::operator()($<$const($<$isLessType.ofType.name>)> & lhs, $<$const($<$isLessType.ofType.name>)> & rhs) const
+    {
+        return $<$isLessType.getLhs> < $<$isLessType.getRhs>;
+    }
+$<endjoin>
+$<if 'string' in [t.name for t in $allComponents.types]>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::string> const & obj)
+    {
+        out << BinaryFormat(obj->size());
+        out.write(obj->data(), obj->size());
+
+        return out;
+    }
+$<endif>
+$<if 'string_view' in [t.name for t in $allComponents.types]>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::string_view> const & obj)
+    {
+        out << BinaryFormat(obj->size());
+        out.write(obj->data(), obj->size());
+
+        return out;
+    }
+$<endif>
+}
+$<endif $<# less or binary serialization >>
+
+$<endout>
+
+------------------ Building $headerDir/$diffsHeaderFile.
+$<if $diffable>
+$<out $headerDir/$diffsHeaderFile>#pragma once
+
+$headerTopComment
+
+$<join for header in $<$includes.diffs.header>>
+#include $header$<endjoin>
+
+namespace $namespace
+{
+    template <class StructType>
+    struct Diff
+    {
+        Diff() : memberDiffs(false) { }
+
+        Diff(StructType const & lhs, StructType const & rhs)
+        : memberDiffs(lhs != rhs)
+        { }
+
+        bool memberDiffs = false;
+    };
+$<if 'array' in [t.name for t in $allComponents.types]>
+    template <class T, std::size_t Size>
+    struct Diff<std::array<T, Size>>
+    {
+        Diff() { }
+
+        Diff(std::array<T, Size> const & lhs, std::array<T, Size> const & rhs)
+        {
+            for (std::size_t i = 0; i < lhs.size(); ++i)
+            {
+                if (lhs[i] != rhs[i])
+                {
+                    elementDiffs.emplace_back(i, Diff<T> { lhs[i], rhs[i] });
+                }
+            }
+        }
+
+        std::vector<std::pair<std::size_t, Diff<T>>> elementDiffs;
+    };
+$<endif>
+$<if 'pair' in [t.name for t in $allComponents.types]>
+    template <class TF, class TS>
+    struct Diff<std::pair<TF, TS>>
+    {
+        Diff() { }
+
+        Diff(std::pair<TF, TS> const & lhs, std::pair<TF, TS> const & rhs)
+        : memberDiffs((lhs.first != rhs.first) << 0 | (lhs.second != rhs.second) << 1),
+          diffObjects(Diff<TF>(lhs.first, rhs.first), Diff<TS>(lhs.second, rhs.second))
+        { }
+
+        std::bitset<2> memberDiffs;
+        std::pair<Diff<TF>, Diff<TS>> diffObjects;
+    };
+$<endif>
+$<if 'tuple' in [t.name for t in $allComponents.types]>
+    // Calls func with tuple element.
+    // https://stackoverflow.com/questions/28997271/c11-way-to-index-tuple-at-runtime-without-using-switch
+    template <class Func, class Tuple, size_t N = 0>
+    void setCompareBit(Func func, Tuple const & tup0, Tuple const & tup1, size_t idx)
+    {
+        if (N == idx)
+        {
+            std::invoke(func, std::get<N>(tup0), std::get<N>(tup1), idx);
+            return;
+        }
+
+        if constexpr (N + 1 < std::tuple_size_v<Tuple>)
+        {
+            return setCompareBit<Func, Tuple, N + 1>(func, tup0, tup1, idx);
+        }
+    }
+
+
+    template <class ... Args>
+    struct Diff<std::tuple<Args...>>
+    {
+        Diff() { }
+
+        Diff(std::tuple<Args...> const & lhs, std::tuple<Args...> const & rhs)
+        : diffObjects { Diff<Args>(std::get<Args>(lhs), std::get<Args>(rhs))... }
+        {
+            for (std::size_t i = 0; i < sizeof...(Args); ++i)
+            {
+                setCompareBit(
+                    [this](auto const & a, auto const & b, std::size_t idx)
+                        { memberDiffs[idx] = a != b; },
+                    lhs, rhs, i);
+            }
+        }
+
+        std::bitset<sizeof...(Args)> memberDiffs;
+        std::tuple<Diff<Args>...> diffObjects;
+    };
+$<endif>
+$<if 'vector' in [t.name for t in $allComponents.types]>
+    template <class T>
+    struct Diff<std::vector<T>>
+    {
+        enum class DiffKind { added, replaced, removed };
+
+        Diff() { }
+
+        Diff(std::vector<T> const & lhs, std::vector<T> const & rhs)
+        {
+            for (std::size_t i = 0; i < lhs.size(); ++i)
+            {
+                if (rhs.size() >= i)
+                {
+                    if (lhs[i] != rhs[i])
+                    {
+                        elementDiffs.emplace_back(i, DiffKind::replaced, Diff<T>(lhs[i], rhs[i]));
+                    }
+                }
+                else
+                {
+                    elementDiffs.emplace_back(i, DiffKind::removed, Diff<T>());
+                }
+            }
+
+            for (std::size_t i = lhs.size(); i < rhs.size(); ++i)
+            {
+                elementDiffs.emplace_back(i, DiffKind::added, Diff<T>());
+            }
+        }
+
+        std::vector<std::tuple<std::size_t, DiffKind, Diff<T>>> elementDiffs;
+    };
+$<endif>
+$<if 'set' in [t.name for t in $allComponents.types]>
+    template <class T>
+    struct Diff<std::set<T>>
+    {
+        enum class DiffKind { added, removed };
+
+        Diff() { }
+
+        Diff(std::set<T> const & lhs, std::set<T> const & rhs)
+        {
+            // figure out diffs in maps
+            for (auto const & lelem : lhs)
+            {
+                if (auto it = rhs.find(lelem); it == rhs.end())
+                {
+                    elementDiffs.emplace_back(lelem, DiffKind::removed, Diff<T> ());
+                }
+            }
+
+            // figure out diffs in maps
+            for (auto const & relem : rhs)
+            {
+                if (auto it = lhs.find(relem); it == lhs.end())
+                {
+                    elementDiffs.emplace_back(relem, DiffKind::added, Diff<T> ());
+                }
+            }
+        }
+
+        std::vector<std::tuple<T, DiffKind, Diff<T>>> elementDiffs;
+    };
+$<endif>
+$<if 'unordered_set' in [t.name for t in $allComponents.types]>
+    template <class T>
+    struct Diff<std::unordered_set<T>>
+    {
+        enum class DiffKind { added, removed };
+
+        Diff() { }
+
+        Diff(std::unordered_set<T> const & lhs, std::unordered_set<T> const & rhs)
+        {
+            // figure out diffs in maps
+            for (auto const & lelem : lhs)
+            {
+                if (auto it = rhs.find(lelem); it == rhs.end())
+                {
+                    elementDiffs.emplace_back(lelem, DiffKind::removed, Diff<T> ());
+                }
+            }
+
+            // figure out diffs in maps
+            for (auto const & relem : rhs)
+            {
+                if (auto it = lhs.find(relem); it == lhs.end())
+                {
+                    elementDiffs.emplace_back(relem, DiffKind::added, Diff<T> ());
+                }
+            }
+        }
+
+        std::vector<std::tuple<T, DiffKind, Diff<T>>> elementDiffs;
+    };
+$<endif>
+$<if 'map' in [t.name for t in $allComponents.types]>
+    template <class Key, class T>
+    struct Diff<std::map<Key, T>>
+    {
+        enum class DiffKind { added, replaced, removed };
+
+        Diff() { }
+
+        Diff(std::map<Key, T> const & lhs, std::map<Key, T> const & rhs)
+        {
+            // figure out diffs in maps
+            for (auto const & lkvp : lhs)
+            {
+                if (auto it = rhs.find(lkvp.first); it == rhs.end())
+                {
+                    elementDiffs.emplace_back(lkvp.first, DiffKind::removed, Diff<T> ());
+                }
+            }
+
+            for (auto const & lkvp : lhs)
+            {
+                if (auto it = rhs.find(lkvp.first); it != rhs.end() &&
+                    lkvp.second != it->second)
+                {
+                    elementDiffs.emplace_back(lkvp.first, DiffKind::replaced, Diff<T> ( lkvp.second, it->second ));
+                }
+            }
+
+            for (auto const & rkvp : rhs)
+            {
+                if (auto it = lhs.find(rkvp.first); it != lhs.end() &&
+                    rkvp.second != it->second)
+                {
+                    elementDiffs.emplace_back(rkvp.first, DiffKind::added, Diff<T> ());
+                }
+            }
+        }
+
+        std::vector<std::tuple<Key, DiffKind, Diff<T>>> elementDiffs;
+    };
+$<endif>
+$<if 'unordered_map' in [t.name for t in $allComponents.types]>
+    template <class Key, class T>
+    struct Diff<std::unordered_map<Key, T>>
+    {
+        enum class DiffKind { added, replaced, removed };
+
+        Diff() { }
+
+        Diff(std::unordered_map<Key, T> const & lhs, std::unordered_map<Key, T> const & rhs)
+        {
+            // figure out diffs in maps
+            for (auto const & lkvp : lhs)
+            {
+                if (auto it = rhs.find(lkvp.first); it == rhs.end())
+                {
+                    elementDiffs.emplace_back(lkvp.first, DiffKind::removed, Diff<T> ());
+                }
+            }
+
+            for (auto const & lkvp : lhs)
+            {
+                if (auto it = rhs.find(lkvp.first); it != rhs.end() &&
+                    lkvp.second != it->second)
+                {
+                    elementDiffs.emplace_back(lkvp.first, DiffKind::replaced, Diff<T> ( lkvp.second, it->second ));
+                }
+            }
+
+            for (auto const & rkvp : rhs)
+            {
+                if (auto it = lhs.find(rkvp.first); it != lhs.end() &&
+                    rkvp.second != it->second)
+                {
+                    elementDiffs.emplace_back(rkvp.first, DiffKind::added, Diff<T> ());
+                }
+            }
+        }
+
+        std::vector<std::tuple<Key, DiffKind, Diff<T>>> elementDiffs;
+    };
+$<endif>
+}
+$<endout>$<endif $<# diffs >>
+
+------------------ Building $headerDir/$enumHeaderFile.
+$<out $headerDir/$enumHeaderFile>#pragma once
+
+$headerTopComment
+
+$<join for header in $<$includes.enums.header>>
+#include $header$<endjoin>
+
+$<if 'humon' in $deserializeFrom>
+namespace hu
+{$<join for enum in $enums>
+    template <>
+    struct val<$<$enum.type.name>>
+    {
+        static inline $<$enum.type.name> extract(const Node & node) noexcept
+        {$<if $<$enum.flags> == false>
+            auto nodeVal = node.value().str().data();$<join for val in $<$enum.values>>
+            if (std::strncmp(nodeVal, "$<$val.converted>", $<len($val.converted)>) == 0) { return $<$val.name>; }$<endjoin>
+            return {};$<else>
+            using enumIntType = std::underlying_type<::VkIndirectStateFlagBitsNV>::type;
+            enumIntType e = 0;
+            bool fromList = node.kind() == hu::NodeKind::list;
+            Node chNode = node;
+            if (fromList)
+                { chNode = chNode.firstChild(); }
+            do
+            {
+                auto nodeVal = chNode.value().str().data();
+                if      $<join for val in $<$enum.values>>(std::strncmp(nodeVal, "$<$val.converted>", $<$val.converted.length>) == 0) { e |= static_cast<enumIntType>($<$val.name>); }$<delim>
+                else if $<endjoin>
+                chNode = chNode.nextSibling();
+            }
+            while(fromList && chNode);
+
+            return static_cast<::VkIndirectStateFlagBitsNV>(e);$<endif $<# enum.flags >>
+        }
+    }
+$<endjoin $<# enum >>
+}
+$<endif $<# humon >>
+$<if 'binary' in $deserializeFrom>
+namespace $namespace
+{
+    template <class T>
+    struct BinaryReader<T, typename std::enable_if_t<std::is_enum_v<T>>>
+    {
+        static inline T extract(const char *& buffer, std::size_t & size)
+        {
+            auto t = * reinterpret_cast<const T *>(buffer);
+            buffer += sizeof(T);
+            size -= sizeof(T);
+            return t;
+        }
+    };
+
+$<endif>
+$<if 'humon' in $serializeTo>
+$<join for enum in $enums>
+    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.name>> & obj);$<endjoin>
+}
+$<endif $<# humon >>
+$<endout>
+
+------------------ Building $sourceDir/$enumSourceFile.
+$<out $sourceDir/$enumSourceFile>$sourceTopComment
+
+$<join for header in $<$includes.enums.source>>
+#include $header$<endjoin>
+
+$<if 'humon' in $serializeTo>
+namespace $namespace
+{$<join for enum in $enums>
+    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.type>> & obj)
+    {
+        using enumIntType = std::underlying_type<::VkAccelerationStructureCompatibilityKHR>::type;<if $<enum.flags == false>
+        switch(* obj)
+        {<join for val in $<$enum.values>>
+        case $<$val.name>: out << "$<$val.converted>"; break;<endjoin>
+        default: out << static_cast<enumIntType>(* obj); break;
+        }$<else>
+        enumIntType bits = static_cast<enumIntType>(* obj);
+        out << "[";<join for val in $<$enum.values>>
+        if (bits & static_cast<enumIntType>($<$val.name>))
+        {
+            out << " $<$val.converted>";
+            bits &= ~static_cast<enumIntType>($<$val.name>);
+            if (! bits)
+                { goto done; }
+        }
+        <endjoin>
+    done:
+        out << " ]";
+
+        return out;$<endif>
+    }
+$<endjoin $<# enum >>
+}
+$<endif $<# humon >>
+$<endout>
+
+$<join for type in $types>
+------------------ Building $headerDir/$typeHeaderFile.
+$<out $headerDir/$typeHeaderFile>#pragma once
+
+$headerTopComment
+
+$<join for header in $<$includes.type.header>>
+#include $header$<endjoin>
+
+namespace $namespace
+{
+    $<$type.typetype> $<$type.name>;$<if $swap>
+    void swap($<$type.name> & lhs, $<$type.name> & rhs) noexcept;$<endif>$<if 'humon' in $serializeTo>
+    std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$type.name>>)> & obj');$<endif>$<if 'binary' in $serializeTo>
+    std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$type.name>>)> & obj');$<endif>$<if $comparable>
+    bool operator ==($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);
+    bool operator !=($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);$<endif>
+$<if $diffable>
+    template<>
+    struct Diff<$<$type.name>>
+    {$<if $type.members.length $> 0>
+        enum class Members : std::size_t
+        {
+$<join for member in type.members>$tab$tab$tab$<$member.name>,$<delim>
+$<endjoin>
+            numMembers
+        };
+
+        Diff();
+        Diff($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);
+
+        std::bitset<static<cast<std::size_t>(Members::numMembers)> memberDiffs;$<endif><join for member in type.members>
+        Diff<$<$member.type> $<$member.name>_diffs;<endjoin>
+    };$<endif>
+
+    $<$type.typetype> $<$type.name>
+    {$<if $<$type.typetype> == 'class'>
+    public:$<endif>$<if $defaultConstructible>
+        $<$type.name>();$<endif>$<if $memberwiseConstructible>
+        $<$type.name>($<join for member in $<$type.members>>$<$const($<$member.type.name>)> & $<$member.name>$<delim>, $<endjoin>);$<endif>$<if 'humon' in $deserializeFrom>
+        $<$type.name>($<$const('hu::Node')> & node);$<endif>$<if 'binary' in $deserializeFrom>
+        $<$type.name>($<$const('char *')> & buffer, std::size_t & size);$<endif>$<if $copy != 'omit'>
+        $<$type.name>($<$const($<$type.name>)> & rhs)$<if $copy == 'default'> default$<elif copy == delete> delete$<endif>;$<endif>$<if $move != omit>
+        $<$type.name>($<$type.name> && rhs)$<if $move == 'default'> default$<elif move == 'delete'> delete$<else> noexcept$<endif>;$<endif>$<if $copy != omit>
+        $<$type.name> & operator =($<$const($<$type.name>)> & rhs)$<if $copy == 'default'> default$<elif copy == delete> delete$<endif>;$<endif>$<if $move != omit>
+        $<$type.name> & operator =($<$type.name> && rhs)$<if $move == 'default'> default$<elif move == 'delete'> delete$<else> noexcept$<endif>;$<endif>$<if $destructor != omit>
+        $<if $destructor == virtual>virtual $<endif>~$<$type.name>()$<if $destructor == 'default'> = default$<elif destructor == 'delete'> = delete$<endif>;$<if $swap>
+        friend void swap($<$type.name> & lhs, $<$type.name> & rhs) noexcept;$<endif>$<join for member in $<$type.members>>$<if $getters>
+        $<$member.type.name>         get_$<$member.name>() &&$<if $inlineGetters>      { return $<$member.name>; }$<else>;$<endif>$<endif>$<if $constGetters>
+        $<$const($<$member.type.name>) & get_$<$member.name>() const &$<if $inlineGetters> { return $<$member.name>; }$<else>;$<endif>$<endif>$<if $nonConstGetters>
+        $<$member.type.name>       & get_$<$member.name>() &$<if $inlineGetters>       { return $<$member.name>; }$<else>;$<endif>$<endif>$<endjoin>$<join for member in $<$type.members>>$<if $setByCopy>
+        void set_$<$member.name>($<$const($<$member.type.name>)> & new_$<$member.name>)$<if $inlineSetters>  { $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = new_$<$member.name>;$<endif> }$<else>;$<endif>$<endif>$<if $setByMove>
+        void set_$<$member.name>($<$member.type.name> && new_$<$member.name>)$<if 'humon' in $inlineSetters>         { $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = std::move(new_$<$member.name>);$<endif> }$<else>;$<endif>$<endjoin>$<if $serializeTo>
+        friend std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$type.name>>)> & obj')>;$<endif>$<if 'binary' in $serializeTo>
+        friend std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$type.name>>)> & obj')>;$<endif>$<if $comparable>
+        friend bool operator ==($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);
+        friend bool operator !=($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);$<endif>$<if $diffable>
+        friend Diff<$<$type.name>>::Diff();
+        friend Diff<$<$type.name>>::Diff($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);$<endif>
+$<if $privateMembers>
+    private:$<endif>$<join for member in $<$type.members>>
+        $<$member.type> $<$member.name>;$<endjoin>
+    };
+$<if 'humon' in $deserializeFrom>
+namespace hu
+{
+    template<>
+    struct val<$namespace::$<$type.name>>
+    {
+        static inline val<$namespace::$<$type.name> extract($<$const('Node')> & node)
+        {
+            return val<$namespace::$<$type.name>(node);
+        }
+    };
+}
+$endif>$<if 'binary' in $deserializeFrom>
+namespace $namespace
+{
+    template <>
+    struct BinaryReader<$<$type.name>>
+    {
+        static inline $<$type.name> extract($<$const('char *')& buffer, std::size_t & size)
+        {
+            return $<$type.name>(buffer, size);
+        }
+    };
+}
+$<endout>
+------------------ Building $sourceDir/$typeSourceFile.
+$<out $sourceDir/$typeSourceFile>$sourceTopComment
+
+$<join for header in $<$includes.type.source>>
+#include $header$<endjoin>
+
+namespace $namespace
+{
+$<if $defaultConstructible>
+    $<$type.name>::$<$type.name>()
+    {
+    }
+$<endif>$<if $memberwiseConstructible>
+    $<$type.name>::$<$type.name>($<join for member in $<$type.members>>$<$const($<$member.type.name>)> & $<$member.name>$<delim>, $<endjoin>)
+     : $<join for member in $<$type.members>>$<$member.name>($member.name>)$<delim>, $<endjoin>
+    {
+    }
+$<endif>$<if 'humon' in $deserializeFrom>
+    $<$type.name>::$<$type.name>($<$const('hu::Node')> & node)
+     : $<join for member in $<$type.members>>$<$member.name>(node / "$<$member.name>" % hu::val<$<$member.type.name>>{})$<delim>,
+$<endjoin>{
+    }
+$<endif>$<if 'binary' in $deserializeFrom>
+    $<$type.name>::$<$type.name>($<$const('char *')> & buffer, std::size_t & size)
+     : $<join for member in $<$type.members>>$<$member.name>(BinaryReader<$<$member.type.name>>::extract(buffer, size))$<delim>,
+$<endjoin>{
+    }
+$<endif>$<if $copy == source>$<if $copyByCopySwap == False>
+    $<$type.name>::$<$type.name>($<$const($<$type.name>)> & rhs)
+     : $<join for member in $<$type.members>>$<$member.name>(rhs.$member.name>)$<delim>, $<endjoin>
+    {
+    }$<else>
+    {
+        using std::swap;$<join for member in $<$type.members>>
+        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>
+    }$<endif>
+$<endif>$<if $move == source>$<if $moveByCopySwap == False>
+    $<$type.name>::$<$type.name>($<$type.name> && rhs) noexcept
+     : $<join for member in $<$type.members>>$<$member.name>(std::move(rhs.$member.name>))$<delim>, $<endjoin>
+    {
+    }$<else>
+    {
+        using std::swap;$<join for member in $<$type.members>>
+        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>
+    }$<endif>
+$<endif>$<if $copy == source>
+    $<$type.name> & $<$type.name>::operator =($<$const($<$type.name>)> & rhs)
+    {$<if $copyByCopySwap == False>$<join for member in $<$type.members>>
+        $<$member.name> = rhs.$<$member.name>;$<endjoin>$<else>
+        using std::swap;$<join for member in $<$type.members>>
+        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>$<endif>
+        return * this;
+    }
+$<endif>$<if $move == source>
+    $<$type.name> & $<$type.name>::operator =($<$type.name> && rhs)
+    {$<if $moveByCopySwap == False>$<join for member in $<$type.members>>
+        $<$member.name> = std::move(rhs.$<$member.name>);$<endjoin>$<else>
+        using std::swap;$<join for member in $<$type.members>>
+        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>$<endif>
+        return * this;
+    }
+$<endif>$<if $destructor == source>
+    $<$type.name>::~$<$type.name>()
+    {
+    }
+$<endif>;$<if $swap>
+    void swap($<$type.name> & lhs, $<$type.name> & rhs) noexcept
+    {
+        using std::swap;$<join for member in $<$type.members>>
+        swap(lhs.$<$member.name>, rhs.$<$member.name>);$<endjoin>
+    }
+$<endif>$<if $inlineGetters == False>$<join for member in $<$type.members>>$<if $getters>
+    $<$member.type.name> $<$type.name>::get_$<$member.name>() && { return $<$member.name>; }
+$<endif>$<if $constGetters>
+    $<$const($<$member.type.name>) & $<$type.name>::get_$<$member.name>() const & { return $<$member.name>; }
+$<endif>$<endif>$<if $nonConstGetters>
+    $<$member.type.name> & $<$type.name>::get_$<$member.name>() &$ { return $<$member.name>; }
+$<endif>$<endjoin>$<endif>$<if $inlineSetters == False>$<join for member in $<$type.members>>$<if $setByCopy>
+    void $<$type.name>::set_$<$member.name>($<$const($<$member.type.name>)> & new_$<$member.name>) { $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = new_$<$member.name>;$<endif> }
+$<endif>$<if $setByMove>
+    void $<$type.name>::set_$<$member.name>($<$member.type.name> && new_$<$member.name>) noexcept { $<if $moveByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = std::move(new_$<$member.name>);$<endif> }
+$<endif>$<endjoin>$<endif>$<if 'humon' in $serializeTo>
+    std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$type.name>>')> & obj)
+    {
+        out << '{'$<join for member in $<$type.members>>
+            << " $<$member.name>: " << HumonFormat(obj->$<$member.name>);$<endjoin>
+            << '}';
+        return out;
+    }
+$<endif>$<if 'binary' in $serializeTo>
+    std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$type.name>>')> & obj)
+    {
+        out << $<join for member in $<$type.members>>BinaryFormat(obj->$<$member.name>)$<delim>
+            << $<endjoin>;
+        return out;
+    }
+$<endif>$<if $comparable>
+    bool operator ==($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs)
+    {
+        return $<join for member in $<$type.members>>lhs.$<$member.name> == rhs.$<$member.name>$<delim>
+            && $<endjoin>;
+    }
+
+    bool operator !=($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs)
+    {
+        return !(lhs == rhs);
+    }
+$<endif>$<if $diffable>
+    Diff<$<$type.name>>::Diff() { }
+
+    Diff<$<$type.name>::Diff($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs)$<if $type.members.length $> 0>
+    : memberDiffs($<join for member in $type.members>(lhs.$<$member.name> != rhs.$<$member.name>) << static_cast<int>(Members::$<$member.name>)$<delim> |
+$tab              $<endjoin>)$<join for member in type.stdMembers>,
+      $<$member.name>_diffs(lhs.$<$member.name>, rhs.$<$member.name>$<endjoin>)$<endif>
+    {
+    }$<endif>
+}
+
+
+$<endout>
+$<endjoin>

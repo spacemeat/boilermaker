@@ -1,8 +1,8 @@
 import os
-import pathlib
+from pathlib import Path, PurePath
 import subprocess
 from humon import humon, enums as humonEnums
-from . import ansi
+from .ansi import Ansi as ansi
 
 
 def doShellCommand(cmd):
@@ -11,12 +11,17 @@ def doShellCommand(cmd):
 
 
 #TODO: Move all os.path things to pathlib things
+#TODO: Make this more automatic
 def getBuiltinDefsPath(defsName):
     bomaSrcDir = os.path.dirname(__file__)
     if defsName == 'boilermaker':
-        return os.path.join(bomaSrcDir, 'default.hu')
+        return os.path.join(bomaSrcDir, 'speak/default.hu')
     elif defsName == 'c++':
-        return os.path.join(bomaSrcDir, 'cpp', 'default.hu')
+        return os.path.join(bomaSrcDir, 'speak/cpp', 'default.hu')
+    elif defsName == 'c++17':
+        return os.path.join(bomaSrcDir, 'speak/cpp17', 'default.hu')
+    elif defsName == 'vulkan':
+        return os.path.join(bomaSrcDir, 'speak/vulkan', 'default.hu')
 
 
 #TODO: Move all os.path things to pathlib things
@@ -27,9 +32,9 @@ def makeRelativeDir(sourcePath, destinationPath):
     common = os.path.commonpath([sourceDir, destinationDir])
     relativePath = ''
     while str(sourceDir) != str(common):
-        sourceDir = str(pathlib.PurePath(sourceDir).parent)
+        sourceDir = str(PurePath(sourceDir).parent)
         relativePath += '../'
-    return os.path.join(relativePath, str(pathlib.PurePath(destinationDir).relative_to(common)))
+    return os.path.join(relativePath, str(PurePath(destinationDir).relative_to(common)))
 
 #TODO: Move all os.path things to pathlib things
 def makeRelativePath(sourcePath, destinationPath):
@@ -47,9 +52,9 @@ def makeRelativePath(sourcePath, destinationPath):
     common = os.path.commonprefix([sourceDir, destinationDir])
     relativePath = ''
     while str(sourceDir) != str(common):
-        sourceDir = str(pathlib.PurePath(sourceDir).parent)
+        sourceDir = str(PurePath(sourceDir).parent)
         relativePath += '../'
-    return os.path.join(relativePath, str(pathlib.PurePath(destinationPath).relative_to(common)))
+    return os.path.join(relativePath, str(PurePath(destinationPath).relative_to(common)))
 
 
 def getLanguageVersionParts(name):

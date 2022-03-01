@@ -50,96 +50,9 @@ re_endset = re.compile(r'^(\s*endset\s*)[^A-Za-z0-9_]?')
 re_fmt = re.compile(r'^(\s*fmt\s*)[^A-Za-z0-9_]?')
 re_endfmt = re.compile(r'^(\s*endfmt\s*)[^A-Za-z0-9_]?')
 
-re_joinexpr = re.compile(f'^(for\s+)([A-Za-z_][A-Za-z0-9_]*)(\s+in\s+)')
-re_setexpr = re.compile(f'^([A-Za-z_][A-Za-z0-9_]*)(\s*as\s+)')
-re_fmtexpr = re.compile(f'(right|left|center\s*)')
-
-class PropertyBag:
-    def __init__(self, initialProps = {}):
-        self.props = initialProps
-        self.parents = [ ]  # other PropertyBags
-
-    def setProp(self, key, value):
-        self.props[key] = value
-
-    def getProp(self, key):
-        if key in self.props:
-            return self.props[key]
-        for inh in reversed(self.parents):
-            v = inh.getProp(key)
-            if v:
-                return v
-
-    def getAll(self, key):
-        vs = []
-        if key in self.props:
-            vs.append(self.props[key])
-        for inh in reversed(self.parents):
-            v = inh.getAll(key)
-            if len(v):
-                vs.extend(v)
-        return vs
-
-    def inherit(self, ancestorBag):
-        self.parents.append(ancestorBag)
-
-    def toStr(self, depth):
-        s = ' ' * depth
-        for [k, v] in self.props.items():
-            s += f'{ansi.dk_blue_fg}{k}{ansi.all_off}: {ansi.lt_blue_fg}{v}{ansi.all_off}\n'
-        for inh in reversed(self.parents):
-            s += inh.toStr(depth + 1)
-        return s
-
-    def __str__(self):
-        return self.toStr(0)
-
-    def toRepr(self, depth):
-        s = ''
-        for [k, v] in self.props.items():
-            s += ' ' * depth + f'{k}: {v}\n'
-        for inh in reversed(self.parents):
-            s += inh.toRepr(depth + 1)
-        return s
-
-    def __repr__(self):
-        return self.toRepr(0)
-
-
-class Props:
-    def __init__(self, initialProps = {}):
-        self.props = PropertyBag(initialProps)
-
-    def setProp(self, key, value):
-        self.props.setProp(key, value)
-
-    def setDict(self, props):
-        for k, v in props.items():
-            self.props.setProp(k, v)
-
-    def getProp(self, key):
-        return self.props.getProp(key)
-
-    def getAll(self, key):
-        return self.props.getAll(key)
-
-    def push(self, newProps = {}):
-        np = PropertyBag(newProps)
-        np.inherit(self.props)
-        self.props = np
-
-    def pop(self):
-        # if you use this right, there should be only one parent via push()
-        self.props = self.props.parents[0]
-
-    def inherit(self, ancestorBag):
-        self.props.inherit(ancestorBag)
-
-    def __str__(self):
-        return str(self.props)
-
-    def __repr__(self):
-        return repr(self.props)
+re_joinexpr = re.compile(r'^(for\s+)([A-Za-z_][A-Za-z0-9_]*)(\s+in\s+)')
+re_setexpr = re.compile(r'^([A-Za-z_][A-Za-z0-9_]*)(\s*as\s+)')
+re_fmtexpr = re.compile(r'(right|left|center\s*)')
 
 
 class ClauseKind(Enum):
@@ -177,7 +90,6 @@ class Clause:
         self.terms = []     # a term is either a string or another Clause
         self.kind = ClauseKind.TEXT
 
-
     def appendClause(self):
         nc = Clause()
         #nc.siblingIdx = len(self.terms)
@@ -185,14 +97,12 @@ class Clause:
         nc.parent = self
         return nc
 
-
     def append(self, string):
         assert(type(string) is str)
         if len(self.terms) > 0 and type(self.terms[-1]) is str:
             self.terms[-1] += string
         else:
             self.terms.append(string)
-
 
     def insertClause(self):
         si = self.getSiblingIdx()
@@ -203,21 +113,17 @@ class Clause:
         nc.terms.append(self)
         return nc
 
-
     def getParent(self):
         return self.parent
 
-
     def getSiblingIdx(self):
         return self.parent.terms.index(self)
-
 
     def mergeToParent(self):
         si = self.getSiblingIdx()
         newTerms = [* self.parent.terms[:si], * self.terms[:], * self.parent.terms[si + 1:]]
         self.parent.terms = newTerms
         return self.parent
-
 
     def toStr(self, indent = 0):
         s = ''
@@ -237,19 +143,158 @@ class Clause:
             s += f'{ind0}<{self.kind}>: {{ }}\n'
         return s
 
+    def __str__(self):
+        return self.toStr(0)
 
     def __repr__(self):
-        return self.toStr()
+        return self.toStr(0)
 
 
-class Scribe:
+class PropertyBag:
     def __init__(self, initialProps = {}):
-        self.props = Props()
-        self.props.setDict(initialProps)
+        self.props = initialProps
+        self.parents = []  # other PropertyBags
+
+
+    def __str__(self):
+        def toStr(self, depth):
+            s = ''
+            for [k, v] in self.props.items():
+                s += ' ' * depth + f'{ansi.dk_blue_fg}{k}{ansi.all_off}: {ansi.lt_blue_fg}{v}{ansi.all_off}\n'
+            for inh in reversed(self.parents):
+                s += toStr(inh, depth + 1)
+            return s
+        return toStr(self, 0)
+
+
+    def __repr__(self):
+        def toRepr(self, depth):
+            s = ''
+            for [k, v] in self.props.items():
+                s += ' ' * depth + f'{k}: {v}\n'
+            for inh in reversed(self.parents):
+                s += toRepr(inh, depth + 1)
+            return s
+        return toRepr(self, 0)
+
+
+    def setProp(self, key, value):
+        self.props[key] = value
+
+
+    def setDict(self, props):
+        for k, v in props.items():
+            self.props[k] = v
+
+
+    def getProp(self, key):
+        if key in self.props:
+            return self.props[key]
+        for inh in reversed(self.parents):
+            v = inh.getProp(key)
+            if v:
+                return v
+
+
+    def getAll(self, key):
+        vs = []
+        if key in self.props:
+            vs.append(self.props[key])
+        for inh in reversed(self.parents):
+            v = inh.getAll(key)
+            if len(v):
+                vs.extend(v)
+        return vs
+
+
+    def inherit(self, ancestorBag):
+        self.parents.append(ancestorBag)
+
+
+    def ensureList(self, key):
+        if key in self.props:
+            if type(self.props[key]) is not list:
+                self.props[key] = list(self.props[key])
+        for inh in self.parents:
+            inh.ensureList(key)
+
+
+class Props:
+    def __init__(self, initialProps = {}):
+        if type(initialProps) is PropertyBag:
+            self.props = initialProps
+        elif type(initialProps) is dict:
+            self.props = PropertyBag(initialProps)
+        else:
+            raise RuntimeError(f'Props() must take a PropertyBag or dict')
         self.previousPaths = set()
+        self.pathStack = []
         self.debug = False
 
-    def eval(self, expr):
+    def __str__(self):
+        return str(self.props)
+
+    def __repr__(self):
+        return repr(self.props)
+
+    def setProp(self, key, value):
+        self.props.setProp(key, value)
+
+    def setDict(self, props):
+        self.props.setDict(props)
+
+    def getProp(self, key):
+        return self.props.getProp(key)
+
+    def getAll(self, key):
+        return self.props.getAll(key)
+
+    def getXProp(self, key):
+        return self.parseText(str(self.props.getProp(key)))
+
+    def push(self, newProps = {}):
+        np = PropertyBag(newProps)
+        np.inherit(self.props)
+        self.props = np
+
+    def pop(self):
+        # if you use this right, there should be only one parent via push()
+        self.props = self.props.parents[0]
+
+    def inherit(self, ancestorBag):
+        self.props.inherit(ancestorBag)
+
+    def ensureList(self, key):
+        self.props.ensureList(key)
+
+    # -- scribing stuff
+
+    def parseText(self, val):
+        clause = self._parseTagStructure(val)
+        return self._parseClause(clause)
+
+    X = parseText
+
+    def _openFileForWriting(self, path):
+        openmode = 'w'
+        if path in self.previousPaths:
+            openmode = 'a'
+
+        for s in reversed(self.pathStack):
+            if s[0] == path:
+                return s[1]
+        f = open(path, openmode)
+        self.pathStack.append((path, f))
+        self.previousPaths.add(path)
+        return f
+
+    def _closeFileForWriting(self, path):
+        if self.pathStack[-1][0] != path:
+            raise RuntimeError(f'Open/close mismatch on outfile {path}')
+        self.pathStack[-1][1].close()
+        del self.pathStack[-1]
+
+    def _eval(self, expr):
         if self.debug:
             print (f'{ansi.dk_red_fg} Eval expression: {ansi.lt_red_fg}{expr}{ansi.all_off}')
         res = eval(expr, {}, {'props': self.props})
@@ -257,7 +302,7 @@ class Scribe:
             print (f'{ansi.dk_red_fg}      expression returned: {ansi.lt_red_fg}{res}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(res)}{ansi.dk_red_fg}){ansi.all_off}')
         return res
 
-    def exec(self, stmnts):
+    def _exec(self, stmnts):
         res = ''
         locs = { 'props': self.props, 'res': '' }
         if self.debug:
@@ -267,12 +312,7 @@ class Scribe:
             print (f'{ansi.dk_red_fg}      statements returned: {ansi.lt_red_fg}{locs["res"]}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(locs["res"])}{ansi.dk_red_fg}){ansi.all_off}')
         return locs['res']
 
-    def parseText(self, val):
-        clause = self.parseTagStructure(val)
-        return self.parseClause(clause)
-
-
-    def parseTagStructure(self, val):
+    def _parseTagStructure(self, val):
         idx = 0
         end = len(val)
         inTagCounter = 0
@@ -518,8 +558,7 @@ class Scribe:
 
         return rootClause
 
-
-    def parseClause(self, clause):
+    def _parseClause(self, clause):
         acc = ''
         eatSpace = False
         def accum(string):
@@ -542,7 +581,7 @@ class Scribe:
                 if type(t) is Clause and t.kind == ClauseKind.EATSPACE:
                     eatSpace = True
                 else:
-                    accum(self.parseClause(t))
+                    accum(self._parseClause(t))
 
         elif clause.kind == ClauseKind.QUERY:
             expr = f'props.getProp("{clause.terms[0]}")'
@@ -557,7 +596,7 @@ class Scribe:
                 fullexpr = f'{newvar} = {expr}\n'
                 accum(fullexpr)
             else:
-                res = self.eval(expr)
+                res = self._eval(expr)
                 if res:
                     accum(str(res))
                 else:
@@ -575,12 +614,12 @@ class Scribe:
             expr = ''
             for tidx, t in enumerate(clause.terms):
                 if type(t) is str:
-                    expr += self.parseClause(t)
+                    expr += self._parseClause(t)
                 elif t.kind == ClauseKind.QUERY:
-                    setters += self.parseClause(t)
+                    setters += self._parseClause(t)
                     expr += f'(boma_{t.terms[0]})'
                 else:
-                    text = self.parseClause(t)
+                    text = self._parseClause(t)
                     expr += f'{text}'
 
             res = ''
@@ -588,7 +627,7 @@ class Scribe:
                 expr = f'{setters}res = ({expr})'
                 res = expr
                 if clause.kind == ClauseKind.EXPRESSION:
-                    res = str(self.exec(expr))
+                    res = str(self._exec(expr))
                     res = self.parseText(res)
                 accum(res)
 
@@ -608,7 +647,7 @@ class Scribe:
                     raise RuntimeError(f'Found a clause of type {t.kind} in an $<if> tag.')
 
             for tidx in condClauses:
-                t = self.parseClause(clause.terms[tidx])
+                t = self._parseClause(clause.terms[tidx])
                 #   make expr
                 expr = False
                 if type(t) is str:
@@ -616,14 +655,14 @@ class Scribe:
                 elif len(t.terms) > 0:
                     expr = "".join(t.terms)
                 #   exec
-                res = self.exec(expr)
+                res = self._exec(expr)
                 #   if eval is True:
                 assert(type(res) is bool)
                 if type(res) is bool and res == True:
                 #       gather each text clause after idx
                     i = tidx + 1
                     assert(clause.terms[i].kind == ClauseKind.THEN)
-                    accum(self.parseClause(clause.terms[i]))
+                    accum(self._parseClause(clause.terms[i]))
                     break
 
         elif clause.kind == ClauseKind.JOIN:
@@ -660,50 +699,59 @@ class Scribe:
                 tempClause.append(forString[len(m.group(0)):])
                 for t in clause.terms[compIdx].terms[1:]:
                     tempClause.terms.append(t)
-                expr = self.parseClause(tempClause)
+                expr = self._parseClause(tempClause)
 
-                vals = self.exec(expr)
+                vals = self._exec(expr)
 
                 for vidx, val in enumerate(vals):
-                    self.props.push()
-                    self.props.setProp(varname, val)
-                    th = self.parseClause(clause.terms[compIdx + 1])
-                    d = ''
-                    if delimIdx >= 0:
-                        d = self.parseClause(clause.terms[delimIdx + 1])
+                    self.props.push({varname: val})
+                    try:
+                        th = self._parseClause(clause.terms[compIdx + 1])
+                        d = ''
+                        if delimIdx >= 0:
+                            d = self._parseClause(clause.terms[delimIdx + 1])
+                    finally:
+                        self.props.pop()
 
                     accum(th)
                     if len(d) > 0 and vidx < len(vals) - 1:
                         accum(d)
-                    self.props.pop()
 
             else:
                 raise RuntimeError(f'malformed join tag')
 
         elif clause.kind == ClauseKind.IN:
-            path = self.parseClause(clause.terms[0].terms[0])
+            path = self._parseClause(clause.terms[0].terms[0])
             try:
                 with open(path, 'r') as file:
-                    # TODO: set path to props?
+                    self.props.push({'infile': path})
                     string = file.read()
-                    string = self.parseText(string)
+                    try:
+                        string = self.parseText(string)
+                    finally:
+                        self.props.pop()
                     accum(string)
             except EnvironmentError:
                 accum(f'!<Could not open file {path} for reading>')
 
         elif clause.kind == ClauseKind.OUT:
-            # TODO: set path to props?
-            string = self.parseClause(clause.terms[1])
             path = clause.terms[0].terms[0]
-            openmode = 'w'
-            if path in self.previousPaths:
-                openmode = 'a'
+            f = None
             try:
-                with open(path, openmode) as f:
+                f = self._openFileForWriting(path)
+                self.props.push({'outfile': path})
+                try:
+                    string = self._parseClause(clause.terms[1])
+                finally:
+                    self.props.pop()
+                try:
                     f.write(string)
-                    self.previousPaths.add(path)
+                except EnvironmentError:
+                    accum(f'!<Could not write to file {path}>')
             except EnvironmentError:
                 accum(f'!<Could not open file {path} for writing>')
+            finally:
+                self._closeFileForWriting(path)
 
         elif clause.kind == ClauseKind.SET:
             keyIdx = 0
@@ -722,16 +770,18 @@ class Scribe:
                 for t in clause.terms[keyIdx].terms[1:]:
                     tempClause.terms.append(t)
 
-                expr = self.parseClause(tempClause)
+                expr = self._parseClause(tempClause)
 
-                obj = self.exec(expr)
+                obj = self._exec(expr)
                 if type(obj) is str:
                     obj = self.parseText(obj)
 
                 self.props.push({varname: obj})
-                th = self.parseClause(clause.terms[keyIdx + 1])
+                try:
+                    th = self._parseClause(clause.terms[keyIdx + 1])
+                finally:
+                    self.props.pop()
                 accum(th)
-                self.props.pop()
 
             else:
                 raise RuntimeError(f'malformed set tag')
@@ -758,9 +808,9 @@ class Scribe:
             for t in clause.terms[fmtcodeIdx].terms[1:]:
                 tempClause.terms.append(t)
 
-            expr = self.parseClause(tempClause)
+            expr = self._parseClause(tempClause)
 
-            width = self.exec(expr)
+            width = self._exec(expr)
             if type(width) is not int:
                 raise RuntimeError(f'fmt width expression must resolve to int type')
 
@@ -769,7 +819,7 @@ class Scribe:
             elif justification == 'center': j = '^'
 
             fmtcode = f'{{0: {j}{width}}}'
-            th = self.parseClause(clause.terms[fmtcodeIdx + 1])
+            th = self._parseClause(clause.terms[fmtcodeIdx + 1])
             th = fmtcode.format(th)
             accum(th)
 
@@ -782,7 +832,7 @@ if __name__ == "__main__":
     passStr = f'{ansi.lt_green_fg}pass{ansi.all_off}'
     failStr = f'{ansi.lt_red_fg}fail{ansi.all_off}'
 
-    p = Scribe({
+    p = Props({
             'outputForm': 'compiled',
             'defaultConstructible': True,
             'selector': 1,

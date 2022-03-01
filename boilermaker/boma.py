@@ -6,8 +6,8 @@ from . import ansi
 
 
 # TODO: Make this a plugin thing. Nice info: https://realpython.com/python-import/
-from .project import Project as Project
-from .cpp.project import Project as CppProject
+from .project import Project
+from .speak.cpp.project import CppProject
 
 
 def inherit(base, addTo, inheritInherits):
@@ -33,7 +33,7 @@ def inherit(base, addTo, inheritInherits):
     for k, v in addTo.items():
         if k not in ['inherit', 'enums', 'types']:
             defsData[k] = v
-        
+
     return defsData
 
 
@@ -65,7 +65,7 @@ class DefsFile:
             defs = DefsFile(name, path)
             cls.cache[path] = defs
             return defs
-            
+
 
     @staticmethod
     def getDefNameParts(name):
@@ -90,7 +90,7 @@ class DefsFile:
         vdescs = defsData.get('variants')
         if vdescs:
             del defsData['variants']
-    
+
             # variants can't have variants... yet. But, that's intersting, no?
             for vk, vv in vdescs.items():
                 if 'variants' in vv:
@@ -120,7 +120,7 @@ class DefsFile:
 
             defsData['tools'] = defsData.get('tools', '').lower()
             defsData['targetLanguage'] = defsData.get('targetLanguage', '').lower()
- 
+
         return defsData
 
 
@@ -145,7 +145,7 @@ def main():
         if skip:
             skip = False
             continue
-        
+
         if sys.argv[i] == '-v':
             variantsRequested.append(sys.argv[i + 1])
             skip = True
@@ -169,7 +169,7 @@ def main():
 
     if len(operations) == 0:
         operations.append('generateCode')
-    
+
     if defFile:
         defsFile = DefsFile.make('defs', os.path.realpath(defFile))
         if len(variantsRequested) == 0:

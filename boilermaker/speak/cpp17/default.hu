@@ -37,12 +37,12 @@
     memberwiseConstructible: false
     virtualDestructor: false
     privateMembers: true
-    swap: $<$copyByCopySwap or $moveByCopySwap>
+    swap: '$<$copyByCopySwap or $moveByCopySwap>'
     copyByCopySwap: true    // requires swap and copyable
     moveByCopySwap: true    // requires swap and copyable
     copyable: true
     movable: true       // i think requires virtualDestructor to be false
-    getters: $<$inlineGetters or $constGetters or $nonConstGetters>
+    getters: '$<$inlineGetters or $constGetters or $nonConstGetters>'
     inlineGetters: true     // requires getters
     constGetters: true      // requires getters
     nonConstGetters: true   // requires getters, privateMembers

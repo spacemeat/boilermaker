@@ -1,32 +1,13 @@
 from . import utilities
 
 class Enums:
-    def __init__(self, defsData, enumDefsData):
-        self.defsData = defsData
-        self.enumDefsData = enumDefsData
-        self._getPlatformAttributes()
-
-
-    def _getPlatformAttributes(self):
-        # get platform config
-        self.flagsAttribute = {}
-        self.prefixAttribute = {}
-        self.suffixAttribute = {}
-        self.caseAttribute = {}
-
-        defsPath = self.defsData['defsPath']
-
-        languageVersion = self.enumDefsData.get('languageVersion', 'c|gnu17')
-        language, _ = utilities.getLanguageVersionParts(languageVersion)
-        platform = self.enumDefsData.get('platform')
-        if platform:
-            platformPath = utilities.findPlatformFile(language, platform, 'enums.hu', defsPath)
-            t, _ = utilities.loadHumonFile(platformPath)
-            to = t.root.objectify()
-            self.flagsAttribute.update(utilities.dictify(to.get('flags', {}), 'flags'))
-            self.prefixAttribute.update(utilities.dictify(to.get('prefix', {}), 'prefix'))
-            self.suffixAttribute.update(utilities.dictify(to.get('suffix', {}), 'suffix'))
-            self.caseAttribute.update(utilities.dictify(to.get('case', {}), 'case'))
+    def __init__(self, props, enumProps):
+        self.props = props
+        self.enumProps = enumProps
+        self.flagsAttribute = self.enumProps.get('flags', {})
+        self.prefixAttribute = self.enumProps.get('prefix', {})
+        self.suffixAttribute = self.enumProps.get('suffix', {})
+        self.caseAttribute = self.enumProps.get('case', {})
 
 
 class Enum:
@@ -36,8 +17,8 @@ class Enum:
         self._attribs = set()
         self.namespaceName = namespaceName
         self.enumsObject = enumsObject
-        self.defsData = enumsObject.defsData
-        self.enumDefsData = enumsObject.enumDefsData
+        self.props = enumsObject.props
+        self.enumProps = enumsObject.enumProps
 
         self.flags = False
         self.prefixLen = 0
@@ -59,7 +40,7 @@ class Enum:
         # if the prefix ends in a non-delimit, dial it back until we find one
         # (also if postfix starts in a non-_...)
         # TODO: Test multicharacter delimiters. I think this is wrong.
-        
+
         #if commonLength < len(a):
         if delimit:
             if not postfix:

@@ -1,34 +1,45 @@
-from .. import utilities
-from ..enums import Enums as BaseEnums, Enum as BaseEnum
-from ..cFamily.getSearchPaths_gnu import getSearchPaths as getSearchPaths_gnu
+from ... import utilities
+from ...enums import Enums, Enum, EnumTypedef
+from .getSearchPaths_gnu import getSearchPaths as getSearchPaths_gnu
+from pathlib import Path
 import pygccxml
 
 
-class Enums(BaseEnums):
-    def __init__(self, defsData, enumDefsData):
-        super().__init__(defsData, enumDefsData)
+class CfamilyEnums(Enums):
+    def __init__(self, props, enumProps):
+        super().__init__(props, enumProps)
 
-        tools = self.enumDefsData.get('tools', 'gnu').lower()
+        tools = self.props.X(enumProps.get('tools', 'gnu')).lower()
+        projectPath = Path(props.getXProp('projectPath'))
 
         if tools == 'gnu':
-            defsDir = defsData.get('defsDir')
-            self.quotedSearchPaths, self.systemSearchPaths  = getSearchPaths_gnu(defsDir)
+            self.quotedSearchPaths, self.systemSearchPaths  = getSearchPaths_gnu(projectPath.parent)
         else:
-            raise RuntimeError(f'Invalid tools for enum defs in {defsPath}.')
+            raise RuntimeError(f'Invalid tools for enum defs in {projectPath}.')
 
         self.enums = {}
         self.enumTypedefs = {}
-        self.sources = utilities.listify(enumDefsData.get('source', []))
-        for sourceFilename in self.sources:
-            self._processSource(sourceFilename)
-        
+        srcs = enumProps.get('source', [])
+        if srcs != None:
+            if type(srcs) is str:
+                srcs = self.props.X(srcs)
+                if type(srcs) is str:
+                    srcs = [srcs]
+            elif type(srcs) is list:
+                srcs = [self.props.X(src) for src in srcs]
+            else:
+                raise RuntimeError('Invalid type for enums[\{source\}]')
+            self.sources = srcs
+            for sourceFilename in self.sources:
+                self._processSource(sourceFilename)
+
 
     def _processNamespace(self, enums, ns, isScoped):
         for decl in ns.declarations:
             if hasattr(decl, "elaborated_type_specifier"):
                 if decl.elaborated_type_specifier == "enum":
                     enumType = decl.partial_decl_string.replace('::', '.')
-                    self.enums[enumType] = Enum(enumType, decl.values, isScoped, self)
+                    self.enums[enumType] = CfamilyEnum(enumType, decl.values, isScoped, self)
 
         for decl in ns.declarations:
             if hasattr(decl, "decl_type"):
@@ -43,7 +54,7 @@ class Enums(BaseEnums):
 
 
     def _processSource(self, sourceFilename):
-        tools = self.defsData.get('tools', 'gnu').lower()
+        tools = self.props.X(self.enumProps.get('tools', ''))
 
         enums = {}
         generator_path, generator_name = pygccxml.utils.find_xml_generator()
@@ -57,21 +68,22 @@ class Enums(BaseEnums):
             incPaths = self.systemSearchPaths
         else:
             incPaths = [*self.quotedSearchPaths, *self.systemSearchPaths]
-        
+
         cflags = ''
 
         if tools == 'gnu':
-            language, version = utilities.getLanguageVersionParts(
-                self.defsData.get('languageVersion', 'c|gnu17'))
+            language = self.props.X(self.enumProps.get('language', ''))
+            version = self.props.X(self.enumProps.get('languageVersion', ''))
+            languageStandard = self.props.X(self.enumProps.get('languageStandard', ''))
             if language == 'c':
-                if version in [
+                if languageStandard in [
                     'c89', 'c90', 'c99', 'c11', 'c17', 'c18', 'c2x',
                     'gnu89',
-                    'iso9899:1990', 'gnu90', 
-                    'iso9899:199409', 
-                    'iso9899:1999', 'gnu99', 
-                    'iso9899:2011', 'gnu11', 
-                    'iso9899:2017','gnu17', 
+                    'iso9899:1990', 'gnu90',
+                    'iso9899:199409',
+                    'iso9899:1999', 'gnu99',
+                    'iso9899:2011', 'gnu11',
+                    'iso9899:2017','gnu17',
                     'iso9899:2018', 'gnu18',
                     'gnu2x']:
                     cflags = f'-std=c++98'  # We run C through g++ anyway.
@@ -92,7 +104,7 @@ class Enums(BaseEnums):
             xml_generator = generator_name,
             cflags=cflags,
             include_paths=incPaths)
-        
+
         # Parse the include file
         decls = pygccxml.parser.parse([sourceFilename], xml_generator_config)
 
@@ -102,7 +114,7 @@ class Enums(BaseEnums):
         self._processNamespace(enums, global_namespace, language == 'c++')
 
 
-class Enum(BaseEnum):
+class CfamilyEnum(Enum):
     def __init__(self, enumName, pygccxmlEnumVals, isScoped, enumsObject):
         super().__init__(enumName, '.', enumsObject)
         self.isScoped = isScoped

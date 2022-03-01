@@ -1,5 +1,9 @@
 from . import utilities
-from . import ansi
+from .ansi import Ansi as ansi
+
+import re
+re_cppName = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
+
 
 class MemberType:
     def __init__(self, name, fullName, properties):
@@ -61,8 +65,8 @@ class StructType:
     def __init__(self, name, members):
         '''members is always a dict of memberName: memberProperties.'''
         self.name = name
-        self.members = {memberName: MemberType(memberName, f'{name}_{memberName}', memProperties) 
-                        for memberName, memProperties in members.items()}
+        self.members = {memberName: MemberType(memberName, f'{name}_{memberName}', memProperties)
+                        for memberName, memProperties in members.items() if re_cppName.match(memberName)}
 
     def __repr__(self):
         endl = '\n'

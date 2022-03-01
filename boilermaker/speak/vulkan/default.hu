@@ -1,0 +1,32 @@
+@{ app: boma, boma-version: 0.0.4 }
+{
+    vulkanLanguage: c
+    vulkanLanguageVersion: 17
+    vulkanTools: gnu
+    enums: [ {
+        source: [$'<vulkan/vulkan.h>']
+        language: $vulkanLanguage
+        languageVersion: $vulkanLanguageVersion
+        tools: $vulkanTools
+        languageStandard: gnu17
+
+        flags: {
+            nameContains: FlagBits
+        }
+
+        prefix: {
+            exclude: common
+            delimit: _
+        }
+
+        suffix: {
+            exclude: common
+            delimit: _
+        }
+
+        case: {
+            encode: lower
+        }
+
+    }]
+}

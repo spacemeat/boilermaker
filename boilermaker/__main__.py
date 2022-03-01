@@ -1,3 +1,3 @@
-from .boma import main
+from .boilermaker import main
 
 main()
