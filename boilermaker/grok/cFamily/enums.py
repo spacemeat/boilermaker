@@ -3,14 +3,16 @@ from ...enums import Enums, Enum, EnumTypedef
 from .getSearchPaths_gnu import getSearchPaths as getSearchPaths_gnu
 from pathlib import Path
 import pygccxml
+from ...props import Scribe
 
 
 class CfamilyEnums(Enums):
     def __init__(self, props, enumProps):
         super().__init__(props, enumProps)
 
-        tools = self.props.X(enumProps.get('tools', 'gnu')).lower()
-        projectPath = Path(props.getXProp('projectPath'))
+        tools = enumProps.get('tools', 'gnu').lower()
+        s = Scribe(props)
+        projectPath = Path(s.X('projectPath'))
 
         if tools == 'gnu':
             self.quotedSearchPaths, self.systemSearchPaths  = getSearchPaths_gnu(projectPath.parent)
@@ -22,13 +24,10 @@ class CfamilyEnums(Enums):
         srcs = enumProps.get('source', [])
         if srcs != None:
             if type(srcs) is str:
-                srcs = self.props.X(srcs)
-                if type(srcs) is str:
-                    srcs = [srcs]
-            elif type(srcs) is list:
-                srcs = [self.props.X(src) for src in srcs]
-            else:
+                srcs = [srcs]
+            elif type(srcs) is not list:
                 raise RuntimeError('Invalid type for enums[\{source\}]')
+
             self.sources = srcs
             for sourceFilename in self.sources:
                 self._processSource(sourceFilename)
@@ -54,7 +53,8 @@ class CfamilyEnums(Enums):
 
 
     def _processSource(self, sourceFilename):
-        tools = self.props.X(self.enumProps.get('tools', ''))
+        s = Scribe(self.props)
+        tools = s.X(self.enumProps.get('tools', ''))
 
         enums = {}
         generator_path, generator_name = pygccxml.utils.find_xml_generator()
@@ -72,9 +72,9 @@ class CfamilyEnums(Enums):
         cflags = ''
 
         if tools == 'gnu':
-            language = self.props.X(self.enumProps.get('language', ''))
-            version = self.props.X(self.enumProps.get('languageVersion', ''))
-            languageStandard = self.props.X(self.enumProps.get('languageStandard', ''))
+            language = s.X(self.enumProps.get('language', ''))
+            version = s.X(self.enumProps.get('languageVersion', ''))
+            languageStandard = s.X(self.enumProps.get('languageStandard', ''))
             if language == 'c':
                 if languageStandard in [
                     'c89', 'c90', 'c99', 'c11', 'c17', 'c18', 'c2x',

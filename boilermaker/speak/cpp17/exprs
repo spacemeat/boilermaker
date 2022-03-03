@@ -1,0 +1,123 @@
+$<$const($<$isLessType.ofType.name>
+$<$const($<$member.type.name>
+$<$const($<$type.name>
+$<$const('BinaryFormat<$<$type.name>
+$<$const('char *')>
+$<$const(char)>
+$<$const('HumonFormat<$<$type.name>
+$<$const('hu::Node')>
+$<$const('Node')>
+$<$enum.name>
+$<$enum.type>
+$<$enum.type.name>
+$<$enum.values>
+$<$isLessType.getLhs>
+$<$isLessType.getRhs>
+$<$isLessType.name>
+$<$member.name>
+$<$member.type>
+$<$member.type.name>
+$<$subtype.name>
+$<$type.name>
+$<$type.typetype>
+$<$val.converted>
+$<$val.converted.length>
+$<$val.name>
+$<$vtn.name>
+$<$vtn.sbtypes.length>
+$<delim>
+$<elif copy == delete>
+$<elif destructor == 'delete'>
+$<elif move == 'delete'>
+$<else>
+$<endif>
+$<endjoin>
+$<endout>
+$<enum.flags == false>
+$<if $<$enum.flags>
+$<if $<$type.typetype>
+$<if $allComponents.containsFloatingPointTypes>
+$<if $allComponents.containsIntegralTypes>
+$<if $allComponents.types.containsFloatingPointTypes()>
+$<if $allComponents.types.containsIntegralTypes()>
+$<if $comparable>
+$<if $constGetters>
+$<if $copyByCopySwap>
+$<if $copyByCopySwap == False>
+$<if $copy == 'default'>
+$<if $copy != 'omit'>
+$<if $copy != omit>
+$<if $copy == source>
+$<if $defaultConstructible>
+$<if $destructor == 'default'>
+$<if $destructor != omit>
+$<if $destructor == source>
+$<if $destructor == virtual>
+$<if $diffable>
+$<if $getters>
+$<if $inlineGetters>
+$<if $inlineGetters == False>
+$<if $inlineSetters>
+$<if $inlineSetters == False>
+$<if $memberwiseConstructible>
+$<if $moveByCopySwap>
+$<if $moveByCopySwap == False>
+$<if $move == 'default'>
+$<if $move != omit>
+$<if $move == source>
+$<if $nonConstGetters>
+$<if $privateMembers>
+$<if $serializeTo>
+$<if $setByCopy>
+$<if $setByMove>
+$<if $swap>
+$<if $type.members.length $>
+$<if 'array' in [t.name for t in $allComponents.types]>
+$<if 'binary' in $deserializeFrom>
+$<if 'binary' in $serializeTo>
+$<if 'humon' in $deserializeFrom>
+$<if 'humon' in $inlineSetters>
+$<if 'humon' in $serializeTo>
+$<if 'humon' in $serializeTo contains binary or $serializeTo>
+$<if len($typesWithIsLess) $>
+$<if len($variantTypeNames) $>
+$<if 'map' in [t.name for t in $allComponents.types]>
+$<if 'optional' in [t.name for t in $allComponents.types]>
+$<if 'pair' in [t.name for t in $allComponents.types]>
+$<if 'set' in [t.name for t in $allComponents.types]>
+$<if 'string' in [t.name for t in $allComponents.types]>
+$<if 'string_view' in [t.name for t in $<$allComponents.types>
+$<if 'string_view' in [t.name for t in $allComponents.types]>
+$<if 'tuple' in [t.name for t in $allComponents.types]>
+$<if 'unordered_map' in [t.name for t in $allComponents.types]>
+$<if 'unordered_set' in [t.name for t in $allComponents.types]>
+$<if 'variant' in [t.name for t in $allComponents.types]>
+$<if 'vector' in [t.name for t in $allComponents.types]>
+$<join for enum in $enums>
+$<join for header in $<$includes.common.header>
+$<join for header in $<$includes.common.source>
+$<join for header in $<$includes.diffs.header>
+$<join for header in $<$includes.enums.header>
+$<join for header in $<$includes.enums.source>
+$<join for header in $<$includes.main.header>
+$<join for header in $<$includes.type.header>
+$<join for header in $<$includes.type.source>
+$<join for isLessType in $typesWithIsLess>
+$<join for member in $<$type.members>
+$<join for member in $type.members>
+$<join for member in type.members>
+$<join for member in type.stdMembers>
+$<join for subtype in $<$vtn.subtypes>
+$<join for type in $<$forwardDecls.common.header>
+$<join for type in $types>
+$<join for val in $<$enum.values>
+$<join for vtn in $variantTypeNames>
+$<len($val.converted)>
+$<out $headerDir/$commonHeaderFile>
+$<out $headerDir/$diffsHeaderFile>
+$<out $headerDir/$enumHeaderFile>
+$<out $headerDir/$mainHeaderFile>
+$<out $headerDir/$typeHeaderFile>
+$<out $sourceDir/$commonSourceFile>
+$<out $sourceDir/$enumSourceFile>
+$<out $sourceDir/$typeSourceFile>

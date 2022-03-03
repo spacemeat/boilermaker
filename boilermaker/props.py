@@ -9,6 +9,7 @@
 # # now props.movable == True again
 
 from enum import Enum, auto
+from pathlib import Path
 import re
 
 #from . import ansi
@@ -89,6 +90,8 @@ class Clause:
         #self.siblingIdx = 0
         self.terms = []     # a term is either a string or another Clause
         self.kind = ClauseKind.TEXT
+        self.line = 0
+        self.col = 0
 
     def appendClause(self):
         nc = Clause()
@@ -187,13 +190,14 @@ class PropertyBag:
             self.props[k] = v
 
 
-    def getProp(self, key):
+    def getProp(self, key, default = None):
         if key in self.props:
             return self.props[key]
         for inh in reversed(self.parents):
             v = inh.getProp(key)
-            if v:
+            if v != None:
                 return v
+        return default
 
 
     def getAll(self, key):
@@ -227,9 +231,6 @@ class Props:
             self.props = PropertyBag(initialProps)
         else:
             raise RuntimeError(f'Props() must take a PropertyBag or dict')
-        self.previousPaths = set()
-        self.pathStack = []
-        self.debug = False
 
     def __str__(self):
         return str(self.props)
@@ -243,14 +244,11 @@ class Props:
     def setDict(self, props):
         self.props.setDict(props)
 
-    def getProp(self, key):
-        return self.props.getProp(key)
+    def getProp(self, key, default = None):
+        return self.props.getProp(key, default)
 
     def getAll(self, key):
         return self.props.getAll(key)
-
-    def getXProp(self, key):
-        return self.parseText(str(self.props.getProp(key)))
 
     def push(self, newProps = {}):
         np = PropertyBag(newProps)
@@ -267,13 +265,50 @@ class Props:
     def ensureList(self, key):
         self.props.ensureList(key)
 
-    # -- scribing stuff
+
+class Scribe:
+    def __init__(self, props):
+        self.props = props
+        self.previousPaths = set()
+        self.pathStack = []
+        self.debug = False
 
     def parseText(self, val):
         clause = self._parseTagStructure(val)
         return self._parseClause(clause)
 
     X = parseText
+
+    def getXProp(self, key, default = None):
+        def rec(v):
+            if type(v) is str:
+                return self.parseText(v)
+            elif type(v) is list:
+                return [rec(vv) for vv in v]
+            elif type(v) is dict:
+                return {k: rec(vv) for k, vv in v.items()}
+            else:
+                return v
+
+        v = rec(self.props.getProp(key, default))
+        return v
+
+
+    def getXPropAll(self, key):
+        def rec(v):
+            if type(v) is str:
+                return self.parseText(v)
+            elif type(v) is list:
+                return [rec(vv) for vv in v]
+            elif type(v) is dict:
+                return {k: rec(vv) for k, vv in v.items()}
+            else:
+                return v
+
+        vs = self.props.getAll(key)
+        vs = [rec(v) for v in vs]
+        return vs
+
 
     def _openFileForWriting(self, path):
         openmode = 'w'
@@ -296,24 +331,26 @@ class Props:
 
     def _eval(self, expr):
         if self.debug:
-            print (f'{ansi.dk_red_fg} Eval expression: {ansi.lt_red_fg}{expr}{ansi.all_off}')
+            print (f'{ansi.dk_red_fg}Eval expression: {ansi.lt_red_fg}{expr}{ansi.all_off}')
         res = eval(expr, {}, {'props': self.props})
         if self.debug:
-            print (f'{ansi.dk_red_fg}      expression returned: {ansi.lt_red_fg}{res}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(res)}{ansi.dk_red_fg}){ansi.all_off}')
+            print (f'{ansi.dk_red_fg}     expression returned: {ansi.lt_red_fg}{res}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(res)}{ansi.dk_red_fg}){ansi.all_off}')
         return res
 
     def _exec(self, stmnts):
         res = ''
         locs = { 'props': self.props, 'res': '' }
         if self.debug:
-            print (f'{ansi.dk_red_fg} Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
+            print (f'{ansi.dk_red_fg}Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
         exec(stmnts, {}, locs)
         if self.debug:
-            print (f'{ansi.dk_red_fg}      statements returned: {ansi.lt_red_fg}{locs["res"]}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(locs["res"])}{ansi.dk_red_fg}){ansi.all_off}')
+            print (f'{ansi.dk_red_fg}     statements returned: {ansi.lt_red_fg}{locs["res"]}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(locs["res"])}{ansi.dk_red_fg}){ansi.all_off}')
         return locs['res']
 
     def _parseTagStructure(self, val):
         idx = 0
+        line = 1
+        col = 1
         end = len(val)
         inTagCounter = 0
         quoteChar = ''
@@ -325,43 +362,55 @@ class Props:
 
         def dbg(msg):
             if self.debug:
-                print (f'{ansi.lt_magenta_fg}({idx}{ansi.dk_magenta_fg}/{len(val)}) {ansi.dk_blue_fg}"{ansi.lt_blue_fg}{msg}{ansi.dk_blue_fg}"{ansi.all_off} {ansi.dk_yellow_fg}Tag counter: {ansi.dk_yellow_fg}{inTagCounter}{ansi.all_off}')
+                print (f'{ansi.lt_magenta_fg}({idx}{ansi.dk_magenta_fg}/{len(val)}) {line}, {col}: {ansi.dk_blue_fg}"{ansi.lt_blue_fg}{msg}{ansi.dk_blue_fg}"{ansi.all_off} {ansi.dk_yellow_fg}Tag counter: {ansi.dk_yellow_fg}{inTagCounter}{ansi.all_off}')
 
+        def incIdx():
+            nonlocal idx, line, col, val
+            idx += 1
+            col += 1
+            if idx < len(val) and val[idx] == '\n':
+                line += 1
+                col = 1
+
+        currentClause.line = line
+        currentClause.col = col
         while idx < end:
             if val[idx] == '$':
-                idx += 1
+                currentClause.line = line
+                currentClause.col = col
+                incIdx()
                 if val[idx] == '\'' or val[idx] == '"' or val[idx] == '`':
                     quoteChar = val[idx]
-                    idx += 1
+                    incIdx()
                     accum = ''
                     #accum = f'${quoteChar}'
                     while idx < end and val[idx] != quoteChar:
                         accum += val[idx]
-                        idx += 1
-                    idx += 1
+                        incIdx()
+                    incIdx()
                     #accum += f'{quoteChar}'
                     dbg(f'quote-tag: {accum}')
                     currentClause.append(accum)
 
                 elif val[idx] == '<':
                     inTagCounter += 1
-                    idx += 1
+                    incIdx()
                     dbg(f'start tag')
                     currentClause = currentClause.appendClause()
                     currentClause.kind = ClauseKind.EXPRESSION
 
                 elif val[idx] == '$':   #  $$ is a way to escape $ so as not to start a tag.
-                    idx += 1
+                    incIdx()
                     dbg(f'$$ tag')
                     currentClause.append('$')
 
                 elif val[idx] == '>':   #  $> is a way to escape > so as not to close a tag.
-                    idx += 1
+                    incIdx()
                     dbg(f'$> tag')
                     currentClause.append('>')
 
                 elif val[idx] == '+':   #  $+ marks the next non-whitespace start
-                    idx += 1
+                    incIdx()
                     exprClause = currentClause.appendClause()
                     exprClause.kind = ClauseKind.EATSPACE
                     dbg(f'$+ tag')
@@ -371,7 +420,7 @@ class Props:
                     accum = ''
                     while idx < end and (val[idx].isalpha() or val[idx].isdigit() or val[idx] == '_'):
                         accum += val[idx]
-                        idx += 1
+                        incIdx()
                     #accum = f' props.get("{accum}")'
                     exprClause = currentClause.appendClause()
                     exprClause.kind = ClauseKind.QUERY
@@ -379,10 +428,10 @@ class Props:
                     dbg(f'query tag: {accum}')
 
                 else:
-                    raise RuntimeError('Naked query spec ($). Use $$ or $"$" to spec a "$" character.')
+                    raise RuntimeError(f'{line}, {col}: Naked query spec ($). Use $$ or $"$" to spec a "$" character.')
 
             elif val[idx] == '>':
-                idx += 1
+                incIdx()
                 inTagCounter -= 1
 
                 # resolve if/join/file/expr/end* tags
@@ -446,7 +495,7 @@ class Props:
                     currentClause = currentClause.mergeToParent()
                     currentClause = currentClause.parent
                     if currentClause.kind != ClauseKind.IF:
-                        raise RuntimeError('$<endif> does not match a preceding $<if>')
+                        raise RuntimeError(f'{line}, {col}: $<endif> does not match a preceding $<if>')
                     currentClause = currentClause.parent
                     dbg(f'endif -> {accum}')
 
@@ -479,7 +528,7 @@ class Props:
                     currentClause = currentClause.mergeToParent()
                     currentClause = currentClause.parent
                     if currentClause.kind != ClauseKind.JOIN:
-                        raise RuntimeError('$<endjoin> does not match a preceding $<join>')
+                        raise RuntimeError(f'{line}, {col}: $<endjoin> does not match a preceding $<join>')
                     currentClause = currentClause.parent
                     dbg(f'endjoin tag')
 
@@ -503,7 +552,7 @@ class Props:
                     currentClause = currentClause.mergeToParent()
                     currentClause = currentClause.parent
                     if currentClause.kind != ClauseKind.OUT:
-                        raise RuntimeError('$<endout> does not match a preceding $<out>')
+                        raise RuntimeError(f'{line}, {col}: $<endout> does not match a preceding $<out>')
                     currentClause = currentClause.parent
                     dbg(f'endout tag')
 
@@ -521,7 +570,7 @@ class Props:
                     currentClause = currentClause.mergeToParent()
                     currentClause = currentClause.parent
                     if currentClause.kind != ClauseKind.SET:
-                        raise RuntimeError('$<endset> does not match a preceding $<set>')
+                        raise RuntimeError(f'{line}, {col}: $<endset> does not match a preceding $<set>')
                     currentClause = currentClause.parent
                     dbg(f'endset tag')
 
@@ -539,7 +588,7 @@ class Props:
                     currentClause = currentClause.mergeToParent()
                     currentClause = currentClause.parent
                     if currentClause.kind != ClauseKind.FMT:
-                        raise RuntimeError('$<endfmt> does not match a preceding $<fmt>')
+                        raise RuntimeError(f'{line}, {col}: $<endfmt> does not match a preceding $<fmt>')
                     currentClause = currentClause.parent
                     dbg(f'endfmt tag')
 
@@ -550,15 +599,20 @@ class Props:
 
             else:   # all other chars before $ or >
                 accum = ''
-                while idx < end and val[idx] != '$' and val[idx] != '>':
+                while idx < end:
+                    if (val[idx] == '$' or
+                        (inTagCounter > 0 and val[idx] == '>')):
+                        break
+
                     accum += val[idx]
-                    idx += 1
+                    incIdx()
                 dbg(f'verbatim: {accum}')
                 currentClause.append(accum)
 
         return rootClause
 
-    def _parseClause(self, clause):
+
+    def _parseClause(self, clause, depth = 0):
         acc = ''
         eatSpace = False
         def accum(string):
@@ -568,6 +622,15 @@ class Props:
                 if len(string) > 0:
                     eatSpace = False
             acc += string
+
+        def dbg(msg):
+            if self.debug:
+                if type(clause) is Clause:
+                    print (f'Clause depth: {depth} at {clause.line}, {clause.col}: {clause.kind}')
+                elif type(clause) is str:
+                    print (f'Clause depth: {depth}: {ansi.lt_black_fg}{clause}{ansi.all_off}')
+
+        dbg(f' - foo')
 
         if type(clause) is str:
             accum(clause)
@@ -581,7 +644,7 @@ class Props:
                 if type(t) is Clause and t.kind == ClauseKind.EATSPACE:
                     eatSpace = True
                 else:
-                    accum(self._parseClause(t))
+                    accum(self._parseClause(t, depth + 1))
 
         elif clause.kind == ClauseKind.QUERY:
             expr = f'props.getProp("{clause.terms[0]}")'
@@ -590,6 +653,7 @@ class Props:
                 clause.parent.kind == ClauseKind.ELIFCONDITIONAL or
                 clause.parent.kind == ClauseKind.ELSE or
                 clause.parent.kind == ClauseKind.JOINCOMPREHENSION or
+                clause.parent.kind == ClauseKind.PATH or
                 clause.parent.kind == ClauseKind.SETASSIGNMENT or
                 clause.parent.kind == ClauseKind.FMTCODE):
                 newvar = f'boma_{clause.terms[0]}'
@@ -598,6 +662,8 @@ class Props:
             else:
                 res = self._eval(expr)
                 if res:
+                    if type(res) is str:
+                        res = self.parseText(res)
                     accum(str(res))
                 else:
                     accum(f'$<!{clause.terms[0]}>')
@@ -607,6 +673,7 @@ class Props:
               clause.kind == ClauseKind.ELIFCONDITIONAL or
               clause.kind == ClauseKind.ELSE or
               clause.kind == ClauseKind.JOINCOMPREHENSION or
+              clause.kind == ClauseKind.PATH or
               clause.kind == ClauseKind.SETASSIGNMENT or
               clause.kind == ClauseKind.FMTCODE):
 
@@ -614,12 +681,12 @@ class Props:
             expr = ''
             for tidx, t in enumerate(clause.terms):
                 if type(t) is str:
-                    expr += self._parseClause(t)
+                    expr += self._parseClause(t, depth + 1)
                 elif t.kind == ClauseKind.QUERY:
-                    setters += self._parseClause(t)
+                    setters += self._parseClause(t, depth + 1)
                     expr += f'(boma_{t.terms[0]})'
                 else:
-                    text = self._parseClause(t)
+                    text = self._parseClause(t, depth + 1)
                     expr += f'{text}'
 
             res = ''
@@ -647,7 +714,7 @@ class Props:
                     raise RuntimeError(f'Found a clause of type {t.kind} in an $<if> tag.')
 
             for tidx in condClauses:
-                t = self._parseClause(clause.terms[tidx])
+                t = self._parseClause(clause.terms[tidx], depth + 1)
                 #   make expr
                 expr = False
                 if type(t) is str:
@@ -662,7 +729,7 @@ class Props:
                 #       gather each text clause after idx
                     i = tidx + 1
                     assert(clause.terms[i].kind == ClauseKind.THEN)
-                    accum(self._parseClause(clause.terms[i]))
+                    accum(self._parseClause(clause.terms[i], depth + 1))
                     break
 
         elif clause.kind == ClauseKind.JOIN:
@@ -699,17 +766,18 @@ class Props:
                 tempClause.append(forString[len(m.group(0)):])
                 for t in clause.terms[compIdx].terms[1:]:
                     tempClause.terms.append(t)
-                expr = self._parseClause(tempClause)
+                expr = self._parseClause(tempClause, depth + 1)
 
+                breakpoint()
                 vals = self._exec(expr)
 
                 for vidx, val in enumerate(vals):
                     self.props.push({varname: val})
                     try:
-                        th = self._parseClause(clause.terms[compIdx + 1])
+                        th = self._parseClause(clause.terms[compIdx + 1], depth + 1)
                         d = ''
                         if delimIdx >= 0:
-                            d = self._parseClause(clause.terms[delimIdx + 1])
+                            d = self._parseClause(clause.terms[delimIdx + 1], depth + 1)
                     finally:
                         self.props.pop()
 
@@ -721,7 +789,10 @@ class Props:
                 raise RuntimeError(f'malformed join tag')
 
         elif clause.kind == ClauseKind.IN:
-            path = self._parseClause(clause.terms[0].terms[0])
+            expr = self._parseClause(clause.terms[0], depth + 1)
+            path = self._exec(expr)
+            if type(path) is str:
+                path = self.parseText(path)
             try:
                 with open(path, 'r') as file:
                     self.props.push({'infile': path})
@@ -735,23 +806,29 @@ class Props:
                 accum(f'!<Could not open file {path} for reading>')
 
         elif clause.kind == ClauseKind.OUT:
-            path = clause.terms[0].terms[0]
+            expr = self._parseClause(clause.terms[0], depth + 1)
+            path = self._exec(expr)
+            if type(path) is str:
+                path = self.parseText(path)
             f = None
             try:
+                breakpoint()
+                Path(path).parent.mkdir(exist_ok=True, parents=True)
                 f = self._openFileForWriting(path)
-                self.props.push({'outfile': path})
                 try:
-                    string = self._parseClause(clause.terms[1])
+                    self.props.push({'outfile': path})
+                    string = self._parseClause(clause.terms[1], depth + 1)
                 finally:
                     self.props.pop()
                 try:
                     f.write(string)
                 except EnvironmentError:
                     accum(f'!<Could not write to file {path}>')
+                finally:
+                    f.close()
+                    self._closeFileForWriting(path)
             except EnvironmentError:
                 accum(f'!<Could not open file {path} for writing>')
-            finally:
-                self._closeFileForWriting(path)
 
         elif clause.kind == ClauseKind.SET:
             keyIdx = 0
@@ -770,7 +847,7 @@ class Props:
                 for t in clause.terms[keyIdx].terms[1:]:
                     tempClause.terms.append(t)
 
-                expr = self._parseClause(tempClause)
+                expr = self._parseClause(tempClause, depth + 1)
 
                 obj = self._exec(expr)
                 if type(obj) is str:
@@ -778,7 +855,7 @@ class Props:
 
                 self.props.push({varname: obj})
                 try:
-                    th = self._parseClause(clause.terms[keyIdx + 1])
+                    th = self._parseClause(clause.terms[keyIdx + 1], depth + 1)
                 finally:
                     self.props.pop()
                 accum(th)
@@ -808,7 +885,7 @@ class Props:
             for t in clause.terms[fmtcodeIdx].terms[1:]:
                 tempClause.terms.append(t)
 
-            expr = self._parseClause(tempClause)
+            expr = self._parseClause(tempClause, depth + 1)
 
             width = self._exec(expr)
             if type(width) is not int:
@@ -819,7 +896,7 @@ class Props:
             elif justification == 'center': j = '^'
 
             fmtcode = f'{{0: {j}{width}}}'
-            th = self._parseClause(clause.terms[fmtcodeIdx + 1])
+            th = self._parseClause(clause.terms[fmtcodeIdx + 1], depth + 1)
             th = fmtcode.format(th)
             accum(th)
 
@@ -852,7 +929,8 @@ if __name__ == "__main__":
         p.debug = debug
         print (f'Test src: {ansi.dk_cyan_fg}{src}{ansi.all_off}')
         try:
-            res = p.parseText(src)
+            s = Scribe(p)
+            res = s.parseText(src)
             if res == exp:
                 print (f'  {passStr}')
             else:
@@ -887,9 +965,9 @@ if __name__ == "__main__":
          '''Deserialize from: [ humon,
                     binary,
                     dna ]''')
-    test('cats: $<in test_input.scribe> baz',
+    test('cats: $<in "test_input.scribe"> baz',
          'cats: Butters, Weeby, Lilly, Leo')
-    test('foo $<out test_output>test $outputForm$<endout>bar',
+    test('foo $<out "test_output">test $outputForm$<endout>bar',
          'foo bar')
     test('foo $<set test_output as $outputForm>test $test_output$<endset> bar',
          'foo test compiled bar')

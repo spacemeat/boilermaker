@@ -5,11 +5,11 @@ from .enums import Enums as Enums
 from .grok.cFamily.enums import CfamilyEnums
 from .type import StructType
 import re
-from .props import Props, PropertyBag
+from .props import Props, PropertyBag, Scribe
 from pathlib import Path, PurePath
 
 # TODO: Make this a plugin thing. Nice info: https://realpython.com/python-import/
-
+from .speak.cpp17.project import CppProject
 
 # read ${captured}, when not preceded by a '\'
 defArgumentPattern = r'(?<!\\)\$\s*\<\s*([A-Za-z0-9_.]+?)\s*\>'
@@ -18,8 +18,14 @@ defArgumentReg = re.compile(defArgumentPattern)
 
 class Project:
     def __init__(self, A, propsPath):
+        if type(propsPath) is str:
+            propsPath = Path(propsPath)
         self.props = self.loadProps(propsPath)
-        self.props.push({'projectPath': propsPath})
+        self.props.push({'projectPath': propsPath,
+                         'projectDir': propsPath.parent,
+                         'bomaDir': Path(__file__).parent,
+                         'mainHeaderIncludes': []})
+        self.scribe = Scribe(self.props)
         self.enumsMade = False
 
     def getPathFromInherit(self, inh :str, originPath :Path):
@@ -41,6 +47,8 @@ class Project:
 
             bag = PropertyBag({})
             bag.setDict(propsDict)
+            bag.propsFilePath = bagPath
+            bag.propsFileDir = bagPath.parent
 
             if 'inherit' in propsDict:
                 inhs = propsDict['inherit']
@@ -152,12 +160,13 @@ class Project:
     def makeEnums(self):
         if self.enumsMade:
             return
+        s = Scribe(self.props)
         self.enums = []
         self.props.ensureList('enums')
-        for enumPropsList in self.props.getAll('enums'):
+        for enumPropsList in s.getXPropAll('enums'):
             for enumProps in enumPropsList:
-                language = self.props.parseText(enumProps.get('language', ''))
-                languageVersion = self.props.parseText(enumProps.get('languageVersion', ''))
+                language = enumProps.get('language', '')
+                languageVersion = enumProps.get('languageVersion', '')
                 if language == "c" or language == 'c++':
                     self.enums.append(CfamilyEnums(self.props, enumProps))
                 else:
@@ -166,14 +175,11 @@ class Project:
 
 
     def makeTypes(self):
+        s = Scribe(self.props)
         self.types = {}
-        breakpoint()
-        for typeValues in self.props.getAll('types'):
+        for typeValues in s.getXPropAll('types'):
             for (typeName, typeData) in typeValues.items():
                 self.types[typeName] = StructType(typeName, typeData)
-
-        #for (typeName, typeData) in [kv.items() for kv in self.props.getAll('types')]:
-        #    self.types[typeName] = StructType(typeName, typeData)
 
 
     def reportDefs(self):
@@ -200,4 +206,11 @@ class Project:
 
 
     def write(self):
-        pass
+        s = Scribe(self.props)
+        if s.X('language') == 'c++':
+            cp = CppProject(self.props)
+            cp.removeAllFiles()
+            cp.generateProps()
+
+        s.debug = True
+        print (s.parseText(f'$<in $scribePath>'))

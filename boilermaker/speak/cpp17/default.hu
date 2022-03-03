@@ -5,6 +5,8 @@
 
     inherit:        boilermaker
 
+    scribePath:     $bomaDir/speak/cpp17/default.scribe
+
     computeEnums:   true
     computeTypes:   true
 

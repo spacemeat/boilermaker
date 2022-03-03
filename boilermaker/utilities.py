@@ -15,13 +15,13 @@ def doShellCommand(cmd):
 def getBuiltinDefsPath(defsName):
     bomaSrcDir = os.path.dirname(__file__)
     if defsName == 'boilermaker':
-        return os.path.join(bomaSrcDir, 'speak/default.hu')
+        return Path(bomaSrcDir) / 'speak' / 'default.hu'
     elif defsName == 'c++':
-        return os.path.join(bomaSrcDir, 'speak/cpp', 'default.hu')
+        return Path(bomaSrcDir) / 'speak' / 'cpp' / 'default.hu'
     elif defsName == 'c++17':
-        return os.path.join(bomaSrcDir, 'speak/cpp17', 'default.hu')
+        return Path(bomaSrcDir) / 'speak/cpp17' / 'default.hu'
     elif defsName == 'vulkan':
-        return os.path.join(bomaSrcDir, 'speak/vulkan', 'default.hu')
+        return Path(bomaSrcDir) / 'speak/vulkan' / 'default.hu'
 
 
 #TODO: Move all os.path things to pathlib things
@@ -98,7 +98,7 @@ def findPlatformFile(language, platform, filename, defsPath):
 
 def loadHumonFile(defsFile):
     '''Load a humon file and validate the version.'''
-    trove = humon.Trove.fromFile(defsFile)
+    trove = humon.Trove.fromFile(str(defsFile))
 
     if not trove.getTroveAnnotations(key="app", value="boma"):
         raise ValueError(f"input file {defsFile} is not a 'boma' file.")

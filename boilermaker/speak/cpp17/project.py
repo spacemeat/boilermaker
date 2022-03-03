@@ -2,7 +2,8 @@ from pathlib import Path
 import os
 from ... import ansi
 from ... import utilities
-from ...project import Project as Project
+#from ...project import Project as Project
+from ...props import Scribe
 
 
 class DependentTypeDecl:
@@ -110,19 +111,25 @@ class OutputSection:
 
 
 class CppProject:
-    from . import gen_enums
-    from . import gen_global
-    from . import gen_types
+    #from . import gen_enums
+    #from . import gen_global
+    #from . import gen_types
 
     def __init__(self, props):
         self.props = props
         self.reset()
-        self.props['headerToInl'] = os.path.relpath(self.d('inlineDir'), self.d('headerDir'))
-        self.props['srcToHeader'] = os.path.relpath(self.d('headerDir'), self.d('sourceDir'))
-        self.props['srcToInl'] = os.path.relpath(self.d('inlineDir'), self.d('sourceDir'))
+
+
+    def P(self, key, default = None):
+        s = Scribe(self.props)
+        return s.getXProp(key, default)
 
 
     def reset(self):
+        # TODO: Remove these if not used
+        self.props.setProp('headerToInl', os.path.relpath(self.P('inlineDir'), self.P('headerDir')))
+        self.props.setProp('srcToHeader', os.path.relpath(self.P('headerDir'), self.P('sourceDir')))
+        self.props.setProp('srcToInl', os.path.relpath(self.P('inlineDir'), self.P('sourceDir')))
         self.outputFiles = {}
         self.outputSections = {}
         self.includeDiffTypes = {}
@@ -132,16 +139,8 @@ class CppProject:
         self.containersVariantTypeNames = {}
 
 
-    def const(self, type):
-        coast = self.d('constCoast', 'west')
-        if coast == 'east':
-            return f'{type} const'
-        else:
-            return f'const {type}'
-
-
     def doingCaveman(self, category):
-        dbgs = self.d('caveperson')
+        dbgs = self.P('caveperson')
         return dbgs and category in dbgs
 
 
@@ -151,7 +150,7 @@ class CppProject:
         if self.doingCaveman(category):
             self.includeForType(sectionName, 'ostream', f'''#include <iostream>''')
 
-            caveStream = self.d('caveStream') or 'cout'
+            caveStream = self.P('caveStream') or 'cout'
             src += f'''
 {it * tabs}std::{caveStream} << {message} << "\\n";'''
         return src
@@ -178,7 +177,7 @@ class CppProject:
         if bomaName in ['less', 'monostate', 'size_t', 'string', 'string_view', 'array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
             return 'std::' + bomaName
         elif useNamespace and bomaName in self.types:
-            bomaName = f'{self.d("namespace")}::{bomaName}'
+            bomaName = f'{self.P("namespace")}::{bomaName}'
         return bomaName.replace('.', '::')
 
 
@@ -195,7 +194,7 @@ class CppProject:
                 builtType += self.makeNative(of, useNamespace)
             if properties['type'] == 'set' or properties['type'] == 'map':
                 if 'isLess' in properties:
-                    ns = f'{self.d("namespace")}::' if useNamespace else ''
+                    ns = f'{self.P("namespace")}::' if useNamespace else ''
                     builtType += f', {ns}IsLess_{properties["fullName"]}'
             builtType += '>'
         return builtType
@@ -205,16 +204,26 @@ class CppProject:
         return self.makeNativeSubtype(utilities.dictify(properties, 'type'), useNamespace)
 
 
-    def generateCode(self):
+    def removeAllFiles(self):
+        def removeAllFiles(self, direc):
+            d = Path(self.P('defsDir'), direc)
+            if d.is_dir():
+                for f in os.listdir(d):
+                    if Path(f).is_file():
+                        os.unlink(f)
+        removeAllFiles(self.P('headerDir'))
+        removeAllFiles(self.P('inlineDir'))
+        removeAllFiles(self.P('sourceDir'))
+
+
+    def generateProps(self):
         self.reset()
-        self.makeOutputForm()
+        #self.makeOutputForm()
 
-        self.gen_global.genAll(self)
-        self.gen_enums.genAll(self)
-        self.gen_types.genAll(self)
-
-        # we're doing includes last, since any other gen_ can add to includes and typedecls.
-        self.gen_global.genTypeDecls(self)
+        #self.gen_global.genAll(self)
+        #self.gen_enums.genAll(self)
+        #self.gen_types.genAll(self)
+        #self.gen_global.genTypeDecls(self)
 
 
     def reportOutputs(self):
@@ -230,7 +239,7 @@ class CppProject:
         if not defsOutput or type(defsOutput) is not dict:
             raise RuntimeError('defs/output must be a dict.')
 
-        outputForm = self.d('outputForm')
+        outputForm = self.P('outputForm')
         defsFiles = defsOutput.get(outputForm)
         if not defsFiles or type(defsFiles) is not dict:
             raise RuntimeError(f'defs/output/{outputForm} must be a dict.')
@@ -257,7 +266,7 @@ class CppProject:
 
                     self.outputFiles[t_defsFileName] = OutputFile(t_sourcePath, t_sourceKind, t_sections)
                     for t_section in t_sections:
-                        self.outputSections[t_section] = OutputSection(self.d('namespace'))
+                        self.outputSections[t_section] = OutputSection(self.P('namespace'))
             else:
                 defsFileName = self.replaceStringArgs(defsFileName)
                 sourcePath = self.replaceStringArgs(defsSourcePath)
@@ -266,7 +275,7 @@ class CppProject:
 
                 self.outputFiles[defsFileName] = OutputFile(sourcePath, sourceKind, sections)
                 for section in sections:
-                    self.outputSections[section] = OutputSection(self.d('namespace'))
+                    self.outputSections[section] = OutputSection(self.P('namespace'))
 
 
     def getSection(self, sectionName, mustNotExist=False):
@@ -280,7 +289,7 @@ class CppProject:
             return None
 
         if not section:
-            section = OutputSection(self.d('namespace'))
+            section = OutputSection(self.P('namespace'))
             self.outputSections[sectionName] = section
 
         return section
@@ -290,7 +299,7 @@ class CppProject:
         if outputFile in self.outputFiles:
             return True
         else:
-            print (f'{ansi.lt_yellow_fg}Warning: {ansi.all_off}"{outputFile}" is not a file in outputForm "{self.d("outputForm")}".')
+            print (f'{ansi.lt_yellow_fg}Warning: {ansi.all_off}"{outputFile}" is not a file in outputForm "{self.P("outputForm")}".')
             return False
 
 
@@ -302,7 +311,7 @@ class CppProject:
                 namespace = self.replaceStringArgs(namespace)
                 s.setSrc(src, namespace)
         else:
-            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}Section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}Section "{sectionName}" has no output in outputForm "{self.P("outputForm")}".')
 
 
     def setSrcIfEmpty(self, sectionName, src, namespace='$<namespace>'):
@@ -313,7 +322,7 @@ class CppProject:
                 namespace = self.replaceStringArgs(namespace)
                 s.setSrcIfEmpty(src, namespace)
         else:
-            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.P("outputForm")}".')
 
 
     def appendSrc(self, sectionName, src, namespace='$<namespace>'):
@@ -324,7 +333,7 @@ class CppProject:
                 namespace = self.replaceStringArgs(namespace)
                 s.appendSrc(src, namespace)
         else:
-            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.P("outputForm")}".')
 
 
     def forwardDeclareType(self, sectionName, baseType, decl, namespace='$<namespace>', inPlace=False):
@@ -336,7 +345,7 @@ class CppProject:
                 namespace = self.replaceStringArgs(namespace)
                 s.forwardDeclareType(baseType, decl, namespace)
         else:
-            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.P("outputForm")}".')
 
 
     def includeForType(self, sectionName, baseType, includeFile, inPlace=False):
@@ -347,7 +356,7 @@ class CppProject:
             if s:
                 s.includeForType(baseType, includeFile)
         else:
-            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.P("outputForm")}".')
 
 
     def includeOutputFile(self, sectionName, outputFile, inPlace=False):
@@ -358,7 +367,7 @@ class CppProject:
             if s:
                 s.includeOutputFile(outputFile, inPlace)
         else:
-            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.P("outputForm")}".')
 
 
     def includeFile(self, sectionName, path, inPlace=False):
@@ -368,11 +377,11 @@ class CppProject:
             if s:
                 s.includeFile(path, inPlace)
         else:
-            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.d("outputForm")}".')
+            print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.P("outputForm")}".')
 
 
     def removeAllFiles(self, direc):
-        d = Path(self.d('defsDir'), direc)
+        d = Path(self.P('defsDir'), direc)
         if d.is_dir():
             for f in os.listdir(d):
                 if Path(f).is_file():
@@ -386,9 +395,9 @@ class CppProject:
         self.generateCode()
 
         # clean any files in the target directories
-        self.removeAllFiles(self.d('headerDir'))
-        self.removeAllFiles(self.d('inlineDir'))
-        self.removeAllFiles(self.d('sourceDir'))
+        self.removeAllFiles(self.P('headerDir'))
+        self.removeAllFiles(self.P('inlineDir'))
+        self.removeAllFiles(self.P('sourceDir'))
 
         for outputFileName, outputFile in self.outputFiles.items():
             self.writeFile(outputFileName, outputFile)
