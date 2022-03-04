@@ -180,6 +180,7 @@ class Project:
         for typeValues in s.getXPropAll('types'):
             for (typeName, typeData) in typeValues.items():
                 self.types[typeName] = StructType(typeName, typeData)
+        self.props.push({'types': self.types})
 
 
     def reportDefs(self):

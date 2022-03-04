@@ -767,11 +767,10 @@ class Scribe:
                 for t in clause.terms[compIdx].terms[1:]:
                     tempClause.terms.append(t)
                 expr = self._parseClause(tempClause, depth + 1)
-
-                breakpoint()
                 vals = self._exec(expr)
 
-                for vidx, val in enumerate(vals):
+                for vidx, valName in enumerate(vals):
+                    val = vals[valName]
                     self.props.push({varname: val})
                     try:
                         th = self._parseClause(clause.terms[compIdx + 1], depth + 1)
@@ -812,7 +811,6 @@ class Scribe:
                 path = self.parseText(path)
             f = None
             try:
-                breakpoint()
                 Path(path).parent.mkdir(exist_ok=True, parents=True)
                 f = self._openFileForWriting(path)
                 try:

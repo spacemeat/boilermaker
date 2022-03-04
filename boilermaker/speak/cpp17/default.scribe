@@ -3,7 +3,9 @@ $<out $headerDir + '/' + $mainHeaderFile>#pragma once
 
 $mainHeaderTopComment
 
-$<join for header in $mainHeaderIncludes>
-#include $header$<endjoin>
+$<if len($enums) $> 0>#include "$headerDir/$enumHeaderFile"
+$<endif>$+
+$<join for type in $types>#include "$headerDir/$typeHeaderFile"$<delim>
+$<endjoin>
 $<endout>
 

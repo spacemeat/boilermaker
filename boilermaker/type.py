@@ -70,7 +70,7 @@ class StructType:
 
     def __repr__(self):
         endl = '\n'
-        src = f'type: {ansi.lt_magenta_fg}{self.name}{ansi.all_off}:{endl}'
+        src = f'name: {ansi.lt_magenta_fg}{self.name}{ansi.all_off}:{endl}'
         for mn, mo in self.members.items():
             src += str(mo)
 
