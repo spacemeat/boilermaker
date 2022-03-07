@@ -21,16 +21,10 @@ class CfamilyEnums(Enums):
 
         self.enums = {}
         self.enumTypedefs = {}
-        srcs = enumProps.get('source', [])
-        if srcs != None:
-            if type(srcs) is str:
-                srcs = [srcs]
-            elif type(srcs) is not list:
-                raise RuntimeError('Invalid type for enums[\{source\}]')
-
-            self.sources = srcs
-            for sourceFilename in self.sources:
-                self._processSource(sourceFilename)
+        src = enumProps.get('source')
+        if src != None:
+            self.source = src
+            self._processSource(src)
 
 
     def _processNamespace(self, enums, ns, isScoped):

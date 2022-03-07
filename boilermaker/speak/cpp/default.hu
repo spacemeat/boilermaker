@@ -21,14 +21,13 @@
 ^^
 
     mainHeaderTopComment: ^^$generatedFileComment
-
     #include this header in your project to use boilermaker-generated code.*/
 ^^
     headerTopComment: ^^$generatedFileComment */
 ^^
-    inlineTopComment: ^^ */
+    inlineTopComment: ^^$generatedFileComment */
 ^^
-    sourceTopComment: ^^ */
+    sourceTopComment: ^^$generatedFileComment */
 ^^
 
     deserializeFrom: [humon] // also accepts binary
@@ -80,108 +79,6 @@
     containersSourceFile:   containers.cpp
 
     output: {
-        headerOnlyOld: {
-            mainHeader: {
-                sourcePath: $<defsDir>/$<headerDir>/$<mainHeaderFile>
-                sections:
-                [
-                    pragma
-                    mainHeaderTopComment
-                    mainHeaderIncludes
-                    bomaStreamClass
-                    mainHeaderLocalIncludes
-                ]
-            }
-
-            enumHeader: {
-                sourcePath: $<defsDir>/$<headerDir>/$<enumHeaderFile>
-                sections: [
-                    pragma
-                    headerTopComment
-                    enumHeaderIncludes
-                    enumHeaderForwardDecls
-                    enumDeserializerDefs
-                    enumSerializerDecls
-                    enumHeaderIncludeInline
-                ]
-            }
-
-            enumSource: {
-                sourcePath: $<defsDir>/$<inlineDir>/$<enumInlineFile>
-                sections: [
-                    pragma
-                    inlineTopComment
-                    enumSourceIncludes
-                    enumSerializerDefs
-                ]
-            }
-
-            typeHeader: {
-                sourcePath: $<defsDir>/$<headerDir>/$<typeHeaderFile>
-                sections: [
-                    pragma
-                    headerTopComment
-                    $<type>|typeHeaderIncludes
-                    $<type>|typeHeaderLocalIncludes
-                    allTypeForwardDecls
-                    $<type>|stdForwardDecls
-                    $<type>|containerDifferDecl
-                    $<type>|forwardClassDecl
-                    $<type>|forwardDecls
-                    $<type>|classBegin
-                    $<type>|defaultCtrDecl
-                    $<type>|memberwiseCtrDecl
-                    $<type>|humonCtrDecl
-                    $<type>|copyCtrDecl
-                    $<type>|moveCtrDecl
-                    $<type>|copyAssignDecl
-                    $<type>|moveAssignDecl
-                    $<type>|destructorDecl
-                    $<type>|swapDecl
-                    $<type>|memberGettersDecl
-                    $<type>|memberSettersDecl
-                    $<type>|memberSetMoversDecl
-                    $<type>|serializerDecl
-                    $<type>|comparatorDecl
-                    $<type>|differDecl
-                    $<type>|members
-                    $<type>|classEnd
-                    $<type>|typeSerializerDecls
-                    $<type>|containerSerializerDecls
-                    $<type>|typeDeserializerDef
-                    $<type>|typeDeserializerDefs
-                    $<type>|typeHeaderIncludeInline
-                ]
-            }
-
-            typeSource: {
-                sourcePath: $<defsDir>/$<inlineDir>/$<typeInlineFile>
-                sections: [
-                    pragma
-                    inlineTopComment
-                    $<type>|typeSourceIncludes
-                    $<type>|typeSourceLocalIncludes
-                    $<type>|containerDifferDef
-                    $<type>|defaultCtrDef
-                    $<type>|memberwiseCtrDef
-                    $<type>|humonCtrDef
-                    $<type>|copyCtrDef
-                    $<type>|moveCtrDef
-                    $<type>|copyAssignDef
-                    $<type>|moveAssignDef
-                    $<type>|destructorDef
-                    $<type>|swapDef
-                    $<type>|memberGettersDef
-                    $<type>|memberSettersDef
-                    $<type>|memberSetMoversDef
-                    $<type>|serialzierDef
-                    $<type>|comparatorDef
-                    $<type>|differDef
-                    $<type>|typeSerializerDefs
-                ]
-            }
-        }
-
         compiled: {
             mainHeader: {
                 sourcePath: $<headerDir>/$<mainHeaderFile>

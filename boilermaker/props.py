@@ -192,7 +192,11 @@ class PropertyBag:
 
     def getProp(self, key, default = None):
         if key in self.props:
-            return self.props[key]
+            v = self.props[key]
+            if type(v) is str:
+                if v == 'true': v = True
+                elif v == 'false': v = False
+            return v
         for inh in reversed(self.parents):
             v = inh.getProp(key)
             if v != None:
@@ -203,7 +207,11 @@ class PropertyBag:
     def getAll(self, key):
         vs = []
         if key in self.props:
-            vs.append(self.props[key])
+            v = self.props[key]
+            if type(v) is str:
+                if v == 'true': v = True
+                elif v == 'false': v = False
+            vs.append(v)
         for inh in reversed(self.parents):
             v = inh.getAll(key)
             if len(v):
@@ -622,6 +630,7 @@ class Scribe:
                 if len(string) > 0:
                     eatSpace = False
             acc += string
+            print (f'{ansi.dk_green_fg}Accum: {"  " * depth}{ansi.lt_green_fg}{string}{ansi.all_off}')
 
         def dbg(msg):
             if self.debug:
@@ -724,8 +733,10 @@ class Scribe:
                 #   exec
                 res = self._exec(expr)
                 #   if eval is True:
-                assert(type(res) is bool)
-                if type(res) is bool and res == True:
+                if res is None:
+                    res = False
+                #assert(type(res) is bool)
+                if res != False:
                 #       gather each text clause after idx
                     i = tidx + 1
                     assert(clause.terms[i].kind == ClauseKind.THEN)
@@ -746,7 +757,7 @@ class Scribe:
                     t.kind == ClauseKind.ENDJOIN):
                     pass
                 else:
-                    raise RuntimeError(f'Found a clause of type {t.kind} in an $<if> tag.')
+                    raise RuntimeError(f'Found a clause of type {t.kind} in a $<join> tag.')
 
             if compIdx < 0:
                 raise RuntimeError(f'No comprehension found for join tag.')
@@ -769,8 +780,13 @@ class Scribe:
                 expr = self._parseClause(tempClause, depth + 1)
                 vals = self._exec(expr)
 
-                for vidx, valName in enumerate(vals):
-                    val = vals[valName]
+                if vals is None:
+                    vals = []
+
+                if type(vals) is dict:
+                    vals = [v for k, v in vals.items()]
+
+                for vidx, val in enumerate(vals):
                     self.props.push({varname: val})
                     try:
                         th = self._parseClause(clause.terms[compIdx + 1], depth + 1)
@@ -831,35 +847,35 @@ class Scribe:
         elif clause.kind == ClauseKind.SET:
             keyIdx = 0
 
-            # parse 'for x in y' to set up the loop on x, y
-            # for must be 'for'
-            # x must be a symbol-legal string
-            # in must be 'in'
-            # y is the rest is an expression for 'for foo in (y)'
             setString = clause.terms[keyIdx].terms[0]
+            varname = ''
+            matched = 0
             if m := re.match(re_setexpr, setString):
                 varname = m.group(1)
-                tempClause = Clause()
-                tempClause.kind = ClauseKind.SETASSIGNMENT
-                tempClause.append(setString[len(m.group(0)):])
-                for t in clause.terms[keyIdx].terms[1:]:
-                    tempClause.terms.append(t)
+                matched = len(m.group(0))
 
-                expr = self._parseClause(tempClause, depth + 1)
+            tempClause = Clause()
+            tempClause.kind = ClauseKind.SETASSIGNMENT
+            tempClause.append(setString[matched:])
+            for t in clause.terms[keyIdx].terms[1:]:
+                tempClause.terms.append(t)
+            breakpoint()
+            expr = self._parseClause(tempClause, depth + 1)
 
-                obj = self._exec(expr)
-                if type(obj) is str:
-                    obj = self.parseText(obj)
-
+            obj = self._exec(expr)
+            if type(obj) is str:
+                obj = self.parseText(obj)
                 self.props.push({varname: obj})
-                try:
-                    th = self._parseClause(clause.terms[keyIdx + 1], depth + 1)
-                finally:
-                    self.props.pop()
-                accum(th)
-
-            else:
-                raise RuntimeError(f'malformed set tag')
+            elif matched == 0 and type(obj) is dict:
+                for k, v in obj.items():
+                    varname = k
+                    pv = self.parseText(v)
+                    self.props.push({varname: pv})
+            try:
+                th = self._parseClause(clause.terms[keyIdx + 1], depth + 1)
+            finally:
+                self.props.pop()
+            accum(th)
 
         # (left|center|right) widthExpression
         elif clause.kind == ClauseKind.FMT:

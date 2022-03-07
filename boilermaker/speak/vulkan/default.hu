@@ -4,29 +4,29 @@
     vulkanLanguageVersion: 17
     vulkanTools: gnu
     enums: [ {
-        source: [$'<vulkan/vulkan.h>']
-        language: $vulkanLanguage
-        languageVersion: $vulkanLanguageVersion
-        tools: $vulkanTools
-        languageStandard: gnu17
+            source: $'<vulkan/vulkan.h>'
+            language: $vulkanLanguage
+            languageVersion: $vulkanLanguageVersion
+            tools: $vulkanTools
+            languageStandard: gnu17
 
-        flags: {
-            nameContains: FlagBits
+            flags: {
+                nameContains: FlagBits
+            }
+
+            prefix: {
+                exclude: common
+                delimit: _
+            }
+
+            suffix: {
+                exclude: common
+                delimit: _
+            }
+
+            case: {
+                encode: lower
+            }
         }
-
-        prefix: {
-            exclude: common
-            delimit: _
-        }
-
-        suffix: {
-            exclude: common
-            delimit: _
-        }
-
-        case: {
-            encode: lower
-        }
-
-    }]
+    ]
 }

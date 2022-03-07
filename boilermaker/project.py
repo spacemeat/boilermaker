@@ -162,8 +162,9 @@ class Project:
             return
         s = Scribe(self.props)
         self.enums = []
-        self.props.ensureList('enums')
         for enumPropsList in s.getXPropAll('enums'):
+            if type(enumPropsList) is dict:
+                enumPropsList = [enumPropsList]
             for enumProps in enumPropsList:
                 language = enumProps.get('language', '')
                 languageVersion = enumProps.get('languageVersion', '')
@@ -171,6 +172,7 @@ class Project:
                     self.enums.append(CfamilyEnums(self.props, enumProps))
                 else:
                     raise RuntimeError(f'Unrecognized enums language: {language}')
+        self.props.push({'enums': self.enums})
         self.enumsMade = True
 
 
@@ -208,10 +210,12 @@ class Project:
 
     def write(self):
         s = Scribe(self.props)
-        if s.X('language') == 'c++':
+        self.props.push()
+        if s.X('$language') == 'c++':
             cp = CppProject(self.props)
             cp.removeAllFiles()
             cp.generateProps()
 
         s.debug = True
         print (s.parseText(f'$<in $scribePath>'))
+        self.props.pop()

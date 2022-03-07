@@ -11,7 +11,7 @@
     computeTypes:   true
 
     constStyle:     west
-    const:          `$<lambda t: f'{t} const' if '$constStyle' == 'east' else 'const {t}'>`
+    //const:          `$<lambda t: f'{t} const' if '$constStyle' == 'east' else 'const {t}'>`
     outputForm:     compiled  // or headerOnly, or anything else in outupt
     caveperson:     []// [ctr, dtr, ass, serializeBinary, deserializeBinary]
     checkBinaryOverruns: false
@@ -20,8 +20,7 @@
     generatedFileComment: ^^
 /*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
     Do not bother modifying this file, as your build process will overwrite
-    your changes.
-^^
+    your changes.^^
 
     mainHeaderTopComment: ^^$generatedFileComment
 
@@ -61,6 +60,7 @@
     sourceDir:              $baseDir/gen-cpp/$namespace/src
     mainHeaderFile:         $namespace.hpp
     commonHeaderFile:       common.hpp
+    commonInlineFile:       common.inl.hpp
     commonSourceFile:       common.cpp
     diffsHeaderFile:        diffs.hpp
     enumHeaderFile:         enums.hpp
@@ -69,4 +69,16 @@
     typeHeaderFile:         $<$type.name>.hpp
     typeInlineFile:         $<$type.name>.inl.hpp
     typeSourceFile:         $<$type.name>.cpp
+
+    mainHeaderPath:         $headerDir/$mainHeaderFile
+    commonHeaderPath:       $headerDir/$commonHeaderFile
+    commonInlinePath:       $inlineDir/$commonInlineFile
+    commonSourcePath:       $sourceDir/$commonSourceFile
+    diffsHeaderPath:        $headerDir/$diffsHeaderFile
+    enumHeaderPath:         $headerDir/$enumHeaderFile
+    enumInlinePath:         $inlineDir/$enumInlineFile
+    enumSourcePath:         $sourceDir/$enumSourceFile
+    typeHeaderPath:         $headerDir/$typeHeaderFile
+    typeInlinePath:         $inlineDir/$typeInlineFile
+    typeSourcePath:         $sourceDir/$typeSourceFile
 }

@@ -1,9 +1,64 @@
+from unicodedata import name
 from . import utilities
 from .ansi import Ansi as ansi
 
 import re
 re_cppName = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 
+
+class Subtype:
+    def __init__(self, properties, name):
+        if type(properties) is str:
+            properties = { 'type': properties }
+
+        self.name = name
+        self.type = properties.get('type')
+        self.alias = properties.get('alias')
+        self.isLess = properties.get('isLess')
+        self.codeDecl = ''
+        self.fullCodeDecl = ''
+
+        ofo = properties.get('of')
+        if ofo and type(ofo) is not list:
+            properties['of'] = [ofo]
+
+        ofo = properties.get('of')
+        if ofo:
+            self.subtypes = [Subtype(subsubtype, f'{name}_{idx}') for idx, subsubtype in enumerate(ofo)]
+        else:
+            self.subtypes = []
+
+    def subtypesWithIsLess(self):
+        sts = []
+        if self.isLess:
+            sts.append(self)
+        for ofo in self.subtypes:
+            sts.extend(ofo.subtypesWithIsLess() or [])
+        return sts
+
+    def allSubtypes(self):
+        sts = [self]
+        for ofo in self.subtypes:
+            sts.extend(ofo.allSubtypes() or [])
+        return sts
+
+    def allSubtypesOfIsLessTypes(self):
+        sts = []
+        if self.isLess:
+            for ofo in self.subtypes:
+                sts.extend(ofo.allSubtypes() or [])
+        else:
+            for ofo in self.subtypes:
+                sts.extend(ofo.allSubtypesOfIsLessTypes() or [])
+        return sts
+
+    def allVariantSubtypes(self):
+        sts = []
+        if self.type == 'variant':
+            sts.append(self)
+        for ofo in self.subtypes:
+            sts.extend(ofo.allVariantSubtypes() or [])
+        return sts
 
 class MemberType:
     def __init__(self, name, fullName, properties):
@@ -34,7 +89,7 @@ class MemberType:
             return properties
 
         self.properties = normalize(properties, fullName, 0)
-
+        self.subtype = Subtype(self.properties, self.fullName)
 
     def __repr__(self):
         endl = '\n'
@@ -60,6 +115,17 @@ class MemberType:
         src += recurse(self.properties, 0)
         return src
 
+    def subtypesWithIsLess(self):
+        return self.subtype.subtypesWithIsLess()
+
+    def allSubtypes(self):
+        return self.subtype.allSubtypes()
+
+    def allSubtypesOfIsLessTypes(self):
+        return self.subtype.allSubtypesOfIsLessTypes()
+
+    def allVariantSubtypes(self):
+        return self.subtype.allVariantSubtypes()
 
 class StructType:
     def __init__(self, name, members):
@@ -75,3 +141,29 @@ class StructType:
             src += str(mo)
 
         return src
+
+    def subtypesWithIsLess(self):
+        mts = []
+        for _, m in self.members.items():
+            if msts := m.subtypesWithIsLess():
+                mts.extend(msts)
+        return mts
+
+    def allSubtypes(self):
+        mts = []
+        for _, m in self.members.items():
+            mts.extend(m.allSubtypes() or [])
+        return mts
+
+    def allSubtypesOfIsLessTypes(self):
+        mts = []
+        for _, m in self.members.items():
+            mts.extend(m.allSubtypesOfIsLessTypes() or [])
+        return mts
+
+    def allVariantSubtypes(self):
+        mts = []
+        for _, m in self.members.items():
+            mts.extend(m.allVariantSubtypes() or [])
+        return mts
+

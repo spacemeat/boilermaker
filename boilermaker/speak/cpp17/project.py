@@ -126,10 +126,6 @@ class CppProject:
 
 
     def reset(self):
-        # TODO: Remove these if not used
-        self.props.setProp('headerToInl', os.path.relpath(self.P('inlineDir'), self.P('headerDir')))
-        self.props.setProp('srcToHeader', os.path.relpath(self.P('headerDir'), self.P('sourceDir')))
-        self.props.setProp('srcToInl', os.path.relpath(self.P('inlineDir'), self.P('sourceDir')))
         self.outputFiles = {}
         self.outputSections = {}
         self.includeDiffTypes = {}
@@ -205,25 +201,119 @@ class CppProject:
 
 
     def removeAllFiles(self):
-        def removeAllFiles(self, direc):
-            d = Path(self.P('defsDir'), direc)
+        def raf(self, direc):
+            d = Path(self.P('projectDir'), direc)
             if d.is_dir():
                 for f in os.listdir(d):
                     if Path(f).is_file():
                         os.unlink(f)
-        removeAllFiles(self.P('headerDir'))
-        removeAllFiles(self.P('inlineDir'))
-        removeAllFiles(self.P('sourceDir'))
+        raf(self, self.P('headerDir'))
+        raf(self, self.P('inlineDir'))
+        raf(self, self.P('sourceDir'))
 
 
     def generateProps(self):
         self.reset()
+
+        structTypes = self.props.getProp('types')
+
+        self.props.setProp('headerToInl', os.path.relpath(self.P('inlineDir'), self.P('headerDir')))
+        self.props.setProp('srcToHeader', os.path.relpath(self.P('headerDir'), self.P('sourceDir')))
+        self.props.setProp('srcToInl', os.path.relpath(self.P('inlineDir'), self.P('sourceDir')))
+
+        def const(decl):
+            return f'{decl} const' if self.props.getProp('constStyle', 'west') == 'east' else f'const {decl}'
+        self.props.setProp('const', const)
+
         #self.makeOutputForm()
 
-        #self.gen_global.genAll(self)
+        class StandardType:
+            def __init__(self, code, include):
+                self.code = code
+                self.include = include
+                self.used = False
+
+        class StandardTypes:
+            def __init__(self):
+                self.string =       StandardType('std::string',            '<string>')
+                self.stringView =   StandardType('std::string_view',       '<string_view>')
+                self.array =        StandardType('std::array',             '<array>')
+                self.pair =         StandardType('std::pair',              '<utility>')
+                self.tuple =        StandardType('std::tuple',             '<tuple>')
+                self.vector =       StandardType('std::vector',            '<vector>')
+                self.set =          StandardType('std::set',               '<set>')
+                self.unorderedSet = StandardType('std::unordered_set',     '<unordered_set>')
+                self.map =          StandardType('std::map',               '<map>')
+                self.unorderedMap = StandardType('std::unordered_map',     '<unordered_map>')
+                self.optional =     StandardType('std::optional',          '<optional>')
+                self.variant =      StandardType('std::variant',           '<variant>' )
+                # TODO: multisdet, multimap, list, pmr things
+
+        standardTypes = StandardTypes()
+        self.props.setProp('std', standardTypes)
+
+        headers = set()
+        if ('humon' in self.props.getProp('deserializeFrom') or
+            'humon' in self.props.getProp('serializeTo')):
+            #headers.append('<humon/humon.hpp>')
+            pass
+
+        for typeName, strType in structTypes.items():
+            subtypes = strType.allSubtypes()
+            for st in subtypes:
+                if st.type in vars(standardTypes):
+                    getattr(standardTypes, st.type).used = True
+
+        #headers.update([st.include for st in standardTypes if st.used])
+
+        self.props.setProp('commonHeaderIncludes', list(headers))
+
+        fwds = set()
+        for typeName, strType in structTypes.items():
+            subtypes = strType.allSubtypesOfIsLessTypes()
+            subtypes = [st.type for st in subtypes if st.type in structTypes]
+            fwds.update(subtypes)
+        self.props.setProp('commonHeaderFwdDecls', fwds)
+
+        def computeCodeDecls_rec(subtype):
+            subtype.codeDecl = subtype.type
+            if subtype.type in vars(standardTypes):
+                subtype.codeDecl = getattr(standardTypes, subtype.type).code
+            if subtype.subtypes:
+                templateArgs = [computeCodeDecls_rec(st) for st in subtype.subtypes]
+                if subtype.isLess:
+                    templateArgs.insert(2, f'IsLess_{subtype.name}')
+                subtype.codeDecl += '<' + ', '.join(templateArgs) + '>'
+            return subtype.codeDecl
+
+        def computeFullCodeDecls_rec(subtype, parentDecl):
+            fcd = parentDecl + '::' + subtype.codeDecl
+            subtype.fullCodeDecl = fcd
+            for st in subtype.subtypes:
+                computeFullCodeDecls_rec(st, fcd)
+
+        for tn, t in structTypes.items():
+            for mn, m in t.members.items():
+                computeCodeDecls_rec(m.subtype)
+                computeFullCodeDecls_rec(m.subtype, '')
+
+        needVariantTypeNamesBase = False
+        for tn, t in structTypes.items():
+            if len(t.allVariantSubtypes()) > 0:
+                needVariantTypeNamesBase = True
+        self.props.setProp('needVariantTypeNamesBase', needVariantTypeNamesBase)
+
+        #self.props.getProp('std').array.used = True
+        #self.props.getProp('std').variant.used = True
+        #self.gen_global.genAll(self) - DONE
+
         #self.gen_enums.genAll(self)
         #self.gen_types.genAll(self)
         #self.gen_global.genTypeDecls(self)
+
+
+    def cleanupProps(self):
+        self.props.pop()
 
 
     def reportOutputs(self):
@@ -380,27 +470,27 @@ class CppProject:
             print (f'{ansi.lt_cyan_fg}Note: {ansi.all_off}section "{sectionName}" has no output in outputForm "{self.P("outputForm")}".')
 
 
-    def removeAllFiles(self, direc):
-        d = Path(self.P('defsDir'), direc)
-        if d.is_dir():
-            for f in os.listdir(d):
-                if Path(f).is_file():
-                    os.unlink(f)
+    # def removeAllFiles(self, direc):
+    #     d = Path(self.P('defsDir'), direc)
+    #     if d.is_dir():
+    #         for f in os.listdir(d):
+    #             if Path(f).is_file():
+    #                 os.unlink(f)
 
 
-    def write(self):
-        '''By now, all the sections have their includes and forward decls resolved into src.'''
-        super().write()
+    # def write(self):
+    #     '''By now, all the sections have their includes and forward decls resolved into src.'''
+    #     super().write()
 
-        self.generateCode()
+    #     self.generateCode()
 
-        # clean any files in the target directories
-        self.removeAllFiles(self.P('headerDir'))
-        self.removeAllFiles(self.P('inlineDir'))
-        self.removeAllFiles(self.P('sourceDir'))
+    #     # clean any files in the target directories
+    #     self.removeAllFiles(self.P('headerDir'))
+    #     self.removeAllFiles(self.P('inlineDir'))
+    #     self.removeAllFiles(self.P('sourceDir'))
 
-        for outputFileName, outputFile in self.outputFiles.items():
-            self.writeFile(outputFileName, outputFile)
+    #     for outputFileName, outputFile in self.outputFiles.items():
+    #         self.writeFile(outputFileName, outputFile)
 
 
     def writeFile(self, outputFileName, outputFile):
