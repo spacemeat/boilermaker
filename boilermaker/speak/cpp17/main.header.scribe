@@ -1,0 +1,9 @@
+$<out $mainHeaderPath>$+
+#pragma once
+
+$mainHeaderTopComment
+
+$+  $<if len($enums) $> 0>#include "$enumHeaderFile"$<endif>
+$+  $<if $computeTypes>$<join for type in $types>#include "$typeHeaderFile"$<delim>
+$<endjoin>$<endif>
+$<endout>

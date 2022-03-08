@@ -231,22 +231,23 @@ class CppProject:
             def __init__(self, code, include):
                 self.code = code
                 self.include = include
-                self.used = False
+                self.used = True # TODO: Turn this False again
 
         class StandardTypes:
             def __init__(self):
-                self.string =       StandardType('std::string',            '<string>')
-                self.stringView =   StandardType('std::string_view',       '<string_view>')
-                self.array =        StandardType('std::array',             '<array>')
-                self.pair =         StandardType('std::pair',              '<utility>')
-                self.tuple =        StandardType('std::tuple',             '<tuple>')
-                self.vector =       StandardType('std::vector',            '<vector>')
-                self.set =          StandardType('std::set',               '<set>')
-                self.unorderedSet = StandardType('std::unordered_set',     '<unordered_set>')
-                self.map =          StandardType('std::map',               '<map>')
-                self.unorderedMap = StandardType('std::unordered_map',     '<unordered_map>')
-                self.optional =     StandardType('std::optional',          '<optional>')
-                self.variant =      StandardType('std::variant',           '<variant>' )
+                self.string =       StandardType('std::string',             '<string>')
+                self.stringView =   StandardType('std::string_view',        '<string_view>')
+                self.cstring =      StandardType('',                        '<cstring>' )
+                self.array =        StandardType('std::array',              '<array>')
+                self.pair =         StandardType('std::pair',               '<utility>')
+                self.tuple =        StandardType('std::tuple',              '<tuple>')
+                self.vector =       StandardType('std::vector',             '<vector>')
+                self.set =          StandardType('std::set',                '<set>')
+                self.unorderedSet = StandardType('std::unordered_set',      '<unordered_set>')
+                self.map =          StandardType('std::map',                '<map>')
+                self.unorderedMap = StandardType('std::unordered_map',      '<unordered_map>')
+                self.optional =     StandardType('std::optional',           '<optional>')
+                self.variant =      StandardType('std::variant',            '<variant>' )
                 # TODO: multisdet, multimap, list, pmr things
 
         standardTypes = StandardTypes()
@@ -303,8 +304,16 @@ class CppProject:
                 needVariantTypeNamesBase = True
         self.props.setProp('needVariantTypeNamesBase', needVariantTypeNamesBase)
 
-        #self.props.getProp('std').array.used = True
-        #self.props.getProp('std').variant.used = True
+        # binary reader for std::string needs std::memcpy
+        if ('binary' in self.props.getProp('deserializeFrom') and
+            standardTypes.string.used):
+            standardTypes.cstring.used = True
+
+        # binary ready for std::variant needs std::optional
+        if ('binary' in self.props.getProp('deserializeFrom') and
+            standardTypes.variant.used):
+            standardTypes.optional.used = True
+
         #self.gen_global.genAll(self) - DONE
 
         #self.gen_enums.genAll(self)

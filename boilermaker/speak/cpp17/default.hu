@@ -7,6 +7,8 @@
 
     scribePath:     $bomaDir/speak/cpp17/default.scribe
 
+    cave:           ['deserializeBinary']
+
     computeEnums:   true
     computeTypes:   true
 
@@ -14,24 +16,20 @@
     //const:          `$<lambda t: f'{t} const' if '$constStyle' == 'east' else 'const {t}'>`
     outputForm:     compiled  // or headerOnly, or anything else in outupt
     caveperson:     []// [ctr, dtr, ass, serializeBinary, deserializeBinary]
-    checkBinaryOverruns: false
-    caveStream:     cerr
+    checkBinaryOverruns: true
+    caveStream:     `std::cerr`
 
-    generatedFileComment: ^^
-/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
+    generatedFileComment: `/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
     Do not bother modifying this file, as your build process will overwrite
-    your changes.^^
+    your changes.`
 
-    mainHeaderTopComment: ^^$generatedFileComment
+    mainHeaderTopComment: `$generatedFileComment
 
-    #include this header in your project to use boilermaker-generated code.*/
-^^
-    headerTopComment: ^^$generatedFileComment */
-^^
-    inlineTopComment: ^^ */
-^^
-    sourceTopComment: ^^ */
-^^
+    #include this header in your project to use boilermaker-generated code.*/`
+
+    headerTopComment: `$generatedFileComment */`
+    inlineTopComment: `$generatedFileComment */`
+    sourceTopComment: `$generatedFileComment */`
 
     deserializeFrom: [humon] // also accepts binary
     defaultConstructible: false

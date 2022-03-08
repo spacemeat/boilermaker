@@ -1,0 +1,39 @@
+$<out $commonSourcePath>$+
+$sourceTopComment
+
+#include "$srcToHeader/$commonHeaderFile"
+$+$<join for type in $commonHeaderFwdDecls>
+#include "$srcToHeader/$type.hpp"$<endjoin>
+
+namespace $namespace
+{
+    $+
+$<join for type in $types>$+
+$<join for subtype in $type.subtypesWithIsLess()>
+    // IsLess impl for $<$subtype.codeDecl>
+    bool IsLess_$<$subtype.name>::operator()($<$const($subtype.subtypes[0].codeDecl)> & lhs, $<$const($subtype.subtypes[0].codeDecl)> & rhs) const
+    {
+        $<$subtype.isLess>$<# I haaaaaate that I'm asking user to specify language-specific key resolution.>
+    }
+$<endjoin>$+
+$<endjoin>
+    $+  $<if $std.string.used>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::string> const & obj)
+    {
+        out << BinaryFormat(obj->size());
+        out.write(obj->data(), obj->size());
+
+        return out;
+    }
+$<endif>
+    $+  $<if $std.stringView.used>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::string_view> const & obj)
+    {
+        out << BinaryFormat(obj->size());
+        out.write(obj->data(), obj->size());
+
+        return out;
+    }
+$<endif>$+
+}
+$<endout>

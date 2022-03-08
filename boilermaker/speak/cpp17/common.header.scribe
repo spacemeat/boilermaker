@@ -1,0 +1,921 @@
+$<out $commonHeaderPath>$+
+#pragma once
+
+$headerTopComment
+
+$+$<if len($cave) $> 0>
+#include <iostream>$<endif>
+$+$<if $computeEnums>$<join for enum in $enums>
+#include $<$enum.source>$<endjoin>$<endif>
+$+$<if 'humon' in $deserializeFrom or 'humon' in $serializeTo>
+#include <humon/humon.hpp>$<endif>
+$<join for inc in $commonHeaderIncludes>
+#include $inc$<endjoin>$+
+$<join for type in vars($std)>$<if $type.used>
+#include $<$type.include>$<endif>$<endjoin>
+
+// -------------------
+// Common declarations
+
+namespace $namespace
+{
+    $+$<join for type in $commonHeaderFwdDecls>
+    class $<$type>;$<endjoin>
+
+    $+
+$<join for type in $types>$+
+$<join for subtype in $type.subtypesWithIsLess()>
+    // IsLess template argument for $<$subtype.codeDecl>
+    struct IsLess_$<$subtype.name>
+    {
+        bool operator()($<$const($subtype.subtypes[0].codeDecl)> & lhs, $<$const($subtype.subtypes[0].codeDecl)> & rhs) const;
+    };
+    $+
+$<endjoin>$<endjoin>
+    $+
+    // ----------------------------------------
+    // Deserializing types from humon or binary
+
+    $+  $<if $needVariantTypeNamesBase>
+    // Variant type names match member type names/aliases
+    template <class T$>
+    struct VariantTypeNames
+    {
+        static constexpr char const * names[] = { };
+        static constexpr std::size_t size = 0;
+    };
+$<endif>
+    $+
+$<join for type in $types>
+$<join for subtype in $type.allVariantSubtypes()>
+    template <$>
+    struct VariantTypeNames<$<$subtype.codeDecl>$>
+    {
+        static constexpr $<$const('char')> * names[] = { $+
+            $<join for subsubtype in $subtype.subtypes>$+
+                $<if $subsubtype.alias>"$<$subsubtype.alias>"$+
+                $<else>"$<$subsubtype.type>"$<endif>$<delim>, $<endjoin> };
+        static constexpr std::size_t size = $<len($subtype.subtypes)>;
+    };
+    $+
+$<endjoin>$<endjoin>
+    $+
+
+$<if 'binary' in $deserializeFrom>
+    // -----------------------------
+    // Read types from binary format
+
+    template <class T, typename V = void$>
+    struct BinaryReader
+    {
+    };$<# NOTE: if we make a struct version of this, don't foreget to check for binary size.>
+
+    class BinaryDeserializer
+    {
+    public:
+        BinaryDeserializer(std::string_view path)
+        {
+            $+  $<#TODO: load file on separate funcion>
+            std::ifstream in(path.data(), std::ios::binary);
+            in.seekg(0, std::ios::end);
+            size = in.tellg();
+            in.seekg(0, std::ios::beg);
+            char * newBuffer = new char[size];
+            buffer = newBuffer;
+            selfManaged = true;
+            in.read(newBuffer, size);
+        }
+
+        BinaryDeserializer($<$const('char')> * data, std::size_t len)
+        {
+            buffer = data;
+            size = len;
+            selfManaged = false;
+        }
+
+        ~BinaryDeserializer()
+        {
+            if (selfManaged)
+                { delete [] buffer; }
+        }
+
+        template <class T$>
+        T deserialize()
+        {
+            auto local = buffer;
+            return BinaryReader<T$>::extract(local, size);
+        }
+
+    private:
+        char const * buffer = nullptr;
+        std::size_t size = 0;
+        bool selfManaged = false;
+    };
+
+    template <class T$>
+    struct BinaryReader<T, typename std::enable_if_t<std::is_integral_v<T$>$>$>
+    {
+        static inline T extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading integer\n";$<endif>
+            $+  $<if $checkBinaryOverruns>
+            if (size < sizeof(T))
+                { throw std::runtime_error("Binary buffer too small."); }$<endif>
+
+            auto t = * reinterpret_cast<$<$const('T')> *>(buffer);
+            buffer += sizeof(T);
+            size -= sizeof(T);
+            return t;
+        }
+    };
+
+    template <class T>
+    struct BinaryReader<T, typename std::enable_if_t<std::is_floating_point_v<T>>>
+    {
+        static inline T extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading float\n";$<endif>
+            $+  $<if $checkBinaryOverruns>
+            if (size < sizeof(T))
+                { throw std::runtime_error("Binary buffer too small."); }$<endif>
+
+            auto t = * reinterpret_cast<$<$const('T')> *>(buffer);
+            buffer += sizeof(T);
+            size -= sizeof(T);
+            return t;
+        }
+    };
+$<if $std.string.used>
+    template <>
+    struct BinaryReader<std::string>
+    {
+        static inline std::string extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            std::string t;
+            auto strSize = BinaryReader<std::size_t>::extract(buffer, size);
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading string\n";$<endif>
+            $+  $<if $checkBinaryOverruns>
+            if (size < strSize)
+                { throw std::runtime_error("Binary buffer too small."); }$<endif>
+
+            t.resize(strSize);
+            std::memcpy(t.data(), buffer, strSize);
+            buffer += strSize;
+            size -= strSize;
+            return t;
+        }
+    };
+    $<endif>
+    $+  $<if $std.stringView.used>
+    template <>
+    struct BinaryReader<std::string_view>
+    {  // NOTE: Returning std::string, until we get a string table
+        static inline std::string_view extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            auto strSize = BinaryReader<std::size_t>::extract(buffer, size);
+            std::string_view t(buffer, strSize);
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading string_view\n";$<endif>
+            $+  $<if $checkBinaryOverruns>
+            if (size < strSize)
+                { throw std::runtime_error("Binary buffer too small."); }$<endif>
+
+            buffer += strSize;
+            size -= strSize;
+            return t;
+        }
+    };
+    $<endif>
+    $+  $<if $std.array.used>
+    template <class T, unsigned long N>
+    struct BinaryReader<std::array<T, N>>
+    {
+        static inline std::array<T, N> extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading array\n";$<endif>
+            auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
+            {
+                return std::array<T, N> { ((void) Seq, BinaryReader<T>::extract(buffer, size))... };
+            };
+
+            return maker(std::make_index_sequence<N> {});
+        }
+    };
+    $<endif>
+    $+  $<if $std.pair.used>
+    template <class T0, class T1>
+    struct BinaryReader<std::pair<T0, T1>>
+    {
+        static inline std::pair<T0, T1> extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading pair\n";$<endif>
+            return {
+                BinaryReader<T0>::extract(buffer, size),
+                BinaryReader<T1>::extract(buffer, size)
+            };
+        }
+    };
+    $<endif>
+    $+  $<if $std.tuple.used>
+    template <class... Ts>
+    struct BinaryReader<std::tuple<Ts...>>
+    {
+        static inline std::tuple<Ts...> extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading tuple\n";$<endif>
+            auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
+            {
+                return std::tuple<Ts...> { ((void) Seq, BinaryReader<Ts>::extract(buffer, size))... };
+            };
+
+            return maker(std::make_index_sequence<sizeof...(Ts)> { });
+        }
+    };
+    $<endif>
+    $+  $<if $std.vector.used>
+    template <class T, class A>
+    struct BinaryReader<std::vector<T, A>>
+    {
+        static inline std::vector<T, A> extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading vector\n";$<endif>
+            std::vector<T, A> rv;
+            auto count = BinaryReader<std::size_t>::extract(buffer, size);
+            for (size_t i = 0; i < count; ++i)
+            {
+                rv.emplace_back(BinaryReader<T>::extract(buffer, size));
+            }
+            return rv;
+        }
+    };
+    $<endif>
+    $+  $<if $std.set.used>
+    template <class K, class C, class A>
+    struct BinaryReader<std::set<K, C, A>>
+    {
+        static inline std::set<K, C, A> extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading set\n";$<endif>
+            std::set<K, C, A> rv;
+            auto count = BinaryReader<std::size_t>::extract(buffer, size);
+            for (size_t i = 0; i < count; ++i)
+            {
+                rv.emplace(BinaryReader<K>::extract(buffer, size));
+            }
+            return rv;
+        }
+    };
+    $<endif>
+    $+  $<if $std.unorderedSet.used>
+    template <class K, class H, class E, class A>
+    struct BinaryReader<std::unordered_set<K, H, E, A>>
+    {
+        static inline std::unordered_set<K, H, E, A> extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading unordered_set\n";$<endif>
+            std::unordered_set<K, H, E, A> rv;
+            auto count = BinaryReader<std::size_t>::extract(buffer, size);
+            for (size_t i = 0; i < count; ++i)
+            {
+                rv.emplace(BinaryReader<K>::extract(buffer, size));
+            }
+            return rv;
+        }
+    };
+    $<endif>
+    $+  $<if $std.map.used>
+    template <class K, class T, class C, class A>
+    struct BinaryReader<std::map<K, T, C, A>>
+    {
+        static inline std::map<K, T, C, A> extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading map\n";$<endif>
+            std::map<K, T, C, A> rv;
+            auto count = BinaryReader<std::size_t>::extract(buffer, size);
+            for (size_t i = 0; i < count; ++i)
+            {
+                auto key = BinaryReader<K>::extract(buffer, size);
+                rv.emplace(std::move(key),
+                           BinaryReader<T>::extract(buffer, size));
+            }
+            return rv;
+        }
+    };
+    $<endif>
+    $+  $<if $std.unorderedMap.used>
+    template <class K, class T, class H, class E, class A>
+    struct BinaryReader<std::unordered_map<K, T, H, E, A>>
+    {
+        static inline std::unordered_map<K, T, H, E, A> extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading unoredered_map\n";$<endif>
+            std::unordered_map<K, T, H, E, A> rv;
+            auto count = BinaryReader<std::size_t>::extract(buffer, size);
+            for (size_t i = 0; i < count; ++i)
+            {
+                auto key = BinaryReader<K>::extract(buffer, size);
+                rv.emplace(std::move(key),
+                           BinaryReader<T>::extract(buffer, size));
+            }
+            return rv;
+        }
+    };
+    $<endif>
+    $+  $<if $std.optional.used>
+    template <class T>
+    struct BinaryReader<std::optional<T>>
+    {
+        static inline std::optional<T> extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading optional\n";$<endif>
+            auto hasValue = BinaryReader<char>::extract(buffer, size);
+            if (static_cast<bool>(hasValue))
+                { return BinaryReader<T>::extract(buffer, size); }
+            else
+                { return { }; }
+        }
+    };
+    $<endif>
+    $+  $<if $std.variant.used>
+    template <class... Ts>
+    struct BinaryReader<std::variant<Ts...>>
+    {
+        // This checks if the type string matches a particular one in the defs.
+        template <std::size_t I>
+        static inline bool schecker(std::size_t idx, std::optional<std::variant<Ts...>> & obj, $<$const('char')> *& buffer, std::size_t & size)
+        {
+            using IndexedType = typename std::tuple_element<I, std::tuple<Ts...>>::type;
+            if (obj.has_value() == false && idx == I)
+            {
+                // now we can make the correct variant
+                obj = std::variant<Ts...> (std::in_place_index<I>, BinaryReader<IndexedType>::extract(buffer, size));
+            }
+            return true;  // we don't actually care about the return value
+        };
+
+        static inline std::variant<Ts...> extract($<$const('char')> *& buffer, std::size_t & size)
+        {
+            $+  $<if 'deserializeBinary' in $cave>
+            $caveStream << "Reading variant\n";$<endif>
+            auto idx = BinaryReader<std::size_t>::extract(buffer, size);
+
+            auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
+            {
+                // cycle through each type; when we find one we like, set the
+                // optional to the correct type.
+                std::optional<std::variant<Ts...>> v;
+                // foo is not used; we're relying on ordered initialization
+                // to set the optional, but the initialization has to init
+                // something. :)
+                auto foo = { schecker<Seq>(idx, v, buffer, size)... };
+                (void) foo;
+                // whatever schecker found should be in v. Woe betide you if it is not.
+                return * v;
+            };
+
+            // We make a sequence of type indices for compile-time tomfoolery.
+            return maker(std::make_index_sequence<sizeof...(Ts)> { });
+        }
+    };
+$+  $<endif>$+
+$+  $<endif $<# deserialize binary>>$+
+$+  $<if 'humon' in $deserializeFrom>
+}
+
+    // ----------------------------
+    // Read types from humon format
+
+namespace hu
+{
+    $+  $<if $std.array.used>
+    template <class T, unsigned long N>
+    struct val<std::array<T, N>>
+    {
+        static inline std::array<T, N> extract($<$const('Node')> & node)
+        {
+            auto maker = [&node]<std::size_t... Seq>(std::index_sequence<Seq...>)
+            {
+                return std::array<T, N> { node / Seq % val<T> { }... };
+            };
+
+            return maker(std::make_index_sequence<N> {});
+        }
+    };
+    $<endif>
+    $+  $<if $std.pair.used>
+    template <class T0, class T1>
+    struct val<std::pair<T0, T1>>
+    {
+        static inline std::pair<T0, T1> extract($<$const('Node')> & node)
+        {
+            return {
+                node / 0 % val<T0> { },
+                node / 1 % val<T1> { }
+            };
+        }
+    };
+    $<endif>
+    $+  $<if $std.tuple.used>
+    template <class... Ts>
+    struct val<std::tuple<Ts...>>
+    {
+        static inline std::tuple<Ts...> extract($<$const('Node')> & node)
+        {
+            auto maker = [&node]<std::size_t... Seq>(std::index_sequence<Seq...>)
+            {
+                return std::tuple<Ts...> { node / Seq % val<Ts> { }... };
+            };
+
+            return maker(std::make_index_sequence<sizeof...(Ts)> { });
+        }
+    };
+    $<endif>
+    $+  $<if $std.vector.used>
+    template <class T, class A>
+    struct val<std::vector<T, A>>
+    {
+        static inline std::vector<T, A> extract($<$const('Node')> & node)
+        {
+            std::vector<T, A> rv;
+            for (size_t i = 0; i < node.numChildren(); ++i)
+            {
+                rv.emplace_back(node / i % val<T> { } );
+            }
+            return rv;
+        }
+    };
+    $<endif>
+    $+  $<if $std.set.used>
+    template <class K, class C, class A>
+    struct val<std::set<K, C, A>>
+    {
+        static inline std::set<K, C, A> extract($<$const('Node')> & node)
+        {
+            std::set<K, C, A> rv;
+            for (size_t i = 0; i < node.numChildren(); ++i)
+            {
+                rv.emplace(node / i % val<K> { } );
+            }
+            return rv;
+        }
+    };
+    $<endif>
+    $+  $<if $std.unorderedSet.used>
+    template <class K, class H, class E, class A>
+    struct val<std::unordered_set<K, H, E, A>>
+    {
+        static inline std::unordered_set<K, H, E, A> extract($<$const('Node')> & node)
+        {
+            std::unordered_set<K, H, E, A> rv;
+            for (size_t i = 0; i < node.numChildren(); ++i)
+            {
+                rv.emplace(node / i % val<K> { } );
+            }
+            return rv;
+        }
+    };
+    $<endif>
+    $+  $<if $std.map.used>
+    template <class K, class T, class C, class A>
+    struct val<std::map<K, T, C, A>>
+    {
+        static inline std::map<K, T, C, A> extract($<$const('Node')> & node)
+        {
+            std::map<K, T, C, A> rv;
+            for (size_t i = 0; i < node.numChildren(); ++i)
+            {
+                Node elemNode = node / i;
+                rv.emplace(std::move(val<K>::extract(elemNode.key().str())),
+                           std::move(elemNode % val<T> { } ));
+            }
+            return rv;
+        }
+    };
+    $<endif>
+    $+  $<if $std.unorderedMap.used>
+    template <class K, class T, class H, class E, class A>
+    struct val<std::unordered_map<K, T, H, E, A>>
+    {
+        static inline std::unordered_map<K, T, H, E, A> extract($<$const('Node')> & node)
+        {
+            std::unordered_map<K, T, H, E, A> rv;
+            for (size_t i = 0; i < node.numChildren(); ++i)
+            {
+                Node elemNode = node / i;
+                rv.emplace(std::move(val<K>::extract(elemNode.key().str())),
+                           std::move(elemNode % val<T> { } ));
+            }
+            return rv;
+        }
+    };
+    $<endif>
+    $+  $<if $std.optional.used>
+    template <class T>
+    struct val<std::optional<T>>
+    {
+        static inline std::optional<T> extract($<$const('Node')> & node)
+        {
+            if (! node)
+                { return { }; }
+            else if (node.kind() == NodeKind::value && node.value().str() == "_")
+                { return { }; }
+            else
+                { return node % val<T>{}; }
+        }
+    };
+    $<endif>
+    $+  $<if $std.variant.used>
+    template <class... Ts>
+    struct val<std::variant<Ts...>>
+    {
+        // This checks if the type string matches a particular one in the defs.
+        template <std::size_t I>
+        static inline bool schecker(std::string_view tokStr, std::optional<std::variant<Ts...>> & obj, $<$const('Node')> & node)
+        {
+            // This holds the type names / aliases for each of the variant types.
+            using IndexedType = typename std::tuple_element<I, std::tuple<Ts...>>::type;
+            auto names = txtToBin::VariantTypeNames<std::variant<Ts...>>::names;
+            if (obj.has_value() == false && tokStr == names[I])
+            {
+                // now we can make the correct variant and give it the node as a ctr arg
+                obj = std::variant<Ts...>(std::in_place_index<I>, node % val<IndexedType> { } );
+            }
+            return true;
+        };
+
+        static inline std::variant<Ts...> extract($<$const('Node')> & node)
+        {
+            Token tok = node.annotation("type");
+            if (! tok)
+                { return { }; }
+            auto tokStr = tok.str();
+
+            auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
+            {
+                // cycle through each type; when we find one we like, set the
+                // optional to the correct type.
+                std::optional<std::variant<Ts...>> v;
+                // foo is not used; we're relying on ordered initialization
+                // to set the optional, but the initialization has to init
+                // something. :)
+                auto foo = { schecker<Seq>(tokStr, v, node)... };
+                (void) foo;
+                // whatever schecker found should be in v. Woe betide you if it is not.
+                return * v;
+            };
+
+            // We make a sequence of type indices for compile-time tomfoolery.
+            return maker(std::make_index_sequence<sizeof...(Ts)> { });
+        }
+    };
+$<endif>$+
+}
+$<endif $<# deserialize humon>>
+$+  $<if 'humon' in $serializeTo or 'binary' in $serializeTo>
+// ------------------------------------
+// Serializing types to humon or binary
+namespace $namespace
+{
+    // Base class for *Format<T> templates
+    template <class T>
+    struct SerializedFormat
+    {
+        SerializedFormat(const T & obj)
+        : obj(obj)
+        { }
+
+        T const & operator *() const
+            { return obj; }
+
+        T const * operator ->() const
+            { return & obj; }
+
+        const T & obj;
+    };
+$<if 'binary' in $serializeTo>
+    // ----------------------------
+    // Write types to binary format
+
+    template <class T>
+    struct BinaryFormat : public SerializedFormat<T>
+    {
+        BinaryFormat(T const & t)
+        : SerializedFormat<T>(t)
+        { }
+    };
+
+    template <class T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<T$>')> & obj)
+    {
+        auto p = reinterpret_cast<$<$const('char')> *>(&(* obj));
+        out.write(p, sizeof(T));
+
+        return out;
+    }
+
+    template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<T$>')> & obj)
+    {
+        auto p = reinterpret_cast<$<$const('char')> *>(&(* obj));
+        out.write(p, sizeof(T));
+
+        return out;
+    }
+
+    $+  $<if $std.string.used>
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::string$>')> & obj);
+    $<endif>
+    $+  $<if $std.stringView.used>
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::string_view$>')> & obj);
+    $<endif>
+    $+  $<if len($enums) $> 0>
+    template <class T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
+    std::ostream & operator <<(std::ostream & out, const BinaryFormat<T> & obj)
+    {
+        using enumIntType = std::underlying_type<::VkResult>::type;
+        out << BinaryFormat(static_cast<enumIntType>(* obj));
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.vector.used>
+    template <class T, class A>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::vector<T, A>> const & obj)
+    {
+        out << BinaryFormat(obj->size());
+        for (auto const & elem : * obj)
+          { out << BinaryFormat(elem); }
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.array.used>
+    template <class T, unsigned long N>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::array<T, N>> const & obj)
+    {
+        for (std::size_t i = 0; i < N; ++i)
+          { out << BinaryFormat( (* obj)[i] ); }
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.pair.used>
+    template <class T0, class T1>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::pair<T0, T1>> const & obj)
+    {
+        out << BinaryFormat(obj->first);
+        out << BinaryFormat(obj->second);
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.tuple.used>
+    template <class... Ts>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::tuple<Ts...>> const & obj)
+    {
+        std::apply(
+            [&out](auto &&... args)
+                { ((out << BinaryFormat(args)), ...); },
+            * obj);
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.map.used>
+    template <class K, class T, class C, class A>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::map<K, T, C, A>> const & obj)
+    {
+        out << BinaryFormat(obj->size());
+        for (auto const & [k, v] : * obj)
+          { out << BinaryFormat(k) << BinaryFormat(v); }
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.unorderedMap.used>
+    template <class K, class T, class H, class E, class A>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::unordered_map<K, T, H, E, A>> const & obj)
+    {
+        out << BinaryFormat(obj->size());
+        for (auto const & [k, v] : * obj)
+          { out << BinaryFormat(k) << BinaryFormat(v); }
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.set.used>
+    template <class K, class C, class A>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::set<K, C, A>> const & obj)
+    {
+        out << BinaryFormat(obj->size());
+        for (auto const & elem : * obj)
+          { out << BinaryFormat(elem); }
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.unorderedSet.used>
+    template <class K, class H, class E, class A>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::unordered_set<K, H, E, A>> const & obj)
+    {
+        out << BinaryFormat(obj->size());
+        for (auto const & elem : * obj)
+          { out << BinaryFormat(elem); }
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.optional.used>
+    template <class T>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::optional<T>> const & obj)
+    {
+        out << BinaryFormat(obj->has_value());
+        if (obj->has_value())
+          { out << BinaryFormat(** obj); }
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.variant.used>
+    template <class... Ts>
+    std::ostream & operator << (std::ostream & out, BinaryFormat<std::variant<Ts...>> const & obj)
+    {
+        out << BinaryFormat(obj->index());
+        std::visit(
+            [&](auto && o)
+                { out << BinaryFormat(o); },
+            * obj);
+
+        return out;
+    }
+    $<endif>$+
+$<endif $<# binary>>
+    $+  $<if 'humon' in $serializeTo>
+    // ---------------------------
+    // Write types to humon format
+
+    template <class T>
+    struct HumonFormat : public SerializedFormat<T>
+    {
+        HumonFormat(T const & t)
+        : SerializedFormat<T>(t)
+        { }
+    };
+
+    template <class T>
+    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<T$>')> & obj)
+    {
+        out << * obj;
+
+        return out;
+    }
+    $+  $<if $std.array.used>
+    template <class T, unsigned long N>
+    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::array<T, N$>$>')> & obj)
+    {
+        out << "[ ";
+        for (std::size_t i = 0; i < N; ++i)
+        {
+            out << HumonFormat( (* obj)[i] ) << " ";
+        }
+        out << "]";
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.pair.used>
+    template <class T0, class T1>
+    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::pair<T0, T1$>$>')> & obj)
+    {
+        out << '[' << HumonFormat(std::get<0>(* obj)) << ' ' << HumonFormat(std::get<1>(* obj)) << ']';
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.tuple.used>
+    template <class... Ts>
+    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::tuple<Ts...$>$>')> & obj)
+    {
+        out << "[ ";
+        apply(
+            [&out](auto &&... args)
+                { ((out << HumonFormat(args) << ' '), ...); },
+            * obj);
+        out << "]";
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.vector.used>
+    template <class T, class A>
+    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::vector<T, A$>$>')> & obj)
+    {
+        out << "[ ";
+        for (auto const & elem : * obj)
+        {
+            out << HumonFormat(elem) << ' ';
+        }
+        out << ']';
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.set.used>
+    template <class K, class C, class A>
+    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::set<K, C, A$>$>')> & obj)
+    {
+        out << "[ ";
+        for (auto const & elem : * obj)
+        {
+            out << HumonFormat(elem) << ' ';
+        }
+        out << ']';
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.unorderedSet.used>
+    template <class K, class H, class E, class A>
+    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::unordered_set<K, H, E, A$>$>')> & obj)
+    {
+        out << "[ ";
+        for (auto const & elem : * obj)
+        {
+            out << HumonFormat(elem) << ' ';
+        }
+        out << ']';
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.map.used>
+    template <class K, class T, class C, class A>
+    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::map<K, T, C, A$>$>')> & obj)
+    {
+        out << "{ ";
+        for (auto const & elem : * obj)
+        {
+            out << HumonFormat(elem.first) << ": " << HumonFormat(elem.second) << ' ';
+        }
+        out << '}';
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.unorderedMap.used>
+    template <class K, class T, class H, class E, class A>
+    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::unordered_map<K, T, H, E, A$>$>')> & obj)
+    {
+        out << "{ ";
+        for (auto const & elem : * obj)
+        {
+            out << HumonFormat(elem.first) << ": " << HumonFormat(elem.second) << ' ';
+        }
+        out << '}';
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.optional.used>
+    template <class T>
+    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::optional<T$>$>')> const & obj)
+    {
+        if (obj->has_value())
+            { out << HumonFormat(** obj); }
+        else
+            { out << '_'; }
+
+        return out;
+    }
+    $<endif>
+    $+  $<if $std.variant.used>
+    template <class... Ts>
+    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::variant<Ts...$>$>')> const & obj)
+    {
+        constexpr auto const names = VariantTypeNames<std::variant<Ts...>>::names;
+
+        std::visit(
+            [&](auto && o)
+                { out << HumonFormat(o) << " @type: " << names[obj->index()]; },
+            * obj);
+
+        return out;
+    }
+$<endif>$+
+$<endif $<#/humon>>$+
+}
+$<endif $<#binary or humon>>$+
+$<endout>
+

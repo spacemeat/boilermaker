@@ -545,6 +545,7 @@ class Scribe:
                     currentClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
                     currentClause = currentClause.insertClause()
                     currentClause.kind = ClauseKind.IN
+                    currentClause = currentClause.parent
                     dbg(f'in tag')
 
                 elif m := re.match(re_out, currentClause.terms[0]):
@@ -630,7 +631,8 @@ class Scribe:
                 if len(string) > 0:
                     eatSpace = False
             acc += string
-            print (f'{ansi.dk_green_fg}Accum: {"  " * depth}{ansi.lt_green_fg}{string}{ansi.all_off}')
+            if self.debug:
+                print (f'{ansi.dk_green_fg}Accum: {"  " * depth}{ansi.lt_green_fg}{string}{ansi.all_off}')
 
         def dbg(msg):
             if self.debug:
@@ -810,7 +812,7 @@ class Scribe:
                 path = self.parseText(path)
             try:
                 with open(path, 'r') as file:
-                    self.props.push({'infile': path})
+                    self.props.push({'inFile': Path(path).name, 'inPath': path, 'inDir': str(Path(path).parent)})
                     string = file.read()
                     try:
                         string = self.parseText(string)
@@ -859,7 +861,6 @@ class Scribe:
             tempClause.append(setString[matched:])
             for t in clause.terms[keyIdx].terms[1:]:
                 tempClause.terms.append(t)
-            breakpoint()
             expr = self._parseClause(tempClause, depth + 1)
 
             obj = self._exec(expr)
@@ -871,6 +872,8 @@ class Scribe:
                     varname = k
                     pv = self.parseText(v)
                     self.props.push({varname: pv})
+            else:
+                self.props.push({varname: obj})
             try:
                 th = self._parseClause(clause.terms[keyIdx + 1], depth + 1)
             finally:
@@ -980,7 +983,7 @@ if __name__ == "__main__":
                     binary,
                     dna ]''')
     test('cats: $<in "test_input.scribe"> baz',
-         'cats: Butters, Weeby, Lilly, Leo')
+         'cats: Butters, Weeby, Lilly, Leo baz')
     test('foo $<out "test_output">test $outputForm$<endout>bar',
          'foo bar')
     test('foo $<set test_output as $outputForm>test $test_output$<endset> bar',
