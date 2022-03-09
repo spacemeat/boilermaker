@@ -309,6 +309,11 @@ class CppProject:
             standardTypes.string.used):
             standardTypes.cstring.used = True
 
+        # humon reader for enums needs std::strncmp
+        if ('humon' in self.props.getProp('deserializeFrom') and
+            len(self.props.getProp('enums')) > 0):
+            standardTypes.cstring.used = True
+
         # binary ready for std::variant needs std::optional
         if ('binary' in self.props.getProp('deserializeFrom') and
             standardTypes.variant.used):

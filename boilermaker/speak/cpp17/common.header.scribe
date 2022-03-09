@@ -3,11 +3,11 @@ $<out $commonHeaderPath>$+
 
 $headerTopComment
 
-$+$<if len($cave) $> 0>
+$+  $<if len($cave) $> 0>
 #include <iostream>$<endif>
-$+$<if $computeEnums>$<join for enum in $enums>
+$+  $<if $computeEnums>$<join for enum in $enums>
 #include $<$enum.source>$<endjoin>$<endif>
-$+$<if 'humon' in $deserializeFrom or 'humon' in $serializeTo>
+$+  $<if 'humon' in $deserializeFrom or 'humon' in $serializeTo>
 #include <humon/humon.hpp>$<endif>
 $<join for inc in $commonHeaderIncludes>
 #include $inc$<endjoin>$+
@@ -19,7 +19,7 @@ $<join for type in vars($std)>$<if $type.used>
 
 namespace $namespace
 {
-    $+$<join for type in $commonHeaderFwdDecls>
+    $+  $<join for type in $commonHeaderFwdDecls>
     class $<$type>;$<endjoin>
 
     $+
@@ -642,7 +642,7 @@ $<if 'binary' in $serializeTo>
     $<endif>
     $+  $<if len($enums) $> 0>
     template <class T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
-    std::ostream & operator <<(std::ostream & out, const BinaryFormat<T> & obj)
+    std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<T$>')> & obj)
     {
         using enumIntType = std::underlying_type<::VkResult>::type;
         out << BinaryFormat(static_cast<enumIntType>(* obj));
@@ -652,7 +652,7 @@ $<if 'binary' in $serializeTo>
     $<endif>
     $+  $<if $std.vector.used>
     template <class T, class A>
-    std::ostream & operator << (std::ostream & out, BinaryFormat<std::vector<T, A>> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::vector<T, A$>$>')> & obj)
     {
         out << BinaryFormat(obj->size());
         for (auto const & elem : * obj)
@@ -663,7 +663,7 @@ $<if 'binary' in $serializeTo>
     $<endif>
     $+  $<if $std.array.used>
     template <class T, unsigned long N>
-    std::ostream & operator << (std::ostream & out, BinaryFormat<std::array<T, N>> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::array<T, N$>$>')> & obj)
     {
         for (std::size_t i = 0; i < N; ++i)
           { out << BinaryFormat( (* obj)[i] ); }
@@ -673,7 +673,7 @@ $<if 'binary' in $serializeTo>
     $<endif>
     $+  $<if $std.pair.used>
     template <class T0, class T1>
-    std::ostream & operator << (std::ostream & out, BinaryFormat<std::pair<T0, T1>> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::pair<T0, T1$>$>')> & obj)
     {
         out << BinaryFormat(obj->first);
         out << BinaryFormat(obj->second);
@@ -683,7 +683,7 @@ $<if 'binary' in $serializeTo>
     $<endif>
     $+  $<if $std.tuple.used>
     template <class... Ts>
-    std::ostream & operator << (std::ostream & out, BinaryFormat<std::tuple<Ts...>> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::tuple<Ts...$>$>')> & obj)
     {
         std::apply(
             [&out](auto &&... args)
@@ -695,7 +695,7 @@ $<if 'binary' in $serializeTo>
     $<endif>
     $+  $<if $std.map.used>
     template <class K, class T, class C, class A>
-    std::ostream & operator << (std::ostream & out, BinaryFormat<std::map<K, T, C, A>> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::map<K, T, C, A$>$>')> & obj)
     {
         out << BinaryFormat(obj->size());
         for (auto const & [k, v] : * obj)
@@ -706,7 +706,7 @@ $<if 'binary' in $serializeTo>
     $<endif>
     $+  $<if $std.unorderedMap.used>
     template <class K, class T, class H, class E, class A>
-    std::ostream & operator << (std::ostream & out, BinaryFormat<std::unordered_map<K, T, H, E, A>> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::unordered_map<K, T, H, E, A$>$>')> & obj)
     {
         out << BinaryFormat(obj->size());
         for (auto const & [k, v] : * obj)
@@ -717,7 +717,7 @@ $<if 'binary' in $serializeTo>
     $<endif>
     $+  $<if $std.set.used>
     template <class K, class C, class A>
-    std::ostream & operator << (std::ostream & out, BinaryFormat<std::set<K, C, A>> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::set<K, C, A$>$>')> & obj)
     {
         out << BinaryFormat(obj->size());
         for (auto const & elem : * obj)
@@ -728,7 +728,7 @@ $<if 'binary' in $serializeTo>
     $<endif>
     $+  $<if $std.unorderedSet.used>
     template <class K, class H, class E, class A>
-    std::ostream & operator << (std::ostream & out, BinaryFormat<std::unordered_set<K, H, E, A>> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::unordered_set<K, H, E, A$>$>')> & obj)
     {
         out << BinaryFormat(obj->size());
         for (auto const & elem : * obj)
@@ -739,7 +739,7 @@ $<if 'binary' in $serializeTo>
     $<endif>
     $+  $<if $std.optional.used>
     template <class T>
-    std::ostream & operator << (std::ostream & out, BinaryFormat<std::optional<T>> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::optional<T$>$>')> & obj)
     {
         out << BinaryFormat(obj->has_value());
         if (obj->has_value())
@@ -750,7 +750,7 @@ $<if 'binary' in $serializeTo>
     $<endif>
     $+  $<if $std.variant.used>
     template <class... Ts>
-    std::ostream & operator << (std::ostream & out, BinaryFormat<std::variant<Ts...>> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::variant<Ts...$>$>')> & obj)
     {
         out << BinaryFormat(obj->index());
         std::visit(

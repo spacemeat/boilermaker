@@ -1,0 +1,122 @@
+$<join for type in $types>
+$<out $sourceDir + '/' + $typeSourceFile>$+
+$sourceTopComment
+
+$<join for header in $<$includes.type.source>>
+#include $header$<endjoin>
+
+namespace $namespace
+{
+$<if $defaultConstructible>
+    $<$type.name>::$<$type.name>()
+    {
+    }
+$<endif>$<if $memberwiseConstructible>
+    $<$type.name>::$<$type.name>($<join for member in $<$type.members>>$<$const($<$member.type.name>)> & $<$member.name>$<delim>, $<endjoin>)
+     : $<join for member in $<$type.members>>$<$member.name>($member.name>)$<delim>, $<endjoin>
+    {
+    }
+$<endif>$<if 'humon' in $deserializeFrom>
+    $<$type.name>::$<$type.name>($<$const('hu::Node')> & node)
+     : $<join for member in $<$type.members>>$<$member.name>(node / "$<$member.name>" % hu::val<$<$member.type.name>>{})$<delim>,
+$<endjoin>{
+    }
+$<endif>$<if 'binary' in $deserializeFrom>
+    $<$type.name>::$<$type.name>($<$const('char *')> & buffer, std::size_t & size)
+     : $<join for member in $<$type.members>>$<$member.name>(BinaryReader<$<$member.type.name>>::extract(buffer, size))$<delim>,
+$<endjoin>{
+    }
+$<endif>$<if $copy == source>$<if $copyByCopySwap == False>
+    $<$type.name>::$<$type.name>($<$const($<$type.name>)> & rhs)
+     : $<join for member in $<$type.members>>$<$member.name>(rhs.$member.name>)$<delim>, $<endjoin>
+    {
+    }$<else>
+    {
+        using std::swap;$<join for member in $<$type.members>>
+        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>
+    }$<endif>
+$<endif>$<if $move == source>$<if $moveByCopySwap == False>
+    $<$type.name>::$<$type.name>($<$type.name> && rhs) noexcept
+     : $<join for member in $<$type.members>>$<$member.name>(std::move(rhs.$member.name>))$<delim>, $<endjoin>
+    {
+    }$<else>
+    {
+        using std::swap;$<join for member in $<$type.members>>
+        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>
+    }$<endif>
+$<endif>$<if $copy == source>
+    $<$type.name> & $<$type.name>::operator =($<$const($<$type.name>)> & rhs)
+    {$<if $copyByCopySwap == False>$<join for member in $<$type.members>>
+        $<$member.name> = rhs.$<$member.name>;$<endjoin>$<else>
+        using std::swap;$<join for member in $<$type.members>>
+        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>$<endif>
+        return * this;
+    }
+$<endif>$<if $move == source>
+    $<$type.name> & $<$type.name>::operator =($<$type.name> && rhs)
+    {$<if $moveByCopySwap == False>$<join for member in $<$type.members>>
+        $<$member.name> = std::move(rhs.$<$member.name>);$<endjoin>$<else>
+        using std::swap;$<join for member in $<$type.members>>
+        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>$<endif>
+        return * this;
+    }
+$<endif>$<if $destructor == source>
+    $<$type.name>::~$<$type.name>()
+    {
+    }
+$<endif>;$<if $swap>
+    void swap($<$type.name> & lhs, $<$type.name> & rhs) noexcept
+    {
+        using std::swap;$<join for member in $<$type.members>>
+        swap(lhs.$<$member.name>, rhs.$<$member.name>);$<endjoin>
+    }
+$<endif>$<if $inlineGetters == False>$<join for member in $<$type.members>>$<if $getters>
+    $<$member.type.name> $<$type.name>::get_$<$member.name>() && { return $<$member.name>; }
+$<if $constGetters>
+    $<$const($member.type.name)> & $<$type.name>::get_$<$member.name>() const & { return $<$member.name>; }
+$<endif>$<if $nonConstGetters>
+    $<$member.type.name> & $<$type.name>::get_$<$member.name>() & { return $<$member.name>; }
+$<endif>$<endif>$<endjoin>$<endif>$<if $inlineSetters == False>$<join for member in $type.members>$<if $setByCopy>
+    void $<$type.name>::set_$<$member.name>($<$const($<$member.type.name>)> & new_$<$member.name>) { $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = new_$<$member.name>;$<endif> }
+$<endif>$<if $setByMove>
+    void $<$type.name>::set_$<$member.name>($<$member.type.name> && new_$<$member.name>) noexcept { $<if $moveByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = std::move(new_$<$member.name>);$<endif> }
+$<endif>$<endjoin>$<endif>$<if 'humon' in $serializeTo>
+    std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$type.name>>')> & obj)
+    {
+        out << '{'$<join for member in $<$type.members>>
+            << " $<$member.name>: " << HumonFormat(obj->$<$member.name>);$<endjoin>
+            << '}';
+        return out;
+    }
+$<endif>$<if 'binary' in $serializeTo>
+    std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$type.name>>')> & obj)
+    {
+        out << $<join for member in $<$type.members>>BinaryFormat(obj->$<$member.name>)$<delim>
+            << $<endjoin>;
+        return out;
+    }
+$<endif>$<if $comparable>
+    bool operator ==($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs)
+    {
+        return $<join for member in $<$type.members>>lhs.$<$member.name> == rhs.$<$member.name>$<delim>
+            && $<endjoin>;
+    }
+
+    bool operator !=($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs)
+    {
+        return !(lhs == rhs);
+    }
+$<endif>$<if $diffable>
+    Diff<$<$type.name>>::Diff() { }
+
+    Diff<$<$type.name>::Diff($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs)$<if $type.members.length $> 0>
+    : memberDiffs($<join for member in $type.members>(lhs.$<$member.name> != rhs.$<$member.name>) << static_cast<int>(Members::$<$member.name>)$<delim> |
+$tab              $<endjoin>)$<join for member in type.stdMembers>,
+      $<$member.name>_diffs(lhs.$<$member.name>, rhs.$<$member.name>$<endjoin>)$<endif>
+    {
+    }$<endif>
+}
+
+
+$<endout>
+$<endjoin>

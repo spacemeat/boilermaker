@@ -1,0 +1,36 @@
+$<out $sourceDir + '/' + $enumSourceFile>$+
+$sourceTopComment
+
+$<join for header in $<$includes.enums.source>>
+#include $header$<endjoin>
+
+$<if 'humon' in $serializeTo>
+namespace $namespace
+{$<join for enum in $enums>
+    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.type>>$> & obj)
+    {
+        using enumIntType = std::underlying_type<::$<$enum.type.name>$>::type;$<if $enum.flags == False>
+        switch(* obj)
+        {$<join for val in $enum.values>
+        case $<$val.name>: out << "$<$val.converted>"; break;$<endjoin>
+        default: out << static_cast<enumIntType$>(* obj); break;
+        }$<else>
+        enumIntType bits = static_cast<enumIntType$>(* obj);
+        out << "[";$<join for val in $enum.values>
+        if (bits & static_cast<enumIntType$>($<$val.name>))
+        {
+            out << " $<$val.converted>";
+            bits &= ~static_cast<enumIntType$>($<$val.name>);
+            if (! bits)
+                { goto done; }
+        }
+        $<endjoin>
+    done:
+        out << " ]";
+
+        return out;$<endif>
+    }
+$<endjoin $<# enum >>
+}
+$<endif $<# humon >>
+$<endout>

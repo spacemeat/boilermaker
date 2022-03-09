@@ -2,15 +2,14 @@
 {
     vulkanLanguage: c
     vulkanLanguageVersion: 17
-    vulkanTools: gnu
-    enums: [ {
-            plugin: grok
-            source: $'<vulkan/vulkan.h>'
-            language: $vulkanLanguage
-            languageVersion: $vulkanLanguageVersion
-            tools: $vulkanTools
-            languageStandard: gnu17
-
+    action: {
+        provider:       grokCpp
+        phase:          enums
+        source:         $'<vulkan/vulkan.h>'
+        language:       $vulkanLanguage
+        languageVersion: $vulkanLanguageVersion
+        languageStandard: gnu17
+        enums: {
             flags: {
                 nameContains: FlagBits
             }
@@ -29,5 +28,5 @@
                 encode: lower
             }
         }
-    ]
+    }
 }

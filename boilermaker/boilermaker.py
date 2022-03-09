@@ -5,6 +5,31 @@ from .ansi import Ansi
 from .project import Project
 
 
+# plugin stuff
+'''
+We need plugins to:
+    o   present props for inheritance
+    o   process props, possibly by doing things like parsing external files
+    o   process props, possibly converting types and enums into target-specific data
+    o   contain scribe files for output
+
+plugins/$pluginName/props.hu        - available props for inheritance
+plugins/$pluginName/plugin.py       - plugin module
+plugins/$pluginName/*.py            - other modules for plugin
+plugins/$pluginName/default.scribe  - output
+plugins/$pluginName/*.scribe        - other scribe files for output
+
+Each plugin has a function:
+    def onPhase(phase, props)
+which modifies props, and possibly has side effects like output. phase is one of:
+    props       boma (loads from .hu files), plugins in inherit order
+    enums       boma (interprets user-defined enum values), plugins in inherit order (maybe load from other sources like C headers)
+    types       boma (interprets user-defined type values), plugins in inherit order (maybe
+    transform   boma (none), plugins in inherit order
+    output      boma (prepares reports), plugins in inherit order
+'''
+
+
 # cmdline:
 # $ python -m boilermaker boma.hu [--props || -p || --enums || -e || --types || -t || --write || -w]
 

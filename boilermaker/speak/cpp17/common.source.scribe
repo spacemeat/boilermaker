@@ -18,7 +18,7 @@ $<join for subtype in $type.subtypesWithIsLess()>
 $<endjoin>$+
 $<endjoin>
     $+  $<if $std.string.used>
-    std::ostream & operator << (std::ostream & out, BinaryFormat<std::string> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::string$>')> & obj)
     {
         out << BinaryFormat(obj->size());
         out.write(obj->data(), obj->size());
@@ -27,7 +27,7 @@ $<endjoin>
     }
 $<endif>
     $+  $<if $std.stringView.used>
-    std::ostream & operator << (std::ostream & out, BinaryFormat<std::string_view> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::string_view$>')> & obj)
     {
         out << BinaryFormat(obj->size());
         out.write(obj->data(), obj->size());

@@ -68,80 +68,6 @@ class Project:
         return Props(topBag)
 
 
-    def replaceStringArgs(self, val, replacements=None):
-        if replacements:
-            replacements = {**replacements, **self.props}
-        else:
-            replacements = self.props
-
-        def replace(key):
-            if key in replacements:
-                return replacements[key]
-            else:
-                return self.props.get(key, f'!{key}!')
-
-        # run this until val stops changing; handles nested $<>
-        while True:
-            newVal = re.sub(defArgumentReg, lambda m: replace(m.group(1)), val)
-            if newVal != val:
-                val = newVal
-            else:
-                return newVal
-
-
-    def replaceObjectArgs(self, val, replacements=None):
-        if not replacements:
-            replacements = self.props
-
-        if type(val) is str:
-            return self.replaceStringArgs(val, replacements)
-
-        elif type(val) is list:
-            return [self.replaceObjectArgs(ch, replacements) for ch in val]
-
-        elif type(val) is dict:
-            return {self.replaceStringArgs(k, replacements): self.replaceObjectArgs(v, replacements) for k, v in val.items()}
-
-
-    def d(self, key, replacements=None):
-        if not replacements:
-            replacements = self.props
-
-        val = self.props.get(key)
-        return self.replaceObjectArgs(val)
-
-
-    def dIs(self, key):
-        val = self.props.get(key)
-        return val and val.lower() == 'true'
-
-
-    def indent(self):
-        indent = self.props.get('indent', {'type':'space', 'num': '4' } )
-        if indent['type'] == 'space':
-            return ' ' * (int(indent['num']))
-        elif indent['type'] == 'tab':
-            return '\t' * (int(indent['num']))
-        else:
-            raise RuntimeError(f'invalid "indent" value: {indent}')
-
-
-    def run(self, op):
-        variantName = self.d('variant')
-        print (f'{ansi.dk_blue_fg}Performing {ansi.lt_blue_fg}{op}{ansi.dk_blue_fg} for project variant {ansi.lt_magenta_fg}{variantName}{ansi.dk_blue_fg}.{ansi.all_off}')
-
-        if op == 'reportDefs':
-            self.reportDefs()
-        elif op == 'reportEnums':
-            self.reportEnums()
-        elif op == 'reportTypes':
-            self.reportTypes()
-        elif op == 'reportOutputs':
-            self.reportOutputs()
-        elif op == 'writeCode':
-            self.write()
-
-
     def reportProps(self):
         print (str(self.props))
 
@@ -219,3 +145,90 @@ class Project:
         s.debug = True
         print (s.parseText(f'$<in $scribePath>'))
         self.props.pop()
+
+
+#######################################################
+#######################################################
+#######################################################
+#######################################################
+#######################################################
+###################### old ############################
+#######################################################
+#######################################################
+#######################################################
+#######################################################
+#######################################################
+
+    def replaceStringArgs(self, val, replacements=None):
+        if replacements:
+            replacements = {**replacements, **self.props}
+        else:
+            replacements = self.props
+
+        def replace(key):
+            if key in replacements:
+                return replacements[key]
+            else:
+                return self.props.get(key, f'!{key}!')
+
+        # run this until val stops changing; handles nested $<>
+        while True:
+            newVal = re.sub(defArgumentReg, lambda m: replace(m.group(1)), val)
+            if newVal != val:
+                val = newVal
+            else:
+                return newVal
+
+
+    def replaceObjectArgs(self, val, replacements=None):
+        if not replacements:
+            replacements = self.props
+
+        if type(val) is str:
+            return self.replaceStringArgs(val, replacements)
+
+        elif type(val) is list:
+            return [self.replaceObjectArgs(ch, replacements) for ch in val]
+
+        elif type(val) is dict:
+            return {self.replaceStringArgs(k, replacements): self.replaceObjectArgs(v, replacements) for k, v in val.items()}
+
+
+    def d(self, key, replacements=None):
+        if not replacements:
+            replacements = self.props
+
+        val = self.props.get(key)
+        return self.replaceObjectArgs(val)
+
+
+    def dIs(self, key):
+        val = self.props.get(key)
+        return val and val.lower() == 'true'
+
+
+    def indent(self):
+        indent = self.props.get('indent', {'type':'space', 'num': '4' } )
+        if indent['type'] == 'space':
+            return ' ' * (int(indent['num']))
+        elif indent['type'] == 'tab':
+            return '\t' * (int(indent['num']))
+        else:
+            raise RuntimeError(f'invalid "indent" value: {indent}')
+
+
+    def run(self, op):
+        variantName = self.d('variant')
+        print (f'{ansi.dk_blue_fg}Performing {ansi.lt_blue_fg}{op}{ansi.dk_blue_fg} for project variant {ansi.lt_magenta_fg}{variantName}{ansi.dk_blue_fg}.{ansi.all_off}')
+
+        if op == 'reportDefs':
+            self.reportDefs()
+        elif op == 'reportEnums':
+            self.reportEnums()
+        elif op == 'reportTypes':
+            self.reportTypes()
+        elif op == 'reportOutputs':
+            self.reportOutputs()
+        elif op == 'writeCode':
+            self.write()
+

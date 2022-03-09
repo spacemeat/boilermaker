@@ -1,19 +1,20 @@
 @{ app: boma, boma-version: 0.0.4 }
 {
-    language:       c++
-    languageVersion: 17
-
     inherit:        boilermaker
 
-    scribePath:     $bomaDir/speak/cpp17/default.scribe
+    language:       c++
+    languageVersion: 17
+    action: {
+        provider:     $cpp17Provider
+        phases:       $cpp17Phases
+    }
 
     cave:           ['deserializeBinary']
 
-    computeEnums:   true
-    computeTypes:   true
+    cpp17Provider:  cpp17
+    cpp17Phases:    [enums, types, transform, output]
 
     constStyle:     west
-    //const:          `$<lambda t: f'{t} const' if '$constStyle' == 'east' else 'const {t}'>`
     outputForm:     compiled  // or headerOnly, or anything else in outupt
     caveperson:     []// [ctr, dtr, ass, serializeBinary, deserializeBinary]
     checkBinaryOverruns: true
@@ -61,9 +62,9 @@
     commonInlineFile:       common.inl.hpp
     commonSourceFile:       common.cpp
     diffsHeaderFile:        diffs.hpp
-    enumHeaderFile:         enums.hpp
-    enumInlineFile:         enums.inl.hpp
-    enumSourceFile:         enums.cpp
+    enumsHeaderFile:        enums.hpp
+    enumsInlineFile:        enums.inl.hpp
+    enumsSourceFile:        enums.cpp
     typeHeaderFile:         $<$type.name>.hpp
     typeInlineFile:         $<$type.name>.inl.hpp
     typeSourceFile:         $<$type.name>.cpp
@@ -73,9 +74,9 @@
     commonInlinePath:       $inlineDir/$commonInlineFile
     commonSourcePath:       $sourceDir/$commonSourceFile
     diffsHeaderPath:        $headerDir/$diffsHeaderFile
-    enumHeaderPath:         $headerDir/$enumHeaderFile
-    enumInlinePath:         $inlineDir/$enumInlineFile
-    enumSourcePath:         $sourceDir/$enumSourceFile
+    enumsHeaderPath:        $headerDir/$enumsHeaderFile
+    enumsInlinePath:        $inlineDir/$enumsInlineFile
+    enumsSourcePath:        $sourceDir/$enumsSourceFile
     typeHeaderPath:         $headerDir/$typeHeaderFile
     typeInlinePath:         $inlineDir/$typeInlineFile
     typeSourcePath:         $sourceDir/$typeSourceFile

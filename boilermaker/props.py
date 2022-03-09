@@ -1015,5 +1015,11 @@ Deserialize from: [ $+
                     dna ]''')
     test('foo $<#if you see me you have FAILED>bar',
          'foo bar')
+    test('foo $<if $selector==1>bar$<endif $<#WHAT>> baz',
+         'foo bar baz')
+    test('foo $<join for m in $serializeTo>-<($m)>-$<endjoin $<#WHAT>> baz',
+         'foo -<(humon)>--<(binary)>--<(dna)>- baz')
+    test('foo $<join for m in $serializeTo>-<($m)>-$<delim $<#WHAT>> $<endjoin $<#WHAT>> baz',
+         'foo -<(humon)>- -<(binary)>- -<(dna)>- baz')
     test('$<set const as $<$const>>$<$const($type + "&")> foo;$<endset>', \
          'hu::Node& const foo;')

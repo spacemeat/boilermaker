@@ -1,0 +1,71 @@
+$<out $enumsHeaderPath>$+
+#pragma once
+
+$headerTopComment
+
+#include "$commonHeaderFile"
+
+$<if 'humon' in $deserializeFrom>
+namespace hu
+{
+    $+  $<join for enum in $enums>
+    template <>
+    struct val< $<$enum.name> >
+    {
+$<#$`
+        static inline $<$enum.type.name> extract(const Node & node) noexcept
+        {
+            $+  $<if not $<$enum.flags>>
+            auto nodeVal = node.value().str().data();$<join for val in $enum.values>
+            if (std::strncmp(nodeVal, "$<$val.converted>", $<len($val.converted)>) == 0) { return $<$val.name>; }$<endjoin>
+            return {};$<else>
+            using enumIntType = std::underlying_type<::VkIndirectStateFlagBitsNV>::type;
+            enumIntType e = 0;
+            bool fromList = node.kind() == hu::NodeKind::list;
+            Node chNode = node;
+            if (fromList)
+                { chNode = chNode.firstChild(); }
+            do
+            {
+                auto nodeVal = chNode.value().str().data();
+                if      $<join for val in $<$enum.values>>(std::strncmp(nodeVal, "$<$val.converted>", $<$val.converted.length>) == 0) { e |= static_cast<enumIntType>($<$val.name>); }$<delim>
+                else if $<endjoin>
+                chNode = chNode.nextSibling();
+            }
+            while(fromList && chNode);
+
+            return static_cast<::VkIndirectStateFlagBitsNV>(e);$<endif $<# enum.flags >>
+        `>
+        }
+    }
+$<endjoin> $<# enum>
+}
+$<endif> $<# humon>
+$<if 'binary' in $deserializeFrom and len($enums) $> 0>
+namespace $namespace
+{
+    template <class T>
+    struct BinaryReader<T, typename std::enable_if_t<std::is_enum_v<T>>>
+    {
+$<#$`
+        static inline T extract(const char *& buffer, std::size_t & size)
+        {$<if $cave['deserializeBinary']>
+            $caveStream << "Reading enum\n";$<endif>$<if $checkBinaryOverruns>
+            if (size < sizeof(T))
+                { throw std::runtime_error("Binary buffer too small."); }
+$<endif>
+            auto t = * reinterpret_cast<const T *>(buffer);
+            buffer += sizeof(T);
+            size -= sizeof(T);
+            return t;
+        }
+`>
+    };
+
+$<endif>
+$<if 'humon' in $serializeTo>
+$<join for enum in $enums>
+    std::ostream & operator <<(std::ostream & out, const HumonFormat<<enum.name$>$> & obj);$<endjoin>
+}
+$<endif $<# humon>>
+$<endout>
