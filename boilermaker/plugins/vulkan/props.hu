@@ -2,9 +2,11 @@
 {
     vulkanLanguage: c
     vulkanLanguageVersion: 17
-    action: {
-        provider:       grokCpp
-        phase:          enums
+    vulkanCreatePropsSequence: 3
+    run: {
+        plugin:         grokCpp
+        provider:       provider
+        ops:            { parseEnums: $vulkanCreatePropsSequence }
         source:         $'<vulkan/vulkan.h>'
         language:       $vulkanLanguage
         languageVersion: $vulkanLanguageVersion

@@ -4,15 +4,23 @@
 
     language:       c++
     languageVersion: 17
-    action: {
-        provider:     $cpp17Provider
-        phases:       $cpp17Phases
+    run: {
+        plugin:         $cpp17Plugin
+        provider:       $cpp17Provider
+        output:         $cpp17Scribe
+        ops:            { createCppProps: $cpp17CreatePropsSequence,
+                          generateCode: $cpp17GenerateCodeSequence }
+        generateCode:   $cpp17GenerateCode
     }
 
-    cave:           ['deserializeBinary']
+    cpp17Plugin:    cpp17
+    cpp17Provider:  provider
+    cpp17Scribe:    output
+    cpp17CreatePropsSequence: 7
+    cpp17GenerateCodeSequence: 9
+    cpp17GenerateCode: $generateOutput
 
-    cpp17Provider:  cpp17
-    cpp17Phases:    [enums, types, transform, output]
+    cave:           ['deserializeBinary']
 
     constStyle:     west
     outputForm:     compiled  // or headerOnly, or anything else in outupt

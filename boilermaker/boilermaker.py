@@ -19,14 +19,17 @@ plugins/$pluginName/*.py            - other modules for plugin
 plugins/$pluginName/default.scribe  - output
 plugins/$pluginName/*.scribe        - other scribe files for output
 
-Each plugin has a function:
-    def onPhase(phase, props)
-which modifies props, and possibly has side effects like output. phase is one of:
-    props       boma (loads from .hu files), plugins in inherit order
-    enums       boma (interprets user-defined enum values), plugins in inherit order (maybe load from other sources like C headers)
-    types       boma (interprets user-defined type values), plugins in inherit order (maybe
-    transform   boma (none), plugins in inherit order
-    output      boma (prepares reports), plugins in inherit order
+Each plugin has functions:
+    def transform(props) -> None
+    def output(props) -> None
+which modifies props, and possibly has side effects like output.
+
+Boma runs in phases:
+    props       (loads Props from .hu files)
+    transform   (nop), call plugin.transform() in inherit order
+    output      (prepares reports), call plugin.output() in inherit order
+
+In general, unless a plugin is disabled it will run transform. Output must be optional, and may not be called by boma.
 '''
 
 
@@ -55,20 +58,4 @@ def main():
 
     path = os.path.abspath(propsFile)
     project = Project(A, path)
-
-    if write or reportProps:
-        if reportProps:
-            project.reportProps()
-
-    if write or reportEnums or reportTypes:
-        project.makeEnums()
-        if reportEnums:
-            project.reportEnums()
-
-    if write or reportTypes:
-        project.makeTypes()
-        if reportTypes:
-            project.reportTypes()
-
-    if write:
-        project.write()
+    return 0 if project.run() else 1

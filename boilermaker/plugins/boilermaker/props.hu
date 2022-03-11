@@ -1,0 +1,28 @@
+@{ app: boma, boma-version: 0.0.4 }
+{
+    run: {
+        plugin:         $bomaPlugin
+        provider:       $bomaProvider
+        output:         $bomaScribe
+        ops:            { createEnums:      $bomaCreateEnumsSequence,
+                          createTypes:      $bomaCreateTypesSequence,
+                          createReports:    $bomaOutputSequence }
+        reports:        $bomaReports
+    }
+
+    bomaPlugin:                 boilermaker
+    bomaProvider:               provider
+    bomaScribe:                 output
+    bomaCreateEnumsSequence:    1
+    bomaCreateTypesSequence:    2
+    bomaOutputSequence:         3
+    bomaReports:                [props, enums, types]
+
+
+    namespace:      boma
+
+    indent:         { type: space, num: 4 }
+    tab:            "$<if $indent.type == 'space'>$<join for _ in range(0, $indent.num)> $<endjoin>$<else>$<'\t'>$<endif>"
+    baseDir:        $projectDir
+    generateOutput: true
+}

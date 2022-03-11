@@ -1,6 +1,6 @@
 @{ app: boma, boma-version: 0.0.4 }
 {
-    inherit: [c++17, vulkan]
+    inherit: [cpp17, vulkan]
     tools: gnu
     outputForm: source
 

@@ -4,7 +4,7 @@
     vulkanLanguageVersion: 17
     vulkanTools: gnu
     enums: [ {
-            plugin: grok
+            provider: grok
             source: $'<vulkan/vulkan.h>'
             language: $vulkanLanguage
             languageVersion: $vulkanLanguageVersion
