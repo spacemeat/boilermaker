@@ -19,6 +19,17 @@
     diffable: true                  // done
     caveperson: []
 
+    enums: {
+        cats: [ Leo, Lilly, Butters, Weeby ]
+        dogs: {
+            values: [ Hays, Winnie, [Copper, 3], Ernest ]
+            props: {
+                prefix: dogs_
+                suffix: _woof
+        }
+        -props: { case: upper }
+    }
+
     types: {
         couple: {
             a: string

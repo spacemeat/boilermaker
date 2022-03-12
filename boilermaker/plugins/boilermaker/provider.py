@@ -1,6 +1,7 @@
 from ...plugin import Provider
 from ...props import Scribe
-from ...type import StructType
+from ...type import BomaType
+from ...enums import EnumType
 from ..grokCpp.enums import CfamilyEnums
 
 
@@ -26,7 +27,7 @@ class BomaProvider(Provider):
         print (f'stopping BomaProvider')
 
 
-    def everyEnum(self):
+    def everyEnum_old(self):
         for enumsObject in self.enums:
             typedefsSeen = set()
             for enumName, enumTypedefObject in enumsObject.enumTypedefs.items():
@@ -39,18 +40,14 @@ class BomaProvider(Provider):
 
     def makeEnums(self, props):
         s = Scribe(props)
-        self.enums = []
-        for enumPropsList in s.getXPropAll('enums'):
-            if type(enumPropsList) is dict:
-                enumPropsList = [enumPropsList]
-            for enumProps in enumPropsList:
-                language = enumProps.get('language', '')
-                languageVersion = enumProps.get('languageVersion', '')
-                if language == "c" or language == 'c++':
-                    self.enums.append(CfamilyEnums(props, enumProps))
-                else:
-                    raise RuntimeError(f'Unrecognized enums language: {language}')
-        props.push({'enums': self.enums})
+        self.enums = {}
+        for enumDefs in s.getXPropAll('enums'):
+            enumProps = enumDefs.get('-props', {})
+            for enumName, enumDef in enumDefs.items():
+                if enumName == '-props':
+                    continue
+                self.enums[enumName] = EnumType(enumName, enumDef, enumProps)
+        props.push({'enumTypes': self.enums})
 
 
     def makeTypes(self, props):
@@ -58,8 +55,8 @@ class BomaProvider(Provider):
         self.types = {}
         for typeValues in s.getXPropAll('types'):
             for (typeName, typeData) in typeValues.items():
-                self.types[typeName] = StructType(typeName, typeData)
-        props.push({'types': self.types})
+                self.types[typeName] = BomaType(typeName, typeData)
+        props.push({'bomaTypes': self.types})
 
 
     def reportProps(self, props):
@@ -67,6 +64,7 @@ class BomaProvider(Provider):
 
 
     def reportEnums(self, props):
+        pass
         for enumName, enumObject in self.everyEnum():
             print (f'Enum: {enumName}:')
             for k, v in enumObject.enumVals.items():

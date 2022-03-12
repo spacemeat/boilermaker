@@ -1,4 +1,6 @@
 from . import utilities
+from .type import Type
+
 
 class Enums:
     def __init__(self, props, enumProps):
@@ -10,9 +12,35 @@ class Enums:
         self.caseAttribute = self.enumProps.get('case', {})
 
 
+class EnumType(Type):
+    def __init__(self, name, enumDef, enumProps :dict):
+        super().__init__(name)
+        self.vals = []
+        self.toDict_prefix = enumProps.get('prefix', '')
+        self.toDict_suffix = enumProps.get('suffix', '')
+        self.toDict_case = enumProps.get('case', '')
+        self.toDict_numerics = enumProps.get('allNumerics', False)
+
+        self.alreadyDefined = False
+        self.declVals = []
+
+        vals = []
+        if type(enumDef) is list:
+            vals = enumDef
+        elif type(enumDef) is dict:
+            vals = enumDef['values'] or []
+            self.enumProps = enumProps | enumDef.get('props', {})
+
+
+    def provideDefinition(self, declVals):
+        self.alreadyDefined = True
+        self.declVals = declVals
+
+
 class Enum:
     def __init__(self, enumName, namespaceName, enumsObject):
-        self.name = enumName
+        super().__init__(self, enumName)
+        self.enumName = enumName
         self._values = {}
         self._attribs = set()
         self.namespaceName = namespaceName

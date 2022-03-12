@@ -12,6 +12,7 @@ def doShellCommand(cmd):
 
 #TODO: Move all os.path things to pathlib things
 #TODO: Make this more automatic
+#NOTE: This is probably straight up unneeded
 def getBuiltinDefsPath(defsName):
     bomaSrcDir = os.path.dirname(__file__)
     if defsName == 'boilermaker':

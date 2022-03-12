@@ -8,6 +8,7 @@
         provider:       provider
         ops:            { parseEnums: $vulkanCreatePropsSequence }
         source:         $'<vulkan/vulkan.h>'
+        tools:          gnu
         language:       $vulkanLanguage
         languageVersion: $vulkanLanguageVersion
         languageStandard: gnu17

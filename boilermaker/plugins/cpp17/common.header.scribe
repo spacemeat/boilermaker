@@ -1,3 +1,6 @@
+$+  $<#TODO: std::variant monostate stuff for copyable variants>
+
+
 $<out $commonHeaderPath>$+
 #pragma once
 

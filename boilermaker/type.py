@@ -6,7 +6,22 @@ import re
 re_cppName = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 
 
-class Subtype:
+class Type:
+    def __init__(self, name):
+        self.name = name
+        self.include = None
+        self.usedInBomaType = False
+        self.aliases = []
+        self.codeDecl = ''
+        self.fullCodeDecl = ''
+
+
+class Types:
+    def __init__(self):
+        self.types = {}
+
+
+class BomaSubtype:
     def __init__(self, properties, name):
         if type(properties) is str:
             properties = { 'type': properties }
@@ -24,9 +39,10 @@ class Subtype:
 
         ofo = properties.get('of')
         if ofo:
-            self.subtypes = [Subtype(subsubtype, f'{name}_{idx}') for idx, subsubtype in enumerate(ofo)]
+            self.subtypes = [BomaSubtype(subsubtype, f'{name}_{idx}') for idx, subsubtype in enumerate(ofo)]
         else:
             self.subtypes = []
+
 
     def subtypesWithIsLess(self):
         sts = []
@@ -36,11 +52,13 @@ class Subtype:
             sts.extend(ofo.subtypesWithIsLess() or [])
         return sts
 
+
     def allSubtypes(self):
         sts = [self]
         for ofo in self.subtypes:
             sts.extend(ofo.allSubtypes() or [])
         return sts
+
 
     def allSubtypesOfIsLessTypes(self):
         sts = []
@@ -52,6 +70,7 @@ class Subtype:
                 sts.extend(ofo.allSubtypesOfIsLessTypes() or [])
         return sts
 
+
     def allVariantSubtypes(self):
         sts = []
         if self.type == 'variant':
@@ -60,7 +79,8 @@ class Subtype:
             sts.extend(ofo.allVariantSubtypes() or [])
         return sts
 
-class MemberType:
+
+class BomaTypeMember:
     def __init__(self, name, fullName, properties):
         '''properties might be a string (spec the type), or a
            dict (probably with a type member).'''
@@ -89,7 +109,7 @@ class MemberType:
             return properties
 
         self.properties = normalize(properties, fullName, 0)
-        self.subtype = Subtype(self.properties, self.fullName)
+        self.subtype = BomaSubtype(self.properties, self.fullName)
 
     def __repr__(self):
         endl = '\n'
@@ -127,11 +147,11 @@ class MemberType:
     def allVariantSubtypes(self):
         return self.subtype.allVariantSubtypes()
 
-class StructType:
+
+class BomaType(Type):
     def __init__(self, name, members):
         '''members is always a dict of memberName: memberProperties.'''
-        self.name = name
-        self.members = {memberName: MemberType(memberName, f'{name}_{memberName}', memProperties)
+        self.members = {memberName: BomaTypeMember(memberName, f'{name}_{memberName}', memProperties)
                         for memberName, memProperties in members.items() if re_cppName.match(memberName)}
 
     def __repr__(self):
@@ -166,4 +186,5 @@ class StructType:
         for _, m in self.members.items():
             mts.extend(m.allVariantSubtypes() or [])
         return mts
+
 
