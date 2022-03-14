@@ -1,128 +1,140 @@
 from pathlib import Path
 import os
-import utilities
+from ... import utilities
 from ...plugin import Provider, PluginCollection
 from ...props import Scribe
-from .project import CppProject
+#from .project import CppProject
 from ...type import Type
 
 
 class StandardType(Type):
-    def __init__(self, code, include, used = False):
-        super().__init__(self, code, include, used)
+    def __init__(self, name, declName, include):
+        super().__init__(name)
+        self.codeDecl = declName
+        self.fullCodeDecl = declName
+        self.alreadyDefined = True
+        self.include = include
 
 
 class cpp17Provider(Provider):
-    def start(self, run, props):
+    def start(self, runDefs, props):
         print (f'starting cpp17Provider')
-        self.run = run
+        self.runDefs = runDefs
+
 
     def do(self, op, seq, props):
         print (f'cpp17Provider doing op {op} at sequence {seq}')
         if op == 'createCppProps':
             s = Scribe(props)
             props.push()
-            self.generateProps()
+            self.generateProps(props)
 
         elif op == 'generateCode':
-            self.removeAllFiles()
+            self.removeAllFiles(props)
             s = Scribe(props)
             s.debug = True
-            breakpoint()
-            scribePath = PluginCollection(s.getXProp('pluginsDir')).locateScribe(self.run['plugin'], self.run['output'])
+            scribePath = PluginCollection(s.getXProp('pluginsDir')).locateScribe(self.runDefs['plugin'], self.runDefs['output'])
             print (s.parseText(f'$<in "{scribePath}">'))
+
 
     def stop(self, props):
         print (f'stopping cpp17Provider')
-        props.pop()
 
 
-    def removeAllFiles(self):
+    def removeAllFiles(self, props):
+        s = Scribe(props)
         def raf(self, direc):
-            d = Path(self.P('projectDir'), direc)
+            d = Path(s.X('projectDir'), direc)
             if d.is_dir():
                 for f in os.listdir(d):
                     if Path(f).is_file():
                         os.unlink(f)
-        raf(self, self.P('headerDir'))
-        raf(self, self.P('inlineDir'))
-        raf(self, self.P('sourceDir'))
+        raf(self, s.X('headerDir'))
+        raf(self, s.X('inlineDir'))
+        raf(self, s.X('sourceDir'))
 
 
-    def generateProps(self):
-        self.reset()
-
-        bomaTypes = self.props.getProp('bomaTypes')
-        enumTypes = self.props.getProp('enumTypes')
+    def generateProps(self, props):
+        bomaEnums = props.getProp('bomaEnums')
+        bomaTypes = props.getProp('bomaTypes')
         standardTypes = {
-            'string':      StandardType('std::string',             '<string>'),
-            'stringView':  StandardType('std::string_view',        '<string_view>'),
-            'cstring':     StandardType('',                        '<cstring>' ),
-            'array':       StandardType('std::array',              '<array>'),
-            'pair':        StandardType('std::pair',               '<utility>'),
-            'tuple':       StandardType('std::tuple',              '<tuple>'),
-            'vector':      StandardType('std::vector',             '<vector>'),
-            'set':         StandardType('std::set',                '<set>'),
-            'unorderedSet':StandardType('std::unordered_set',      '<unordered_set>'),
-            'map':         StandardType('std::map',                '<map>'),
-            'unorderedMap':StandardType('std::unordered_map',      '<unordered_map>'),
-            'optional':    StandardType('std::optional',           '<optional>'),
-            'variant':     StandardType('std::variant',            '<variant>' )
+            'string':      StandardType('string',       'std::string',             '<string>'),
+            'stringView':  StandardType('stringView',   'std::string_view',        '<string_view>'),
+            'cstring':     StandardType('cstring',      '',                        '<cstring>' ),
+            'array':       StandardType('array',        'std::array',              '<array>'),
+            'pair':        StandardType('pair',         'std::pair',               '<utility>'),
+            'tuple':       StandardType('tuple',        'std::tuple',              '<tuple>'),
+            'vector':      StandardType('vector',       'std::vector',             '<vector>'),
+            'set':         StandardType('set',          'std::set',                '<set>'),
+            'unorderedSet':StandardType('unorderedSet', 'std::unordered_set',      '<unordered_set>'),
+            'map':         StandardType('map',          'std::map',                '<map>'),
+            'unorderedMap':StandardType('unorderedMap', 'std::unordered_map',      '<unordered_map>'),
+            'optional':    StandardType('optional',     'std::optional',           '<optional>'),
+            'variant':     StandardType('variant',      'std::variant',            '<variant>' )
                 # TODO: multisdet, multimap, list, pmr things
         }
 
-        allTypes = [*bomaTypes, *enumTypes, *standardTypes]
+        allTypes = {**bomaTypes, **bomaEnums, **standardTypes}
+
+        # compute translated names for enums that aren't already defined
+        for _, e in bomaEnums.items():
+            self.computeDecl(e)
+            e.computeDeclVals()
 
         # compute C++ names for all types
-        for t in allTypes:
-            self.computeDecls(t)
+        for _, t in allTypes.items():
+            self.computeDecl(t)
 
-        # allow scribes to access $std.string.used, say
-        stdObj = object()
+        # allow scribes to access $std.string.usedInBomaType, say
+        class AllStandardObjects:
+            def __init__(self):
+                pass
+        stdObj = AllStandardObjects()
         for k, v in standardTypes.items():
-            stdObj.__setattr__(k, v)
-        self.props.setProp('std', stdObj)
+            setattr(stdObj, k, v)
+        props.setProp('std', stdObj)
 
         # relative paths for local #includes
-        self.props.setProp('headerToInl', os.path.relpath(self.P('inlineDir'), self.P('headerDir')))
-        self.props.setProp('srcToHeader', os.path.relpath(self.P('headerDir'), self.P('sourceDir')))
-        self.props.setProp('srcToInl', os.path.relpath(self.P('inlineDir'), self.P('sourceDir')))
+        s = Scribe(props)
+        props.setProp('headerToInl',    os.path.relpath(s.X('inlineDir'), s.X('headerDir')))
+        props.setProp('srcToHeader',    os.path.relpath(s.X('headerDir'), s.X('sourceDir')))
+        props.setProp('srcToInl',       os.path.relpath(s.X('inlineDir'), s.X('sourceDir')))
 
         # convenience function for $const
         def const(decl):
-            s = Scribe(self.props)
-            return f'{decl} const' if s.X('constStyle', 'west') == 'east' else f'const {decl}'
-        self.props.setProp('const', const)
+            s = Scribe(props)
+            return f'{decl} const' if s.X('constStyle') == 'east' else f'const {decl}'
+        props.setProp('const', const)
 
         #self.makeOutputForm()
 
         headers = set()
-        if ('humon' in self.props.getProp('deserializeFrom') or
-            'humon' in self.props.getProp('serializeTo')):
+        if ('humon' in props.getProp('deserializeFrom') or
+            'humon' in props.getProp('serializeTo')):
             #headers.append('<humon/humon.hpp>')
             pass
 
         for typeName, strType in bomaTypes.items():
             subtypes = strType.allSubtypes()
             for st in subtypes:
-                if st.type in vars(allTypes):
-                    getattr(allTypes, st.type).used = True
+                if st.type in allTypes:
+                    allTypes[st.type].usedInBomaType = True
 
-        #headers.update([st.include for st in standardTypes if st.used])
+        #headers.update([st.include for st in standardTypes if st.usedInBomaType])
 
-        self.props.setProp('commonHeaderIncludes', list(headers))
+        props.setProp('commonHeaderIncludes', list(headers))
 
         fwds = set()
         for typeName, strType in bomaTypes.items():
             subtypes = strType.allSubtypesOfIsLessTypes()
             subtypes = [st.type for st in subtypes if st.type in bomaTypes]
             fwds.update(subtypes)
-        self.props.setProp('commonHeaderFwdDecls', fwds)
+        props.setProp('commonHeaderFwdDecls', fwds)
 
         def computeCodeDecls_rec(subtype):
             subtype.codeDecl = subtype.type
-            if subtype.type in vars(standardTypes):
-                subtype.codeDecl = getattr(standardTypes, subtype.type).code
+            if subtype.type in standardTypes:
+                subtype.codeDecl = standardTypes[subtype.type].codeDecl
             if subtype.subtypes:
                 templateArgs = [computeCodeDecls_rec(st) for st in subtype.subtypes]
                 if subtype.isLess:
@@ -145,41 +157,34 @@ class cpp17Provider(Provider):
         for tn, t in bomaTypes.items():
             if len(t.allVariantSubtypes()) > 0:
                 needVariantTypeNamesBase = True
-        self.props.setProp('needVariantTypeNamesBase', needVariantTypeNamesBase)
+        props.setProp('needVariantTypeNamesBase', needVariantTypeNamesBase)
 
         # binary reader for std::string needs std::memcpy
-        if ('binary' in self.props.getProp('deserializeFrom') and
-            standardTypes.string.used):
-            standardTypes.cstring.used = True
+        if ('binary' in s.X('deserializeFrom') and
+            standardTypes.string.usedInBomaType):
+            standardTypes.cstring.usedInBomaType = True
 
         # humon reader for enums needs std::strncmp
-        if ('humon' in self.props.getProp('deserializeFrom') and
-            len(self.props.getProp('enums')) > 0):
-            standardTypes.cstring.used = True
+        if ('humon' in s.X('deserializeFrom') and
+            len(props.getProp('enums')) > 0):
+            standardTypes.cstring.usedInBomaType = True
 
         # binary ready for std::variant needs std::optional
-        if ('binary' in self.props.getProp('deserializeFrom') and
-            standardTypes.variant.used):
-            standardTypes.optional.used = True
-
-        #self.gen_global.genAll(self) - DONE
-
-        #self.gen_enums.genAll(self)
-        #self.gen_types.genAll(self)
-        #self.gen_global.genTypeDecls(self)
-
-
-    def cleanupProps(self):
-        self.props.pop()
+        if ('binary' in s.X('deserializeFrom') and
+            standardTypes.variant.usedInBomaType):
+            standardTypes.optional.usedInBomaType = True
 
 
     def computeDecl(self, t :Type):
-        pass
+        if t.alreadyDefined:
+            return
+
+        t.codeDecl = t.name.replace('.', '::')
+        t.fullCodeDecl = t.name.replace('.', '::')
 
 
 
-
-    def makeNative(self, bomaName, useNamespace=False):
+    def makeNative_old(self, bomaName, useNamespace=False):
         if bomaName in ['less', 'monostate', 'size_t', 'string', 'string_view', 'array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
             return 'std::' + bomaName
         elif useNamespace and bomaName in self.types:
@@ -187,7 +192,7 @@ class cpp17Provider(Provider):
         return bomaName.replace('.', '::')
 
 
-    def makeNativeSubtype(self, properties, useNamespace=False):
+    def makeNativeSubtype_old(self, properties, useNamespace=False):
         builtType = self.makeNative(properties['type'], useNamespace)
         of = properties.get('of')
         if of:
@@ -206,7 +211,7 @@ class cpp17Provider(Provider):
         return builtType
 
 
-    def makeNativeMemberType(self, properties, useNamespace=False):
+    def makeNativeMemberType_old(self, properties, useNamespace=False):
         return self.makeNativeSubtype(utilities.dictify(properties, 'type'), useNamespace)
 
 

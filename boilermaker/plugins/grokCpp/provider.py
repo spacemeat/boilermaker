@@ -1,6 +1,6 @@
 from ...plugin import Provider
 from ...props import Scribe
-from .enums import makeEnums
+from ...enums import EnumType
 from .getSearchPaths_gnu import getSearchPaths as getSearchPaths_gnu
 import pygccxml
 from pathlib import Path
@@ -11,34 +11,38 @@ class grokCppProvider(Provider):
         print (f'starting grokCppProvider')
         self.runDefs = runDefs
 
-        s = Scribe(props)
-        projectDir = Path(s.X('projectDir'))
-
-        self.quotedSearchPaths, self.systemSearchPaths  = getSearchPaths_gnu(projectDir)
-
-        # parse source files here
-        sources = runDefs.get('source')
-        if type(sources) is str:
-            sources = [sources]
-
-        for source in sources:
-            self._processSource(source)
-
 
     def do(self, op, seq, props):
         print (f'grokCppProvider doing op {op} at sequence {seq}')
-        makeEnums(self.runDefs, props)
+        self._parseSources(props)
 
 
     def stop(self, props):
         print (f'stopping grokCppProvider')
 
 
-    def _processSource(self, sourceFilename):
-        s = Scribe(self.props)
-        tools = s.X(self.enumProps.get('tools', ''))
+    def _parseSources(self, props):
+        s = Scribe(props)
+        projectDir = Path(s.X('projectDir'))
 
+        self.quotedSearchPaths, self.systemSearchPaths  = getSearchPaths_gnu(projectDir)
+
+        sources = self.runDefs['source']
+        if type(sources) is str:
+            sources = [sources]
+
+        # at some point this might be like
+        # enums = {} / types = {} / e, t = self._processSource(source)
         enums = {}
+        for source in sources:
+            enums.update(self._processSource(source, props))
+        props.push({'bomaEnums': enums})
+
+
+    def _processSource(self, sourceFilename, props):
+        s = Scribe(props)
+        tools = s.X(self.runDefs.get('tools', ''))
+
         generator_path, generator_name = pygccxml.utils.find_xml_generator()
 
         isSystemInclude = sourceFilename.startswith('<') and sourceFilename.endswith('>')
@@ -54,9 +58,9 @@ class grokCppProvider(Provider):
         cflags = ''
 
         if tools == 'gnu':
-            language = s.X(self.enumProps.get('language', ''))
-            version = s.X(self.enumProps.get('languageVersion', ''))
-            languageStandard = s.X(self.enumProps.get('languageStandard', ''))
+            language = s.X(self.runDefs.get('language', ''))
+            version = s.X(self.runDefs.get('languageVersion', ''))
+            languageStandard = s.X(self.runDefs.get('languageStandard', ''))
             if language == 'c':
                 if languageStandard in [
                     'c89', 'c90', 'c99', 'c11', 'c17', 'c18', 'c2x',
@@ -93,45 +97,205 @@ class grokCppProvider(Provider):
         # Get access to the global namespace
         global_namespace = pygccxml.declarations.get_global_namespace(decls)
 
-        self._processNamespace(enums, global_namespace, language == 'c++')
+        return self._processNamespace(global_namespace, language == 'c++')
 
 
     def _processNamespace(self, ns, isScoped):
+        accruedEnums = {}
         for decl in ns.declarations:
             if hasattr(decl, "elaborated_type_specifier"):
                 if decl.elaborated_type_specifier == "enum":
                     enumType = decl.partial_decl_string.replace('::', '.')
-                    self.enums[enumType] = CfamilyEnum(enumType, decl.values, isScoped, self)
+                    #self.enums[enumType] = CfamilyEnum(enumType, decl.values, isScoped, self)
                     # instead of above, just make the EnumType object, and then .provideDefinition
+                    e = self._extractEnum(decl, isScoped)
+                    accruedEnums[e.name] = e
 
         for decl in ns.declarations:
             if hasattr(decl, "decl_type"):
                 typedefName = decl.partial_decl_string.replace('::', '.')
                 declType = decl.decl_type.decl_string.replace('::', '.')
-                enum = self.enums.get(declType)
-                if enum:
-                    self.enumTypedefs[typedefName] = EnumTypedef(typedefName, declType, ns.name)
+                if enum := accruedEnums.get(declType):
+                    # self.enumTypedefs[typedefName] = EnumTypedef(typedefName, declType, ns.name)
                     # instead of above, just find the EnumType object, and then give it an alias
+                    enum.aliases.append(typedefName)
                     # NOTE: Need to make Types.find() that matches type names AND aliases
 
         for decl in ns.namespaces(allow_empty=True):
-            self._processNamespace(decl, isScoped)
+            accruedEnums.update(self._processNamespace(decl, isScoped))
+
+        return accruedEnums
 
 
-    def makeEnums_old(self, props):
-        s = Scribe(props)
-        self.enums = []
-        enumProps = self.run
-        for enumPropsList in s.getXPropAll('enums'):
-            if type(enumPropsList) is dict:
-                enumPropsList = [enumPropsList]
-            for enumProps in enumPropsList:
-                language = enumProps.get('language', '')
-                languageVersion = enumProps.get('languageVersion', '')
-                if language == "c" or language == 'c++':
-                    self.enums.append(CfamilyEnums(props, enumProps))
+    def _extractEnum(self, pygccxmlDecl, isScoped):
+        bomaEnumName = pygccxmlDecl.partial_decl_string.replace('::', '.')
+        declVals = []
+        for val in pygccxmlDecl.values:
+            if type(val) is tuple:
+                declVals.append([val[0], val[1]])
+            else:
+                declVals.append(val)
+
+        bomaVals, flags = self._translateDeclValsToBomaVals(bomaEnumName, declVals)
+
+        isScoped = (self.runDefs.get('isScoped', False) or
+                    self.runDefs.get('language', 'c++') == 'c++')
+        e = EnumType(bomaEnumName, bomaVals, {'isScoped': isScoped, 'flags': flags})
+        e.provideDeclVals(declVals)
+        return e
+
+
+    def _translateDeclValsToBomaVals(self, enumName, declVals):
+        declValStrings = [v[0] if type(v) is list else v for v in declVals]
+        eva = self._computeAttributes(enumName, declValStrings)
+
+        def translateEnumVal(enumVal):
+            val = enumVal
+            val = val[eva.prefixLen:]
+            if eva.suffixLen > 0:
+                val = val[:-eva.suffixLen]
+            if eva.case == 'lower':
+                val = val.lower()
+            elif eva.case == 'upper':
+                val = val.upper()
+            return val
+
+        bomaVals = []
+        cidx = 0
+        for val in declVals:
+            idx = cidx
+            if type(val) is list:
+                idx = val[1]
+                val = translateEnumVal(val[0])
+                cidx = idx
+                bomaVals.append([val, idx])
+            else:
+                val = translateEnumVal(val)
+                bomaVals.append(val)
+            cidx += 1
+
+        return (bomaVals, eva.flags)
+
+
+    def _computeAttributes(self, enumName, declStringValues):
+        class EnumValAttributes:
+            def __init__(self):
+                self.flags = False
+                self.prefixLen = 0
+                self.suffixLen = 0
+                self.case = 'leaveIt'
+
+        eva = EnumValAttributes()
+        enumProps = self.runDefs.get('enums', {})
+
+        if len(enumProps.get('flags', {})) > 0:
+            for op, value in enumProps['flags'].items():
+                if op == 'nameContains':
+                    if value and type(value) is not str:
+                        raise RuntimeError(f'platform/flags/nameContains must be a string value.')
+
+                    if enumName.find(value) > 0:
+                        eva.flags = True
                 else:
-                    raise RuntimeError(f'Unrecognized enums language: {language}')
-        props.push({'enums': self.enums})
+                    raise RuntimeError(f'platform/flag contains an invalid operation "{op}".')
+
+        if len(enumProps.get('prefix', {})) > 0:
+            excludeCommon = False
+            delimit = ''
+            for op, value in enumProps['prefix'].items():
+                if op == 'exclude':
+                    if value and type(value) is not str:
+                        raise RuntimeError(f'platform/prefix/exclude must be a string value.')
+                    if value == 'common':
+                        excludeCommon = True
+                elif op == 'delimit':
+                    if value and type(value) is not str:
+                        raise RuntimeError(f'platform/prefix/delimit must be a string value.')
+                    delimit = value
+                else:
+                    raise RuntimeError(f'platform/prefix contains an invalid operation "{op}".')
+
+            if excludeCommon and len(declStringValues) > 1:
+                eva.prefixLen = self.determineCommonPrefixAndSuffixLength(declStringValues, False, delimit)
+            else:
+                eva.prefixLen = 0
+
+        if len(enumProps.get('suffix', {})) > 0:
+            excludeCommon = False
+            delimit = ''
+            for op, value in enumProps['suffix'].items():
+                if op == 'exclude':
+                    if value and type(value) is not str:
+                        raise RuntimeError(f'platform/suffix/exclude must be a string value.')
+                    if value == 'common':
+                        excludeCommon = True
+                elif op == 'delimit':
+                    if value and type(value) is not str:
+                        raise RuntimeError(f'platform/suffix/delimit must be a string value.')
+                    delimit = value
+                else:
+                    raise RuntimeError(f'platform/suffix contains an invalid operation "{op}".')
+
+            if excludeCommon and len(declStringValues) > 1:
+                eva.suffixLen = self.determineCommonPrefixAndSuffixLength(declStringValues, True, delimit)
+            else:
+                eva.suffixLen = 0
+
+        if len(enumProps.get('case', {})) > 0:
+            for op, value in enumProps['case'].items():
+                if op == 'encode':
+                    if value and type(value) is not str:
+                        raise RuntimeError(f'platform/case/encode value must be a string value.')
+
+                    if value in ['lower', 'upper', 'leaveIt']:
+                        eva.case = value
+                    else:
+                        raise RuntimeError(f'platform/case/encode value must be one of "lower", "upper", or "leaveIt".)')
+                else:
+                    raise RuntimeError(f'platform/case contains an invalid operation "{op}".')
+
+        return eva
 
 
+    @staticmethod
+    def determineCommonPrefixAndSuffixLengthBetweenTwo(a, b, postfix, delimit = None):
+        # I'm sure there's a pythonic way
+        commonLength = 0
+        for i in range(0, min(len(a), len(b))):
+            idx = i if not postfix else -i - 1
+            if a[idx] == b[idx]:
+                commonLength += 1
+            else:
+                break
+
+        # if the prefix ends in a non-delimit, dial it back until we find one
+        # (also if postfix starts in a non-_...)
+        # TODO: Test multicharacter delimiters. I think this is wrong.
+
+        #if commonLength < len(a):
+        if delimit:
+            if not postfix:
+                idx = commonLength - 1
+                while commonLength > 0 and a[idx:idx + len(delimit)] != delimit:
+                    commonLength -= 1
+                    idx -= 1
+            else:
+                idx = -commonLength
+                while commonLength > 0 and a[idx:idx + len(delimit)] != delimit:
+                    commonLength -= 1
+                    idx += 1
+
+        return commonLength
+
+
+    @staticmethod
+    def determineCommonPrefixAndSuffixLength(strs, postfix, delimit):
+        cev = strs[0]
+        commonLength = len(cev)
+        for ev in strs[1:]:
+            l = grokCppProvider.determineCommonPrefixAndSuffixLengthBetweenTwo(cev, ev, postfix, delimit)
+            if l < commonLength:
+                commonLength = l
+            if commonLength == 0:
+                break
+        return commonLength

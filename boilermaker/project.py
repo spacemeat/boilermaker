@@ -2,8 +2,8 @@ from tkinter import E
 from . import utilities, ansi
 
 # TODO: Make this a plugin thing.
-from .enums import Enums as Enums
-from .plugins.grokCpp.enums import CfamilyEnums
+#from .enums import Enums as Enums
+#from .plugins.grokCpp.enums import CfamilyEnums
 import re
 from .props import Props, PropertyBag, Scribe
 from pathlib import Path

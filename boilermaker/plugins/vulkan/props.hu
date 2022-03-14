@@ -6,7 +6,7 @@
     run: {
         plugin:         grokCpp
         provider:       provider
-        ops:            { parseEnums: $vulkanCreatePropsSequence }
+        ops:            { parseSource: $vulkanCreatePropsSequence }
         source:         $'<vulkan/vulkan.h>'
         tools:          gnu
         language:       $vulkanLanguage

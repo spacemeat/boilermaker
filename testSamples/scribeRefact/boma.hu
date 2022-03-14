@@ -26,6 +26,7 @@
             props: {
                 prefix: dogs_
                 suffix: _woof
+            }
         }
         -props: { case: upper }
     }

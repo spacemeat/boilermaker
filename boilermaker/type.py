@@ -1,8 +1,8 @@
 from unicodedata import name
 from . import utilities
 from .ansi import Ansi as ansi
-
 import re
+
 re_cppName = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 
 
@@ -12,6 +12,7 @@ class Type:
         self.include = None
         self.usedInBomaType = False
         self.aliases = []
+        self.alreadyDefined = False
         self.codeDecl = ''
         self.fullCodeDecl = ''
 
@@ -28,7 +29,7 @@ class BomaSubtype:
 
         self.name = name
         self.type = properties.get('type')
-        self.alias = properties.get('alias')
+        self.aliases = properties.get('alias')
         self.isLess = properties.get('isLess')
         self.codeDecl = ''
         self.fullCodeDecl = ''
@@ -150,6 +151,7 @@ class BomaTypeMember:
 
 class BomaType(Type):
     def __init__(self, name, members):
+        super().__init__(name)
         '''members is always a dict of memberName: memberProperties.'''
         self.members = {memberName: BomaTypeMember(memberName, f'{name}_{memberName}', memProperties)
                         for memberName, memProperties in members.items() if re_cppName.match(memberName)}

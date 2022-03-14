@@ -14,7 +14,7 @@ $+  $<if 'humon' in $deserializeFrom or 'humon' in $serializeTo>
 #include <humon/humon.hpp>$<endif>
 $<join for inc in $commonHeaderIncludes>
 #include $inc$<endjoin>$+
-$<join for type in vars($std)>$<if $type.used>
+$<join for type in vars($std)>$<if $type.usedInBomaType>
 #include $<$type.include>$<endif>$<endjoin>
 
 // -------------------
@@ -26,7 +26,7 @@ namespace $namespace
     class $<$type>;$<endjoin>
 
     $+
-$<join for type in $types>$+
+$<join for type in $bomaTypes>$+
 $<join for subtype in $type.subtypesWithIsLess()>
     // IsLess template argument for $<$subtype.codeDecl>
     struct IsLess_$<$subtype.name>
@@ -150,7 +150,7 @@ $<if 'binary' in $deserializeFrom>
             return t;
         }
     };
-$<if $std.string.used>
+$<if $std.string.usedInBomaType>
     template <>
     struct BinaryReader<std::string>
     {
@@ -172,7 +172,7 @@ $<if $std.string.used>
         }
     };
     $<endif>
-    $+  $<if $std.stringView.used>
+    $+  $<if $std.stringView.usedInBomaType>
     template <>
     struct BinaryReader<std::string_view>
     {  // NOTE: Returning std::string, until we get a string table
@@ -192,7 +192,7 @@ $<if $std.string.used>
         }
     };
     $<endif>
-    $+  $<if $std.array.used>
+    $+  $<if $std.array.usedInBomaType>
     template <class T, unsigned long N>
     struct BinaryReader<std::array<T, N>>
     {
@@ -209,7 +209,7 @@ $<if $std.string.used>
         }
     };
     $<endif>
-    $+  $<if $std.pair.used>
+    $+  $<if $std.pair.usedInBomaType>
     template <class T0, class T1>
     struct BinaryReader<std::pair<T0, T1>>
     {
@@ -224,7 +224,7 @@ $<if $std.string.used>
         }
     };
     $<endif>
-    $+  $<if $std.tuple.used>
+    $+  $<if $std.tuple.usedInBomaType>
     template <class... Ts>
     struct BinaryReader<std::tuple<Ts...>>
     {
@@ -241,7 +241,7 @@ $<if $std.string.used>
         }
     };
     $<endif>
-    $+  $<if $std.vector.used>
+    $+  $<if $std.vector.usedInBomaType>
     template <class T, class A>
     struct BinaryReader<std::vector<T, A>>
     {
@@ -259,7 +259,7 @@ $<if $std.string.used>
         }
     };
     $<endif>
-    $+  $<if $std.set.used>
+    $+  $<if $std.set.usedInBomaType>
     template <class K, class C, class A>
     struct BinaryReader<std::set<K, C, A>>
     {
@@ -277,7 +277,7 @@ $<if $std.string.used>
         }
     };
     $<endif>
-    $+  $<if $std.unorderedSet.used>
+    $+  $<if $std.unorderedSet.usedInBomaType>
     template <class K, class H, class E, class A>
     struct BinaryReader<std::unordered_set<K, H, E, A>>
     {
@@ -295,7 +295,7 @@ $<if $std.string.used>
         }
     };
     $<endif>
-    $+  $<if $std.map.used>
+    $+  $<if $std.map.usedInBomaType>
     template <class K, class T, class C, class A>
     struct BinaryReader<std::map<K, T, C, A>>
     {
@@ -315,7 +315,7 @@ $<if $std.string.used>
         }
     };
     $<endif>
-    $+  $<if $std.unorderedMap.used>
+    $+  $<if $std.unorderedMap.usedInBomaType>
     template <class K, class T, class H, class E, class A>
     struct BinaryReader<std::unordered_map<K, T, H, E, A>>
     {
@@ -335,7 +335,7 @@ $<if $std.string.used>
         }
     };
     $<endif>
-    $+  $<if $std.optional.used>
+    $+  $<if $std.optional.usedInBomaType>
     template <class T>
     struct BinaryReader<std::optional<T>>
     {
@@ -351,7 +351,7 @@ $<if $std.string.used>
         }
     };
     $<endif>
-    $+  $<if $std.variant.used>
+    $+  $<if $std.variant.usedInBomaType>
     template <class... Ts>
     struct BinaryReader<std::variant<Ts...>>
     {
@@ -379,7 +379,7 @@ $<if $std.string.used>
                 // cycle through each type; when we find one we like, set the
                 // optional to the correct type.
                 std::optional<std::variant<Ts...>> v;
-                // foo is not used; we're relying on ordered initialization
+                // foo is not.usedInBomaType; we're relying on ordered initialization
                 // to set the optional, but the initialization has to init
                 // something. :)
                 auto foo = { schecker<Seq>(idx, v, buffer, size)... };
@@ -402,7 +402,7 @@ $+  $<if 'humon' in $deserializeFrom>
 
 namespace hu
 {
-    $+  $<if $std.array.used>
+    $+  $<if $std.array.usedInBomaType>
     template <class T, unsigned long N>
     struct val<std::array<T, N>>
     {
@@ -417,7 +417,7 @@ namespace hu
         }
     };
     $<endif>
-    $+  $<if $std.pair.used>
+    $+  $<if $std.pair.usedInBomaType>
     template <class T0, class T1>
     struct val<std::pair<T0, T1>>
     {
@@ -430,7 +430,7 @@ namespace hu
         }
     };
     $<endif>
-    $+  $<if $std.tuple.used>
+    $+  $<if $std.tuple.usedInBomaType>
     template <class... Ts>
     struct val<std::tuple<Ts...>>
     {
@@ -445,7 +445,7 @@ namespace hu
         }
     };
     $<endif>
-    $+  $<if $std.vector.used>
+    $+  $<if $std.vector.usedInBomaType>
     template <class T, class A>
     struct val<std::vector<T, A>>
     {
@@ -460,7 +460,7 @@ namespace hu
         }
     };
     $<endif>
-    $+  $<if $std.set.used>
+    $+  $<if $std.set.usedInBomaType>
     template <class K, class C, class A>
     struct val<std::set<K, C, A>>
     {
@@ -475,7 +475,7 @@ namespace hu
         }
     };
     $<endif>
-    $+  $<if $std.unorderedSet.used>
+    $+  $<if $std.unorderedSet.usedInBomaType>
     template <class K, class H, class E, class A>
     struct val<std::unordered_set<K, H, E, A>>
     {
@@ -490,7 +490,7 @@ namespace hu
         }
     };
     $<endif>
-    $+  $<if $std.map.used>
+    $+  $<if $std.map.usedInBomaType>
     template <class K, class T, class C, class A>
     struct val<std::map<K, T, C, A>>
     {
@@ -507,7 +507,7 @@ namespace hu
         }
     };
     $<endif>
-    $+  $<if $std.unorderedMap.used>
+    $+  $<if $std.unorderedMap.usedInBomaType>
     template <class K, class T, class H, class E, class A>
     struct val<std::unordered_map<K, T, H, E, A>>
     {
@@ -524,7 +524,7 @@ namespace hu
         }
     };
     $<endif>
-    $+  $<if $std.optional.used>
+    $+  $<if $std.optional.usedInBomaType>
     template <class T>
     struct val<std::optional<T>>
     {
@@ -539,7 +539,7 @@ namespace hu
         }
     };
     $<endif>
-    $+  $<if $std.variant.used>
+    $+  $<if $std.variant.usedInBomaType>
     template <class... Ts>
     struct val<std::variant<Ts...>>
     {
@@ -570,7 +570,7 @@ namespace hu
                 // cycle through each type; when we find one we like, set the
                 // optional to the correct type.
                 std::optional<std::variant<Ts...>> v;
-                // foo is not used; we're relying on ordered initialization
+                // foo is not.usedInBomaType; we're relying on ordered initialization
                 // to set the optional, but the initialization has to init
                 // something. :)
                 auto foo = { schecker<Seq>(tokStr, v, node)... };
@@ -637,10 +637,10 @@ $<if 'binary' in $serializeTo>
         return out;
     }
 
-    $+  $<if $std.string.used>
+    $+  $<if $std.string.usedInBomaType>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::string$>')> & obj);
     $<endif>
-    $+  $<if $std.stringView.used>
+    $+  $<if $std.stringView.usedInBomaType>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::string_view$>')> & obj);
     $<endif>
     $+  $<if len($enums) $> 0>
@@ -653,7 +653,7 @@ $<if 'binary' in $serializeTo>
         return out;
     }
     $<endif>
-    $+  $<if $std.vector.used>
+    $+  $<if $std.vector.usedInBomaType>
     template <class T, class A>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::vector<T, A$>$>')> & obj)
     {
@@ -664,7 +664,7 @@ $<if 'binary' in $serializeTo>
         return out;
     }
     $<endif>
-    $+  $<if $std.array.used>
+    $+  $<if $std.array.usedInBomaType>
     template <class T, unsigned long N>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::array<T, N$>$>')> & obj)
     {
@@ -674,7 +674,7 @@ $<if 'binary' in $serializeTo>
         return out;
     }
     $<endif>
-    $+  $<if $std.pair.used>
+    $+  $<if $std.pair.usedInBomaType>
     template <class T0, class T1>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::pair<T0, T1$>$>')> & obj)
     {
@@ -684,7 +684,7 @@ $<if 'binary' in $serializeTo>
         return out;
     }
     $<endif>
-    $+  $<if $std.tuple.used>
+    $+  $<if $std.tuple.usedInBomaType>
     template <class... Ts>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::tuple<Ts...$>$>')> & obj)
     {
@@ -696,7 +696,7 @@ $<if 'binary' in $serializeTo>
         return out;
     }
     $<endif>
-    $+  $<if $std.map.used>
+    $+  $<if $std.map.usedInBomaType>
     template <class K, class T, class C, class A>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::map<K, T, C, A$>$>')> & obj)
     {
@@ -707,7 +707,7 @@ $<if 'binary' in $serializeTo>
         return out;
     }
     $<endif>
-    $+  $<if $std.unorderedMap.used>
+    $+  $<if $std.unorderedMap.usedInBomaType>
     template <class K, class T, class H, class E, class A>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::unordered_map<K, T, H, E, A$>$>')> & obj)
     {
@@ -718,7 +718,7 @@ $<if 'binary' in $serializeTo>
         return out;
     }
     $<endif>
-    $+  $<if $std.set.used>
+    $+  $<if $std.set.usedInBomaType>
     template <class K, class C, class A>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::set<K, C, A$>$>')> & obj)
     {
@@ -729,7 +729,7 @@ $<if 'binary' in $serializeTo>
         return out;
     }
     $<endif>
-    $+  $<if $std.unorderedSet.used>
+    $+  $<if $std.unorderedSet.usedInBomaType>
     template <class K, class H, class E, class A>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::unordered_set<K, H, E, A$>$>')> & obj)
     {
@@ -740,7 +740,7 @@ $<if 'binary' in $serializeTo>
         return out;
     }
     $<endif>
-    $+  $<if $std.optional.used>
+    $+  $<if $std.optional.usedInBomaType>
     template <class T>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::optional<T$>$>')> & obj)
     {
@@ -751,7 +751,7 @@ $<if 'binary' in $serializeTo>
         return out;
     }
     $<endif>
-    $+  $<if $std.variant.used>
+    $+  $<if $std.variant.usedInBomaType>
     template <class... Ts>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::variant<Ts...$>$>')> & obj)
     {
@@ -784,7 +784,7 @@ $<endif $<# binary>>
 
         return out;
     }
-    $+  $<if $std.array.used>
+    $+  $<if $std.array.usedInBomaType>
     template <class T, unsigned long N>
     std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::array<T, N$>$>')> & obj)
     {
@@ -798,7 +798,7 @@ $<endif $<# binary>>
         return out;
     }
     $<endif>
-    $+  $<if $std.pair.used>
+    $+  $<if $std.pair.usedInBomaType>
     template <class T0, class T1>
     std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::pair<T0, T1$>$>')> & obj)
     {
@@ -807,7 +807,7 @@ $<endif $<# binary>>
         return out;
     }
     $<endif>
-    $+  $<if $std.tuple.used>
+    $+  $<if $std.tuple.usedInBomaType>
     template <class... Ts>
     std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::tuple<Ts...$>$>')> & obj)
     {
@@ -821,7 +821,7 @@ $<endif $<# binary>>
         return out;
     }
     $<endif>
-    $+  $<if $std.vector.used>
+    $+  $<if $std.vector.usedInBomaType>
     template <class T, class A>
     std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::vector<T, A$>$>')> & obj)
     {
@@ -835,7 +835,7 @@ $<endif $<# binary>>
         return out;
     }
     $<endif>
-    $+  $<if $std.set.used>
+    $+  $<if $std.set.usedInBomaType>
     template <class K, class C, class A>
     std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::set<K, C, A$>$>')> & obj)
     {
@@ -849,7 +849,7 @@ $<endif $<# binary>>
         return out;
     }
     $<endif>
-    $+  $<if $std.unorderedSet.used>
+    $+  $<if $std.unorderedSet.usedInBomaType>
     template <class K, class H, class E, class A>
     std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::unordered_set<K, H, E, A$>$>')> & obj)
     {
@@ -863,7 +863,7 @@ $<endif $<# binary>>
         return out;
     }
     $<endif>
-    $+  $<if $std.map.used>
+    $+  $<if $std.map.usedInBomaType>
     template <class K, class T, class C, class A>
     std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::map<K, T, C, A$>$>')> & obj)
     {
@@ -877,7 +877,7 @@ $<endif $<# binary>>
         return out;
     }
     $<endif>
-    $+  $<if $std.unorderedMap.used>
+    $+  $<if $std.unorderedMap.usedInBomaType>
     template <class K, class T, class H, class E, class A>
     std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::unordered_map<K, T, H, E, A$>$>')> & obj)
     {
@@ -891,7 +891,7 @@ $<endif $<# binary>>
         return out;
     }
     $<endif>
-    $+  $<if $std.optional.used>
+    $+  $<if $std.optional.usedInBomaType>
     template <class T>
     std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::optional<T$>$>')> const & obj)
     {
@@ -903,7 +903,7 @@ $<endif $<# binary>>
         return out;
     }
     $<endif>
-    $+  $<if $std.variant.used>
+    $+  $<if $std.variant.usedInBomaType>
     template <class... Ts>
     std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::variant<Ts...$>$>')> const & obj)
     {

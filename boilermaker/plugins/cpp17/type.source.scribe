@@ -1,4 +1,4 @@
-$<join for type in $types>
+$<join for type in $bomaTypes>
 $<out $sourceDir + '/' + $typeSourceFile>$+
 $sourceTopComment
 

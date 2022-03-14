@@ -5,7 +5,7 @@ $<out $diffsHeaderPath>$+
 $headerTopComment
 
 #include <bitset>
-$+  $<join for type in vars($std)>$<if $type.used> $<#TODO: we're heavy handed with this includes>
+$+  $<join for type in vars($std)>$<if $type.usedInBomaType> $<#TODO: we're heavy handed with this includes>
 #include $<$type.include>$<endif>$<endjoin>
 
 namespace $namespace
@@ -22,7 +22,7 @@ namespace $namespace
         bool memberDiffs = false;
     };
 
-    $+  $<if $std.array.used>
+    $+  $<if $std.array.usedInBomaType>
     template <class T, std::size_t Size>
     struct Diff<std::array<T, Size>>
     {
@@ -42,7 +42,7 @@ namespace $namespace
         std::vector<std::pair<std::size_t, Diff<T>>> elementDiffs;
     };
 $<endif>
-    $+  $<if $std.pair.used>
+    $+  $<if $std.pair.usedInBomaType>
     template <class TF, class TS>
     struct Diff<std::pair<TF, TS>>
     {
@@ -57,7 +57,7 @@ $<endif>
         std::pair<Diff<TF>, Diff<TS>> diffObjects;
     };
 $<endif>
-    $+  $<if $std.tuple.used>
+    $+  $<if $std.tuple.usedInBomaType>
     $<# Calls func with tuple element. https://stackoverflow.com/questions/28997271/c11-way-to-index-tuple-at-runtime-without-using-switch >
     template <class Func, class Tuple, size_t N = 0>
     void setCompareBit(Func func, $<$const('Tuple')> & tup0, $<$const('Tuple')> & tup1, size_t idx)
@@ -95,7 +95,7 @@ $<endif>
         std::tuple<Diff<Args>...> diffObjects;
     };
 $<endif>
-    $+  $<if $std.vector.used>
+    $+  $<if $std.vector.usedInBomaType>
     template <class T>
     struct Diff<std::vector<T>>
     {
@@ -129,7 +129,7 @@ $<endif>
         std::vector<std::tuple<std::size_t, DiffKind, Diff<T>>> elementDiffs;
     };
 $<endif>
-    $+  $<if $std.set.used>
+    $+  $<if $std.set.usedInBomaType>
     template <class T>
     struct Diff<std::set<T>>
     {
@@ -161,7 +161,7 @@ $<endif>
         std::vector<std::tuple<T, DiffKind, Diff<T>>> elementDiffs;
     };
 $<endif>
-    $+  $<if $std.unorderedSet.used>
+    $+  $<if $std.unorderedSet.usedInBomaType>
     template <class T>
     struct Diff<std::unordered_set<T>>
     {
@@ -193,7 +193,7 @@ $<endif>
         std::vector<std::tuple<T, DiffKind, Diff<T>>> elementDiffs;
     };
 $<endif>
-    $+  $<if $std.map.used>
+    $+  $<if $std.map.usedInBomaType>
     template <class Key, class T>
     struct Diff<std::map<Key, T>>
     {
@@ -234,7 +234,7 @@ $<endif>
         std::vector<std::tuple<Key, DiffKind, Diff<T>>> elementDiffs;
     };
 $<endif>
-    $+  $<if $std.unorderedMap.used>
+    $+  $<if $std.unorderedMap.usedInBomaType>
     template <class Key, class T>
     struct Diff<std::unordered_map<Key, T>>
     {
