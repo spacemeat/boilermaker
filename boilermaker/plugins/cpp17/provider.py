@@ -13,7 +13,10 @@ class StandardType(Type):
         self.codeDecl = declName
         self.fullCodeDecl = declName
         self.alreadyDefined = True
-        self.include = include
+        if type(include) is str:
+            self.include = [include]
+        else:
+            self.include = include
 
 
 class cpp17Provider(Provider):
@@ -25,8 +28,6 @@ class cpp17Provider(Provider):
     def do(self, op, seq, props):
         print (f'cpp17Provider doing op {op} at sequence {seq}')
         if op == 'createCppProps':
-            s = Scribe(props)
-            props.push()
             self.generateProps(props)
 
         elif op == 'generateCode':
@@ -34,7 +35,7 @@ class cpp17Provider(Provider):
             s = Scribe(props)
             s.debug = True
             scribePath = PluginCollection(s.getXProp('pluginsDir')).locateScribe(self.runDefs['plugin'], self.runDefs['output'])
-            print (s.parseText(f'$<in "{scribePath}">'))
+            print (s.X(f'$<in "{scribePath}">'))
 
 
     def stop(self, props):
@@ -44,19 +45,30 @@ class cpp17Provider(Provider):
     def removeAllFiles(self, props):
         s = Scribe(props)
         def raf(self, direc):
-            d = Path(s.X('projectDir'), direc)
+            d = Path(s.X('$projectDir'), direc)
             if d.is_dir():
                 for f in os.listdir(d):
                     if Path(f).is_file():
                         os.unlink(f)
-        raf(self, s.X('headerDir'))
-        raf(self, s.X('inlineDir'))
-        raf(self, s.X('sourceDir'))
+        raf(self, s.X('$headerDir'))
+        raf(self, s.X('$inlineDir'))
+        raf(self, s.X('$sourceDir'))
 
 
     def generateProps(self, props):
-        bomaEnums = props.getProp('bomaEnums')
-        bomaTypes = props.getProp('bomaTypes')
+        props.push()
+
+        s = Scribe(props)
+        bomaEnums = {}
+        for enumsCluster in s.getXPropAll('bomaEnums'):
+            bomaEnums.update(enumsCluster)
+        props.setProp('enums', bomaEnums)
+
+        bomaTypes = {}
+        for typesCluster in s.getXPropAll('bomaTypes'):
+            bomaTypes.update(typesCluster)
+        props.setProp('types', bomaTypes)
+
         standardTypes = {
             'string':      StandardType('string',       'std::string',             '<string>'),
             'stringView':  StandardType('stringView',   'std::string_view',        '<string_view>'),
@@ -76,14 +88,13 @@ class cpp17Provider(Provider):
 
         allTypes = {**bomaTypes, **bomaEnums, **standardTypes}
 
-        # compute translated names for enums that aren't already defined
-        for _, e in bomaEnums.items():
-            self.computeDecl(e)
-            e.computeDeclVals()
-
         # compute C++ names for all types
         for _, t in allTypes.items():
-            self.computeDecl(t)
+            self.computeDecl(t, props)
+
+        # compute translated names for enums that aren't already defined
+        for _, e in bomaEnums.items():
+            e.computeDeclVals()
 
         # allow scribes to access $std.string.usedInBomaType, say
         class AllStandardObjects:
@@ -95,7 +106,6 @@ class cpp17Provider(Provider):
         props.setProp('std', stdObj)
 
         # relative paths for local #includes
-        s = Scribe(props)
         props.setProp('headerToInl',    os.path.relpath(s.X('inlineDir'), s.X('headerDir')))
         props.setProp('srcToHeader',    os.path.relpath(s.X('headerDir'), s.X('sourceDir')))
         props.setProp('srcToInl',       os.path.relpath(s.X('inlineDir'), s.X('sourceDir')))
@@ -103,24 +113,33 @@ class cpp17Provider(Provider):
         # convenience function for $const
         def const(decl):
             s = Scribe(props)
-            return f'{decl} const' if s.X('constStyle') == 'east' else f'const {decl}'
+            return f'{decl} const' if s.X('$constStyle') == 'east' else f'const {decl}'
         props.setProp('const', const)
 
-        #self.makeOutputForm()
-
         headers = set()
-        if ('humon' in props.getProp('deserializeFrom') or
-            'humon' in props.getProp('serializeTo')):
-            #headers.append('<humon/humon.hpp>')
-            pass
+
+        if len(s.X('$cave') or []) > 0:
+            headers.add('<iostream>')
+
+        if ('humon' in s.X('$deserializeFrom') or
+            'humon' in s.X('$serializeTo')):
+            headers.add('<humon/humon.hpp>')
 
         for typeName, strType in bomaTypes.items():
             subtypes = strType.allSubtypes()
             for st in subtypes:
                 if st.type in allTypes:
                     allTypes[st.type].usedInBomaType = True
+                    for inc in allTypes[st.type].include:
+                        headers.add(inc)
 
-        #headers.update([st.include for st in standardTypes if st.usedInBomaType])
+        for _, bomaEnum in bomaEnums.items():
+            for inc in bomaEnum.include:
+                headers.add(inc)
+
+        for _, stdType in standardTypes.items():
+            for inc in stdType.include:
+                headers.add(inc)
 
         props.setProp('commonHeaderIncludes', list(headers))
 
@@ -160,28 +179,27 @@ class cpp17Provider(Provider):
         props.setProp('needVariantTypeNamesBase', needVariantTypeNamesBase)
 
         # binary reader for std::string needs std::memcpy
-        if ('binary' in s.X('deserializeFrom') and
-            standardTypes.string.usedInBomaType):
-            standardTypes.cstring.usedInBomaType = True
+        if ('binary' in s.X('$deserializeFrom') and
+            stdObj.string.usedInBomaType):
+            stdObj.cstring.usedInBomaType = True
 
         # humon reader for enums needs std::strncmp
-        if ('humon' in s.X('deserializeFrom') and
+        if ('humon' in s.X('$deserializeFrom') and
             len(props.getProp('enums')) > 0):
-            standardTypes.cstring.usedInBomaType = True
+            stdObj.cstring.usedInBomaType = True
 
         # binary ready for std::variant needs std::optional
-        if ('binary' in s.X('deserializeFrom') and
-            standardTypes.variant.usedInBomaType):
-            standardTypes.optional.usedInBomaType = True
+        if ('binary' in s.X('$deserializeFrom') and
+            stdObj.variant.usedInBomaType):
+            stdObj.optional.usedInBomaType = True
 
 
-    def computeDecl(self, t :Type):
+    def computeDecl(self, t :Type, props):
         if t.alreadyDefined:
             return
-
+        s = Scribe(props)
         t.codeDecl = t.name.replace('.', '::')
-        t.fullCodeDecl = t.name.replace('.', '::')
-
+        t.fullCodeDecl = s.X('$namespace') + '::' + t.name.replace('.', '::')
 
 
     def makeNative_old(self, bomaName, useNamespace=False):

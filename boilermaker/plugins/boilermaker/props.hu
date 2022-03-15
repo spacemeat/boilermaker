@@ -18,6 +18,8 @@
     bomaOutputSequence:         3
     bomaReports:                [props, enums, types]
 
+    outputEnums:    true
+    outputTypes:    true
 
     namespace:      boma
 

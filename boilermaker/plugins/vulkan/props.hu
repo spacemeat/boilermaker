@@ -7,7 +7,7 @@
         plugin:         grokCpp
         provider:       provider
         ops:            { parseSource: $vulkanCreatePropsSequence }
-        source:         $'<vulkan/vulkan.h>'
+        sources:        $'<vulkan/vulkan.h>'
         tools:          gnu
         language:       $vulkanLanguage
         languageVersion: $vulkanLanguageVersion

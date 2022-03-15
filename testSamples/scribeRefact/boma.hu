@@ -17,7 +17,7 @@
     privateMembers: true            // done
     comparable: true                // done
     diffable: true                  // done
-    caveperson: []
+    cave: [ctr]
 
     enums: {
         cats: [ Leo, Lilly, Butters, Weeby ]

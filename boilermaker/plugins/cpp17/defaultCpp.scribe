@@ -1178,7 +1178,7 @@ $<endjoin $<# enum >>
 $<endif $<# humon >>
 $<endout>
 
-$<join for type in $types>
+$<join for type in $bomaTypes>
 ------------------ Building $headerDir/$typeHeaderFile.
 $<out $headerDir + '/' + $typeHeaderFile>#pragma once
 

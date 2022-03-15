@@ -9,7 +9,7 @@ re_cppName = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 class Type:
     def __init__(self, name):
         self.name = name
-        self.include = None
+        self.include = []
         self.usedInBomaType = False
         self.aliases = []
         self.alreadyDefined = False

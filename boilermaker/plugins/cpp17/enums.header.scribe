@@ -5,21 +5,42 @@ $headerTopComment
 
 #include "$commonHeaderFile"
 
-$<if 'humon' in $deserializeFrom>
+$<if len([e for _, e in $enums.items() if e.alreadyDefined]) $> 0>
+namespace $namespace
+{
+    $+  $<join for enum in $enums>$+
+            $<if not $enum.alreadyDefined>
+    enum $<if $enum.isScoped>class $<endif>$<$enum.codeDecl>
+    {
+        $+  $<join for val in $enum.declVals>$<if type($val) is list>$+
+        $<$val[0]> = $<$val[1]>$<else>$val$<endif>$<delim>,
+        $<endjoin>
+    };$<endif>$<delim>
+
+    $<endjoin>
+}$<endif>
+
+$+  $<if 'humon' in $deserializeFrom>
 namespace hu
 {
     $+  $<join for enum in $enums>
     template <>
-    struct val< $<$enum.name> >
+    struct val<$<$enum.fullCodeDecl>$+ >        $<# TODO: the space before the gt shouldn't have to be there>
     {
-$<#$`
-        static inline $<$enum.type.name> extract(const Node & node) noexcept
+        static inline $<$enum.fullCodeDecl> extract(const Node & node) noexcept
         {
-            $+  $<if not $<$enum.flags>>
-            auto nodeVal = node.value().str().data();$<join for val in $enum.values>
-            if (std::strncmp(nodeVal, "$<$val.converted>", $<len($val.converted)>) == 0) { return $<$val.name>; }$<endjoin>
-            return {};$<else>
-            using enumIntType = std::underlying_type<::VkIndirectStateFlagBitsNV>::type;
+            $+  $<if not $enum.flags >
+            auto nodeVal = node.value().str().data();
+            $+  $<join for i in range(0, len($enum.declVals)) >
+            $<if type($enum.declVals[$i]) is list>$+
+            if (std::strncmp(nodeVal, "$<$enum.vals[$i][0] >", $<len($enum.vals[$i][0]) >) == 0) { return $<if $enum.isScoped>$<$enum.fullCodeDecl>::$<endif>$<$enum.declVals[$i][0] >; }$+
+            $<else>$+
+            if (std::strncmp(nodeVal, "$<$enum.vals[$i] >", $<len($enum.vals[$i]) >) == 0) { return $<if $enum.isScoped>$<$enum.fullCodeDecl>::$<endif>$<$enum.declVals[$i] >; }$+
+            $<endif>$+
+            $<endjoin>
+            return {};$+
+            $<else>
+            using enumIntType = std::underlying_type<$<$enum.fullCodeDecl > >::type;
             enumIntType e = 0;
             bool fromList = node.kind() == hu::NodeKind::list;
             Node chNode = node;
@@ -28,28 +49,31 @@ $<#$`
             do
             {
                 auto nodeVal = chNode.value().str().data();
-                if      $<join for val in $<$enum.values>>(std::strncmp(nodeVal, "$<$val.converted>", $<$val.converted.length>) == 0) { e |= static_cast<enumIntType>($<$val.name>); }$<delim>
+                if      $<join for i in range(0, len($enum.declVals)) >$+
+                $<if type($enum.vals[$i]) is list >$+
+                (std::strncmp(nodeVal, "$<$enum.vals[$i][0] >", $<len($enum.vals[$i][0]) >) == 0) { e |= static_cast<enumIntType>($<$enum.declVals[$i][0] >); }$+
+                $<else>
+                (std::strncmp(nodeVal, "$<$enum.vals[$i] >", $<len($enum.vals[$i]) >) == 0) { e |= static_cast<enumIntType>($<$enum.declVals[$i] >); }$+
+                $<endif>$<delim>
                 else if $<endjoin>
                 chNode = chNode.nextSibling();
             }
             while(fromList && chNode);
 
-            return static_cast<::VkIndirectStateFlagBitsNV>(e);$<endif $<# enum.flags >>
-        `>
+            return static_cast<$<$enum.fullCodeDecl> >(e);$<endif>  $<# enum.flags>
         }
-    }
-$<endjoin> $<# enum>
+    };
+$<endjoin>$+ $<# enum>
 }
 $<endif> $<# humon>
-$<if 'binary' in $deserializeFrom and len($enums) $> 0>
+$+  $<if 'binary' in $deserializeFrom and len($enums) $> 0>
 namespace $namespace
 {
     template <class T>
     struct BinaryReader<T, typename std::enable_if_t<std::is_enum_v<T>>>
     {
-$<#$`
         static inline T extract(const char *& buffer, std::size_t & size)
-        {$<if $cave['deserializeBinary']>
+        {$<if 'deserializeBinary' in $cave>
             $caveStream << "Reading enum\n";$<endif>$<if $checkBinaryOverruns>
             if (size < sizeof(T))
                 { throw std::runtime_error("Binary buffer too small."); }
@@ -59,13 +83,13 @@ $<endif>
             size -= sizeof(T);
             return t;
         }
-`>
     };
-
 $<endif>
-$<if 'humon' in $serializeTo>
-$<join for enum in $enums>
-    std::ostream & operator <<(std::ostream & out, const HumonFormat<<enum.name$>$> & obj);$<endjoin>
+    $+
+$<if 'humon' in $serializeTo>$+
+$<join for enum in $enums>$+
+    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.codeDecl>$+ > & obj);
+    $<endjoin>
 }
 $<endif $<# humon>>
 $<endout>

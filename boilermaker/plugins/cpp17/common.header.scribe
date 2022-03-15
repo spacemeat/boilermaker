@@ -6,16 +6,20 @@ $<out $commonHeaderPath>$+
 
 $headerTopComment
 
+$<# $`
 $+  $<if len($cave) $> 0>
 #include <iostream>$<endif>
-$+  $<if $computeEnums>$<join for enum in $enums>
-#include $<$enum.source>$<endjoin>$<endif>
+$+  $<if $outputEnums>$<join for enum in $enums>$<join for inc in $enum.include>
+#include $inc               // ENUMS$<endjoin>$<endjoin>$<endif>
 $+  $<if 'humon' in $deserializeFrom or 'humon' in $serializeTo>
-#include <humon/humon.hpp>$<endif>
-$<join for inc in $commonHeaderIncludes>
-#include $inc$<endjoin>$+
-$<join for type in vars($std)>$<if $type.usedInBomaType>
-#include $<$type.include>$<endif>$<endjoin>
+#include <humon/humon.hpp>  // HUMON$<endif>`>
+$+  $<join for inc in $commonHeaderIncludes>
+#include $inc               // COMMONHEADERINCLUDES$<endjoin>
+$<# $`
+$+  $<join for type in vars($std)>$<if $type.usedInBomaType>
+$+  $<join for inc in $type.include>
+#include $inc               // TYPES$<endjoin>$<endif>$<endjoin>
+`>
 
 // -------------------
 // Common declarations
@@ -49,14 +53,14 @@ $<endjoin>$<endjoin>
     };
 $<endif>
     $+
-$<join for type in $types>
+$<join for type in $bomaTypes>
 $<join for subtype in $type.allVariantSubtypes()>
     template <$>
     struct VariantTypeNames<$<$subtype.codeDecl>$>
     {
         static constexpr $<$const('char')> * names[] = { $+
             $<join for subsubtype in $subtype.subtypes>$+
-                $<if $subsubtype.alias>"$<$subsubtype.alias>"$+
+                $<if $subsubtype.aliases>"$<$subsubtype.aliases>"$+
                 $<else>"$<$subsubtype.type>"$<endif>$<delim>, $<endjoin> };
         static constexpr std::size_t size = $<len($subtype.subtypes)>;
     };

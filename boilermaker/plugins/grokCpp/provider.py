@@ -27,9 +27,10 @@ class grokCppProvider(Provider):
 
         self.quotedSearchPaths, self.systemSearchPaths  = getSearchPaths_gnu(projectDir)
 
-        sources = self.runDefs['source']
+        sources = self.runDefs['sources']
         if type(sources) is str:
             sources = [sources]
+            self.runDefs['sources'] = sources
 
         # at some point this might be like
         # enums = {} / types = {} / e, t = self._processSource(source)
@@ -141,6 +142,9 @@ class grokCppProvider(Provider):
         isScoped = (self.runDefs.get('isScoped', False) or
                     self.runDefs.get('language', 'c++') == 'c++')
         e = EnumType(bomaEnumName, bomaVals, {'isScoped': isScoped, 'flags': flags})
+        e.include = self.runDefs.get('sources', [])
+        e.codeDecl = bomaEnumName.replace('.', '::')
+        e.fullCodeDecl = e.codeDecl
         e.provideDeclVals(declVals)
         return e
 

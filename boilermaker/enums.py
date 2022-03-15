@@ -5,8 +5,15 @@ from .type import Type
 class EnumType(Type):
     def __init__(self, name, enumDef, enumProps :dict):
         super().__init__(name)
-        self.vals = []
-        self.isScoped = enumProps.get('isScoped', False)
+        vals = []
+        if type(enumDef) is list:
+            vals = enumDef
+        elif type(enumDef) is dict:
+            vals = enumDef['values'] or []
+            self.enumProps = enumProps.update(enumDef.get('props', {}))
+        self.vals = vals
+
+        self.isScoped = enumProps.get('isScoped', True)
         self.flags = enumProps.get('flags', False)
         self.toDecl_prefix = enumProps.get('prefix', '')
         self.toDecl_suffix = enumProps.get('suffix', '')
@@ -15,17 +22,8 @@ class EnumType(Type):
         self.alreadyDefined = False
         self.declVals = []
 
-        vals = []
-        if type(enumDef) is list:
-            vals = enumDef
-        elif type(enumDef) is dict:
-            vals = enumDef['values'] or []
-            self.enumProps = enumProps.update(enumDef.get('props', {}))
-
 
     def provideDeclVals(self, declVals):
-        if self.alreadyDefined:
-            return
         self.alreadyDefined = True
         self.declVals = declVals
 
@@ -33,14 +31,14 @@ class EnumType(Type):
     def computeDeclVals(self):
         if self.alreadyDefined:
             return
-        self.alreadyDefined = True
 
         def translateEnumVal(enumVal):
             val = f'{self.toDecl_prefix}{enumVal}{self.toDecl_suffix}'
-            if self.case == 'upper':
-                val = val.toupper()
-            elif self.case == 'lower':
-                val = val.tolower()
+            if self.toDecl_case == 'upper':
+                val = val.upper()
+            elif self.toDecl_case == 'lower':
+                val = val.lower()
+            return val
 
         declVals = []
         cidx = 0
@@ -49,7 +47,7 @@ class EnumType(Type):
             idx = cidx
             if type(v) is list:
                 declVal = translateEnumVal(v[0])
-                idx = v[1]
+                idx = int(v[1])
                 cidx = idx
                 declVals.append([declVal, idx])
             else:
