@@ -9,6 +9,7 @@
 # # now props.movable == True again
 
 from enum import Enum, auto
+from lib2to3.pytree import Base
 from pathlib import Path
 import re
 
@@ -282,8 +283,13 @@ class Scribe:
         self.debug = False
 
     def parseText(self, val):
-        clause = self._parseTagStructure(val)
-        return self._parseClause(clause)
+        try:
+            clause = self._parseTagStructure(val)
+            return self._parseClause(clause)
+
+        except BaseException as e:
+            print(f'{self.props.getProp("inFile")}: {e}')
+            raise e
 
     X = parseText
 
@@ -350,7 +356,13 @@ class Scribe:
         locs = { 'props': self.props, 'res': '' }
         if self.debug:
             print (f'{ansi.dk_red_fg}Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
-        exec(stmnts, {}, locs)
+        try:
+            exec(stmnts, {}, locs)
+        except BaseException as e:
+            if not self.debug:
+                print (f'{ansi.dk_red_fg}Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
+            print (f'{ansi.dk_red_fg}     exception raised: {ansi.lt_red_fg}{e}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(locs["res"])}{ansi.dk_red_fg}){ansi.all_off}')
+            raise e
         if self.debug:
             print (f'{ansi.dk_red_fg}     statements returned: {ansi.lt_red_fg}{locs["res"]}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(locs["res"])}{ansi.dk_red_fg}){ansi.all_off}')
         return locs['res']
@@ -436,7 +448,7 @@ class Scribe:
                     dbg(f'query tag: {accum}')
 
                 else:
-                    raise RuntimeError(f'{line}, {col}: Naked query spec ($). Use $$ or $"$" to spec a "$" character.')
+                    raise RuntimeError(f'({line}, {col}): Naked query spec ($). Use $$ or $"$" to spec a "$" character.')
 
             elif val[idx] == '>':
                 incIdx()
@@ -503,7 +515,7 @@ class Scribe:
                     currentClause = currentClause.mergeToParent()
                     currentClause = currentClause.parent
                     if currentClause.kind != ClauseKind.IF:
-                        raise RuntimeError(f'{line}, {col}: $<endif> does not match a preceding $<if>')
+                        raise RuntimeError(f'{self.props.getProp("inFile")} ({line}, {col}): $<endif> does not match a preceding $<if>')
                     currentClause = currentClause.parent
                     dbg(f'endif -> {accum}')
 
@@ -536,7 +548,7 @@ class Scribe:
                     currentClause = currentClause.mergeToParent()
                     currentClause = currentClause.parent
                     if currentClause.kind != ClauseKind.JOIN:
-                        raise RuntimeError(f'{line}, {col}: $<endjoin> does not match a preceding $<join>')
+                        raise RuntimeError(f'({line}, {col}): $<endjoin> does not match a preceding $<join>')
                     currentClause = currentClause.parent
                     dbg(f'endjoin tag')
 
@@ -561,7 +573,7 @@ class Scribe:
                     currentClause = currentClause.mergeToParent()
                     currentClause = currentClause.parent
                     if currentClause.kind != ClauseKind.OUT:
-                        raise RuntimeError(f'{line}, {col}: $<endout> does not match a preceding $<out>')
+                        raise RuntimeError(f'({line}, {col}): $<endout> does not match a preceding $<out>')
                     currentClause = currentClause.parent
                     dbg(f'endout tag')
 
@@ -579,7 +591,7 @@ class Scribe:
                     currentClause = currentClause.mergeToParent()
                     currentClause = currentClause.parent
                     if currentClause.kind != ClauseKind.SET:
-                        raise RuntimeError(f'{line}, {col}: $<endset> does not match a preceding $<set>')
+                        raise RuntimeError(f'({line}, {col}): $<endset> does not match a preceding $<set>')
                     currentClause = currentClause.parent
                     dbg(f'endset tag')
 
@@ -597,7 +609,7 @@ class Scribe:
                     currentClause = currentClause.mergeToParent()
                     currentClause = currentClause.parent
                     if currentClause.kind != ClauseKind.FMT:
-                        raise RuntimeError(f'{line}, {col}: $<endfmt> does not match a preceding $<fmt>')
+                        raise RuntimeError(f'({line}, {col}): $<endfmt> does not match a preceding $<fmt>')
                     currentClause = currentClause.parent
                     dbg(f'endfmt tag')
 

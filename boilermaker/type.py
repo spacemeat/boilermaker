@@ -7,8 +7,9 @@ re_cppName = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 
 
 class Type:
-    def __init__(self, name):
+    def __init__(self, name, namespace = ''):
         self.name = name
+        self.namespace = namespace
         self.include = []
         self.usedInBomaType = False
         self.aliases = []
@@ -150,8 +151,8 @@ class BomaTypeMember:
 
 
 class BomaType(Type):
-    def __init__(self, name, members):
-        super().__init__(name)
+    def __init__(self, name, namespace, members):
+        super().__init__(name, namespace)
         '''members is always a dict of memberName: memberProperties.'''
         self.members = {memberName: BomaTypeMember(memberName, f'{name}_{memberName}', memProperties)
                         for memberName, memProperties in members.items() if re_cppName.match(memberName)}

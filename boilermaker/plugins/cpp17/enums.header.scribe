@@ -10,10 +10,14 @@ namespace $namespace
 {
     $+  $<join for enum in $enums>$+
             $<if not $enum.alreadyDefined>
-    enum $<if $enum.isScoped>class $<endif>$<$enum.codeDecl>
+    enum $<if $enum.isScoped >class $<endif>$<$enum.codeDecl >
     {
-        $+  $<join for val in $enum.declVals>$<if type($val) is list>$+
-        $<$val[0]> = $<$val[1]>$<else>$val$<endif>$<delim>,
+        $+  $<join for val in $enum.vals >$+
+        $+  $<if $val.numberValueSpecified >$+
+        $<$val.codeDecl > = $<$val.numberValue >
+        $+  $<else>$+
+        $<$val.codeDecl >$+
+        $+  $<endif>$<delim>,
         $<endjoin>
     };$<endif>$<delim>
 
@@ -31,12 +35,13 @@ namespace hu
         {
             $+  $<if not $enum.flags >
             auto nodeVal = node.value().str().data();
-            $+  $<join for i in range(0, len($enum.declVals)) >
-            $<if type($enum.declVals[$i]) is list>$+
-            if (std::strncmp(nodeVal, "$<$enum.vals[$i][0] >", $<len($enum.vals[$i][0]) >) == 0) { return $<if $enum.isScoped>$<$enum.fullCodeDecl>::$<endif>$<$enum.declVals[$i][0] >; }$+
+            $+  $<join for val in $enum.vals>
+            if (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName) >) == 0) { return $+
+            $<if $enum.isScoped>$+
+                $<$enum.fullCodeDecl>::$<$val.codeDecl>$+
             $<else>$+
-            if (std::strncmp(nodeVal, "$<$enum.vals[$i] >", $<len($enum.vals[$i]) >) == 0) { return $<if $enum.isScoped>$<$enum.fullCodeDecl>::$<endif>$<$enum.declVals[$i] >; }$+
-            $<endif>$+
+                $<$val.fullCodeDecl>$+
+            $<endif>; }$+
             $<endjoin>
             return {};$+
             $<else>
@@ -49,12 +54,9 @@ namespace hu
             do
             {
                 auto nodeVal = chNode.value().str().data();
-                if      $<join for i in range(0, len($enum.declVals)) >$+
-                $<if type($enum.vals[$i]) is list >$+
-                (std::strncmp(nodeVal, "$<$enum.vals[$i][0] >", $<len($enum.vals[$i][0]) >) == 0) { e |= static_cast<enumIntType>($<$enum.declVals[$i][0] >); }$+
-                $<else>
-                (std::strncmp(nodeVal, "$<$enum.vals[$i] >", $<len($enum.vals[$i]) >) == 0) { e |= static_cast<enumIntType>($<$enum.declVals[$i] >); }$+
-                $<endif>$<delim>
+                if      $<join for val in $enum.vals>$+
+                (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName) >) == 0) { e |= static_cast<enumIntType>($<$val.fullCodeDecl>); }$+
+                $<delim>
                 else if $<endjoin>
                 chNode = chNode.nextSibling();
             }
@@ -73,7 +75,8 @@ namespace $namespace
     struct BinaryReader<T, typename std::enable_if_t<std::is_enum_v<T>>>
     {
         static inline T extract(const char *& buffer, std::size_t & size)
-        {$<if 'deserializeBinary' in $cave>
+        {$+
+            $<if 'deserializeBinary' in $cave>
             $caveStream << "Reading enum\n";$<endif>$<if $checkBinaryOverruns>
             if (size < sizeof(T))
                 { throw std::runtime_error("Binary buffer too small."); }
@@ -87,9 +90,9 @@ $<endif>
 $<endif>
     $+
 $<if 'humon' in $serializeTo>$+
-$<join for enum in $enums>$+
-    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.codeDecl>$+ > & obj);
+$+  $<join for enum in $enums>$+
+    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.codeDecl>$+ > & obj);$<delim>
     $<endjoin>
 }
-$<endif $<# humon>>
+$<endif $<# humon>>$+
 $<endout>

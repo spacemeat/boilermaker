@@ -35,7 +35,7 @@ class BomaProvider(Provider):
             for enumName, enumDef in enumDefs.items():
                 if enumName == '-props':
                     continue
-                self.enums[enumName] = EnumType(enumName, enumDef, enumProps)
+                self.enums[enumName] = EnumType(enumName, s.X('namespace'), enumDef, enumProps)
         props.push({'bomaEnums': self.enums})
 
 
@@ -44,7 +44,7 @@ class BomaProvider(Provider):
         self.types = {}
         for typeValues in s.getXPropAll('types'):
             for (typeName, typeData) in typeValues.items():
-                self.types[typeName] = BomaType(typeName, typeData)
+                self.types[typeName] = BomaType(typeName, s.X('namespace'), typeData)
         props.push({'bomaTypes': self.types})
 
 

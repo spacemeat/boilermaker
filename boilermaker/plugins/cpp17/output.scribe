@@ -13,10 +13,10 @@ $<in $inDir + '/diffs.header.scribe'>
 ------------------ Building $headerDir/$enumsHeaderFile.
 $<in $inDir + '/enums.header.scribe'>
 
-$<#$`
 ------------------ Building $sourceDir/$enumsSourceFile.
 $<in $inDir + '/enums.source.scribe'>
 
+$<#$`
 ------------------ Building $headerDir/[type headers].
 $<in $inDir + '/types.header.scribe'>
 

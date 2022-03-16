@@ -2,16 +2,42 @@ from . import utilities
 from .type import Type
 
 
+class EnumVal:
+    def __init__(self, bomaName, numberValue, numberValueSpecified, isDuplicate):
+        self.bomaName = bomaName
+        self.codeDecl = ''
+        self.fullCodeDecl = ''
+        self.numberValue = numberValue
+        self.numberValueSpecified = numberValueSpecified
+        self.isDuplicate = isDuplicate
+
+
 class EnumType(Type):
-    def __init__(self, name, enumDef, enumProps :dict):
-        super().__init__(name)
+    def __init__(self, name, namespace, enumDef, enumProps :dict):
+        super().__init__(name, namespace)
         vals = []
         if type(enumDef) is list:
             vals = enumDef
         elif type(enumDef) is dict:
             vals = enumDef['values'] or []
             self.enumProps = enumProps.update(enumDef.get('props', {}))
-        self.vals = vals
+
+        self.vals = []
+        cidx = 0
+        seenNums = set()
+        for val in vals:
+            idx = cidx
+            if type(val) is list:
+                idx = int(val[1])    # TODO: Allow idx to be a name we've seen earlier
+                val = val[0]
+                cidx = idx
+                ev = EnumVal(val, idx, True, idx in seenNums)
+                self.vals.append(ev)
+            else:
+                ev = EnumVal(val, idx, False, idx in seenNums)
+                self.vals.append(ev)
+            seenNums.add(idx)
+            cidx += 1
 
         self.isScoped = enumProps.get('isScoped', True)
         self.flags = enumProps.get('flags', False)
@@ -23,12 +49,7 @@ class EnumType(Type):
         self.declVals = []
 
 
-    def provideDeclVals(self, declVals):
-        self.alreadyDefined = True
-        self.declVals = declVals
-
-
-    def computeDeclVals(self):
+    def computeDeclVals(self, makeFullDecl):
         if self.alreadyDefined:
             return
 
@@ -40,22 +61,9 @@ class EnumType(Type):
                 val = val.lower()
             return val
 
-        declVals = []
-        cidx = 0
-        for v in self.vals:
-            declVal = v
-            idx = cidx
-            if type(v) is list:
-                declVal = translateEnumVal(v[0])
-                idx = int(v[1])
-                cidx = idx
-                declVals.append([declVal, idx])
-            else:
-                declVal = translateEnumVal(declVal)
-                declVals.append(declVal)
-            cidx += 1
-
-        self.declVals = declVals
+        for val in self.vals:
+            val.codeDecl = translateEnumVal(val.bomaName)
+            val.fullCodeDecl = makeFullDecl(val)
 
 
 class Enums_old:

@@ -8,8 +8,8 @@ from ...type import Type
 
 
 class StandardType(Type):
-    def __init__(self, name, declName, include):
-        super().__init__(name)
+    def __init__(self, name, namespace, declName, include):
+        super().__init__(name, namespace)
         self.codeDecl = declName
         self.fullCodeDecl = declName
         self.alreadyDefined = True
@@ -33,7 +33,7 @@ class cpp17Provider(Provider):
         elif op == 'generateCode':
             self.removeAllFiles(props)
             s = Scribe(props)
-            s.debug = True
+            #s.debug = True
             scribePath = PluginCollection(s.getXProp('pluginsDir')).locateScribe(self.runDefs['plugin'], self.runDefs['output'])
             print (s.X(f'$<in "{scribePath}">'))
 
@@ -70,19 +70,19 @@ class cpp17Provider(Provider):
         props.setProp('types', bomaTypes)
 
         standardTypes = {
-            'string':      StandardType('string',       'std::string',             '<string>'),
-            'stringView':  StandardType('stringView',   'std::string_view',        '<string_view>'),
-            'cstring':     StandardType('cstring',      '',                        '<cstring>' ),
-            'array':       StandardType('array',        'std::array',              '<array>'),
-            'pair':        StandardType('pair',         'std::pair',               '<utility>'),
-            'tuple':       StandardType('tuple',        'std::tuple',              '<tuple>'),
-            'vector':      StandardType('vector',       'std::vector',             '<vector>'),
-            'set':         StandardType('set',          'std::set',                '<set>'),
-            'unorderedSet':StandardType('unorderedSet', 'std::unordered_set',      '<unordered_set>'),
-            'map':         StandardType('map',          'std::map',                '<map>'),
-            'unorderedMap':StandardType('unorderedMap', 'std::unordered_map',      '<unordered_map>'),
-            'optional':    StandardType('optional',     'std::optional',           '<optional>'),
-            'variant':     StandardType('variant',      'std::variant',            '<variant>' )
+            'string':      StandardType('string',       'std', 'std::string',             '<string>'),
+            'stringView':  StandardType('stringView',   'std', 'std::string_view',        '<string_view>'),
+            'cstring':     StandardType('cstring',      'std', '',                        '<cstring>' ),
+            'array':       StandardType('array',        'std', 'std::array',              '<array>'),
+            'pair':        StandardType('pair',         'std', 'std::pair',               '<utility>'),
+            'tuple':       StandardType('tuple',        'std', 'std::tuple',              '<tuple>'),
+            'vector':      StandardType('vector',       'std', 'std::vector',             '<vector>'),
+            'set':         StandardType('set',          'std', 'std::set',                '<set>'),
+            'unorderedSet':StandardType('unorderedSet', 'std', 'std::unordered_set',      '<unordered_set>'),
+            'map':         StandardType('map',          'std', 'std::map',                '<map>'),
+            'unorderedMap':StandardType('unorderedMap', 'std', 'std::unordered_map',      '<unordered_map>'),
+            'optional':    StandardType('optional',     'std', 'std::optional',           '<optional>'),
+            'variant':     StandardType('variant',      'std', 'std::variant',            '<variant>' )
                 # TODO: multisdet, multimap, list, pmr things
         }
 
@@ -94,7 +94,7 @@ class cpp17Provider(Provider):
 
         # compute translated names for enums that aren't already defined
         for _, e in bomaEnums.items():
-            e.computeDeclVals()
+            e.computeDeclVals(lambda val: f'{e.namespace}::{val.codeDecl}')
 
         # allow scribes to access $std.string.usedInBomaType, say
         class AllStandardObjects:

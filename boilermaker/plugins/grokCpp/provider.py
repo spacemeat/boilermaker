@@ -129,23 +129,22 @@ class grokCppProvider(Provider):
 
 
     def _extractEnum(self, pygccxmlDecl, isScoped):
-        bomaEnumName = pygccxmlDecl.partial_decl_string.replace('::', '.')
+        bomaEnumName = pygccxmlDecl.name
+        bomaNamespace = pygccxmlDecl.partial_decl_string[:-len(bomaEnumName)].replace('::', '.')
         declVals = []
         for val in pygccxmlDecl.values:
-            if type(val) is tuple:
-                declVals.append([val[0], val[1]])
-            else:
-                declVals.append(val)
+            declVals.append([val[0], val[1]])
 
         bomaVals, flags = self._translateDeclValsToBomaVals(bomaEnumName, declVals)
 
+        #breakpoint()
         isScoped = (self.runDefs.get('isScoped', False) or
                     self.runDefs.get('language', 'c++') == 'c++')
-        e = EnumType(bomaEnumName, bomaVals, {'isScoped': isScoped, 'flags': flags})
+        e = EnumType(bomaEnumName, bomaNamespace, bomaVals, {'isScoped': isScoped, 'flags': flags})
         e.include = self.runDefs.get('sources', [])
-        e.codeDecl = bomaEnumName.replace('.', '::')
-        e.fullCodeDecl = e.codeDecl
-        e.provideDeclVals(declVals)
+        e.codeDecl = bomaEnumName
+        e.fullCodeDecl = f'{bomaNamespace}{e.codeDecl}'.replace('.', '::')
+        self._provideDeclValsToEnum(e, declVals)
         return e
 
 
@@ -259,6 +258,16 @@ class grokCppProvider(Provider):
                     raise RuntimeError(f'platform/case contains an invalid operation "{op}".')
 
         return eva
+
+
+    def _provideDeclValsToEnum(self, enum :EnumType, declVals):
+        enum.alreadyDefined = True
+        for i in range(0, len(declVals)):
+            declVal = declVals[i]
+            if enum.vals[i].numberValue != declVal[1]:
+                raise RuntimeError(f'declVal / enum val mismatch')
+            enum.vals[i].codeDecl = declVal[0]
+            enum.vals[i].fullCodeDecl = f'{enum.namespace}{declVal[0]}'.replace('.', '::')
 
 
     @staticmethod

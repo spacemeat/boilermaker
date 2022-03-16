@@ -1,29 +1,39 @@
-$<out $sourceDir + '/' + $enumSourceFile>$+
+$<out $enumsSourcePath>$+
+
 $sourceTopComment
 
-$<join for header in $<$includes.enums.source>>
-#include $header$<endjoin>
+#include "../../inc/boma/enums.hpp"
+#include <iostream>
 
 $<if 'humon' in $serializeTo>
 namespace $namespace
-{$<join for enum in $enums>
-    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.type>>$> & obj)
+{
+    $+
+    $<join for enum in $enums>
+    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.codeDecl > > & obj)
     {
-        using enumIntType = std::underlying_type<::$<$enum.type.name>$>::type;$<if $enum.flags == False>
+        using enumIntType = std::underlying_type<$<$enum.codeDecl> >::type;
+        $<if not $enum.flags>
         switch(* obj)
-        {$<join for val in $enum.values>
-        case $<$val.name>: out << "$<$val.converted>"; break;$<endjoin>
+        {
+        $+  $<join for val in $enum.vals>$+
+        $<if not $val.isDuplicate>$+
+        case $<$val.codeDecl>: out << "$<$val.bomaName>"; break;$+
+        $<endif>$+
+        $<endjoin>
         default: out << static_cast<enumIntType$>(* obj); break;
         }$<else>
         enumIntType bits = static_cast<enumIntType$>(* obj);
-        out << "[";$<join for val in $enum.values>
-        if (bits & static_cast<enumIntType$>($<$val.name>))
+        out << "[";
+
+        $+  $<join for val in $enum.vals>
+        if (bits & static_cast<enumIntType>($<$val.codeDecl>))
         {
-            out << " $<$val.converted>";
-            bits &= ~static_cast<enumIntType$>($<$val.name>);
+            out << " $<$val.bomaName>";
+            bits &= ~static_cast<enumIntType>($<$val.codeDecl>);
             if (! bits)
                 { goto done; }
-        }
+        }$+
         $<endjoin>
     done:
         out << " ]";
