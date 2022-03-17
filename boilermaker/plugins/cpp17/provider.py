@@ -58,6 +58,23 @@ class cpp17Provider(Provider):
     def generateProps(self, props):
         props.push()
 
+        props.setProp('scope', '')
+
+        # convenience function for namespace/scoping
+        def rescope(type):
+            # TODO: This is probably losy perf
+            s = Scribe(props)
+            currentScope = s.getXProp('scope').split('::')
+            fullName = type.fullCodeDecl.split('::')
+            # find first n common names; the rest is the qualified name
+            skip = 0
+            for i in range(min(len(currentScope), len(fullName))):
+                if currentScope[i] == fullName[i]:
+                    skip += 1
+            #breakpoint()
+            return '::'.join(fullName[skip:])
+        props.setProp('rescope', rescope)
+
         s = Scribe(props)
         bomaEnums = {}
         for enumsCluster in s.getXPropAll('bomaEnums'):
@@ -106,9 +123,9 @@ class cpp17Provider(Provider):
         props.setProp('std', stdObj)
 
         # relative paths for local #includes
-        props.setProp('headerToInl',    os.path.relpath(s.X('inlineDir'), s.X('headerDir')))
-        props.setProp('srcToHeader',    os.path.relpath(s.X('headerDir'), s.X('sourceDir')))
-        props.setProp('srcToInl',       os.path.relpath(s.X('inlineDir'), s.X('sourceDir')))
+        props.setProp('headerToInl',    os.path.relpath(s.X('$inlineDir'), s.X('$headerDir')))
+        props.setProp('srcToHeader',    os.path.relpath(s.X('$headerDir'), s.X('$sourceDir')))
+        props.setProp('srcToInl',       os.path.relpath(s.X('$inlineDir'), s.X('$sourceDir')))
 
         # convenience function for $const
         def const(decl):
@@ -199,7 +216,7 @@ class cpp17Provider(Provider):
             return
         s = Scribe(props)
         t.codeDecl = t.name.replace('.', '::')
-        t.fullCodeDecl = s.X('$namespace') + '::' + t.name.replace('.', '::')
+        t.fullCodeDecl = '::' + s.X('$namespace') + '::' + t.name.replace('.', '::')
 
 
     def makeNative_old(self, bomaName, useNamespace=False):

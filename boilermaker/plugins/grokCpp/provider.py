@@ -132,7 +132,15 @@ class grokCppProvider(Provider):
         bomaEnumName = pygccxmlDecl.name
         bomaNamespace = pygccxmlDecl.partial_decl_string[:-len(bomaEnumName)].replace('::', '.')
         declVals = []
+        bomaVals = []
+        cidx = 0
         for val in pygccxmlDecl.values:
+            idx = val[1]
+            if idx != cidx:
+                bomaVals.append([val[0], idx])
+                cidx = idx
+            else:
+                bomaVals.append(val[0])
             declVals.append([val[0], val[1]])
 
         bomaVals, flags = self._translateDeclValsToBomaVals(bomaEnumName, declVals)
@@ -166,15 +174,12 @@ class grokCppProvider(Provider):
         bomaVals = []
         cidx = 0
         for val in declVals:
-            idx = cidx
-            if type(val) is list:
-                idx = val[1]
-                val = translateEnumVal(val[0])
+            idx = val[1]
+            if idx != cidx:
+                bomaVals.append([translateEnumVal(val[0]), idx])
                 cidx = idx
-                bomaVals.append([val, idx])
             else:
-                val = translateEnumVal(val)
-                bomaVals.append(val)
+                bomaVals.append(translateEnumVal(val[0]))
             cidx += 1
 
         return (bomaVals, eva.flags)

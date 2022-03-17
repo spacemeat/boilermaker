@@ -435,6 +435,11 @@ class Scribe:
                     exprClause.kind = ClauseKind.EATSPACE
                     dbg(f'$+ tag')
 
+                elif val[idx] == '!':   #  $! traps in a running debugger
+                    incIdx()
+                    dbg(f'$! tag')
+                    breakpoint()
+
                 elif val[idx].isalpha() or val[idx] == '_':
                     # eval props.get which must resolve to a string (because we are not inTag)
                     accum = ''
@@ -452,171 +457,178 @@ class Scribe:
 
             elif val[idx] == '>':
                 incIdx()
-                inTagCounter -= 1
 
-                # resolve if/join/file/expr/end* tags
-                if len(currentClause.terms) == 0:
-                    dbg(f'empty tag')
-                    # just a way of pruning this clause really
-                    currentClause = currentClause.mergeToParent()
-
-                # First token isn't text - might be an expression or query.
-                # Either way, skip it for now. We're just examining structure
-                # and looking for keywords or text patterns.
-                elif type(currentClause.terms[0]) is not str:
-                    currentClause = currentClause.parent
-                    dbg(f'tag')
-
-                elif m := re.match(re_comment, currentClause.terms[0]):
-                    currentClause.kind = ClauseKind.COMMENT
-                    currentClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
-                    currentClause = currentClause.parent
-                    dbg(f'comment tag')
-
-                elif m := re.match(re_if, currentClause.terms[0]):
-                    ifClause = currentClause.insertClause()
-                    ifClause.kind = ClauseKind.IF
-                    condClause = ifClause.terms[0]
-                    condClause.terms[0] = condClause.terms[0][len(m.group(1)):]
-                    condClause.kind = ClauseKind.IFCONDITIONAL
-                    currentClause = ifClause
-                    currentClause = currentClause.appendClause()
-                    currentClause.kind = ClauseKind.THEN
-                    dbg(f'if tag')
-
-                elif m := re.match(re_elif, currentClause.terms[0]):
-                    thenClause = currentClause.parent
-                    ifClause = thenClause.parent    # pop out of THEN
-                    ifCondClause = ifClause.appendClause()
-                    ifCondClause.kind = ClauseKind.ELIFCONDITIONAL
-                    ifCondClause.terms = currentClause.terms
-                    currentClause.terms = []
-                    currentClause.mergeToParent()
-                    ifCondClause.terms[0] = ifCondClause.terms[0][len(m.group(1)):]
-                    currentClause = ifClause
-                    currentClause = currentClause.appendClause()
-                    currentClause.kind = ClauseKind.THEN
-                    dbg(f'elif tag')
-
-                elif m := re.match(re_else, currentClause.terms[0]):
-                    currentClause.terms = []
-                    currentClause = currentClause.mergeToParent()
-                    currentClause = currentClause.parent    # pop out of ELSE
-                    currentClause = currentClause.appendClause()
-                    currentClause.kind = ClauseKind.ELSE
-                    currentClause.append("True")
-                    currentClause = currentClause.parent    # pop out of ELSE
-                    currentClause = currentClause.appendClause()
-                    currentClause.kind = ClauseKind.THEN
-                    dbg(f'else tag')
-
-                elif m := re.match(re_endif, currentClause.terms[0]):
-                    currentClause.terms = []
-                    currentClause = currentClause.mergeToParent()
-                    currentClause = currentClause.parent
-                    if currentClause.kind != ClauseKind.IF:
-                        raise RuntimeError(f'{self.props.getProp("inFile")} ({line}, {col}): $<endif> does not match a preceding $<if>')
-                    currentClause = currentClause.parent
-                    dbg(f'endif -> {accum}')
-
-                elif m := re.match(re_join, currentClause.terms[0]):
-                    joinClause = currentClause.insertClause()
-                    joinClause.kind = ClauseKind.JOIN
-                    condClause = joinClause.terms[0]
-                    condClause.terms[0] = condClause.terms[0][len(m.group(1)):]
-                    condClause.kind = ClauseKind.JOINCOMPREHENSION
-                    currentClause = joinClause
-                    currentClause = currentClause.appendClause()
-                    currentClause.kind = ClauseKind.THEN
-                    dbg(f'join tag')
-
-                elif m := re.match(re_delim, currentClause.terms[0]):
-                    thenClause = currentClause.parent
-                    joinClause = thenClause.parent    # pop out of ELSE
-                    delimClause = joinClause.appendClause()
-                    delimClause.kind = ClauseKind.DELIM
-                    delimClause.terms = currentClause.terms
-                    delimClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
-                    currentClause.terms = []
-                    currentClause.mergeToParent()
-                    currentClause = joinClause.appendClause()
-                    currentClause.kind = ClauseKind.THEN
-                    dbg(f'delim tag')
-
-                elif m := re.match(re_endjoin, currentClause.terms[0]):
-                    currentClause.terms = []
-                    currentClause = currentClause.mergeToParent()
-                    currentClause = currentClause.parent
-                    if currentClause.kind != ClauseKind.JOIN:
-                        raise RuntimeError(f'({line}, {col}): $<endjoin> does not match a preceding $<join>')
-                    currentClause = currentClause.parent
-                    dbg(f'endjoin tag')
-
-                elif m := re.match(re_in, currentClause.terms[0]):
-                    currentClause.kind = ClauseKind.PATH
-                    currentClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
-                    currentClause = currentClause.insertClause()
-                    currentClause.kind = ClauseKind.IN
-                    currentClause = currentClause.parent
-                    dbg(f'in tag')
-
-                elif m := re.match(re_out, currentClause.terms[0]):
-                    currentClause.kind = ClauseKind.PATH
-                    currentClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
-                    outClause = currentClause.insertClause()
-                    outClause.kind = ClauseKind.OUT
-                    currentClause = outClause.appendClause()
-                    dbg(f'out tag')
-
-                elif m := re.match(re_endout, currentClause.terms[0]):
-                    currentClause.terms = []
-                    currentClause = currentClause.mergeToParent()
-                    currentClause = currentClause.parent
-                    if currentClause.kind != ClauseKind.OUT:
-                        raise RuntimeError(f'({line}, {col}): $<endout> does not match a preceding $<out>')
-                    currentClause = currentClause.parent
-                    dbg(f'endout tag')
-
-                elif m := re.match(re_set, currentClause.terms[0]):
-                    currentClause.kind = ClauseKind.SETASSIGNMENT
-                    currentClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
-                    setClause = currentClause.insertClause()
-                    setClause.kind = ClauseKind.SET
-                    currentClause = setClause.appendClause()
-                    currentClause.kind = ClauseKind.THEN
-                    dbg(f'set tag')
-
-                elif m := re.match(re_endset, currentClause.terms[0]):
-                    currentClause.terms = []
-                    currentClause = currentClause.mergeToParent()
-                    currentClause = currentClause.parent
-                    if currentClause.kind != ClauseKind.SET:
-                        raise RuntimeError(f'({line}, {col}): $<endset> does not match a preceding $<set>')
-                    currentClause = currentClause.parent
-                    dbg(f'endset tag')
-
-                elif m := re.match(re_fmt, currentClause.terms[0]):
-                    currentClause.kind = ClauseKind.FMTCODE
-                    currentClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
-                    fmtClause = currentClause.insertClause()
-                    fmtClause.kind = ClauseKind.FMT
-                    currentClause = fmtClause.appendClause()
-                    currentClause.kind = ClauseKind.THEN
-                    dbg(f'fmt tag')
-
-                elif m := re.match(re_endfmt, currentClause.terms[0]):
-                    currentClause.terms = []
-                    currentClause = currentClause.mergeToParent()
-                    currentClause = currentClause.parent
-                    if currentClause.kind != ClauseKind.FMT:
-                        raise RuntimeError(f'({line}, {col}): $<endfmt> does not match a preceding $<fmt>')
-                    currentClause = currentClause.parent
-                    dbg(f'endfmt tag')
+                if inTagCounter == 0:
+                    accum = '>'
+                    dbg(f'verbatim: {accum}')
+                    currentClause.append(accum)
 
                 else:
-                    currentClause.kind = ClauseKind.EXPRESSION
-                    currentClause = currentClause.parent
-                    dbg(f'expr tag')
+                    inTagCounter -= 1
+
+                    # empty tag
+                    if len(currentClause.terms) == 0:
+                        dbg(f'empty tag')
+                        # just a way of pruning this clause really
+                        currentClause = currentClause.mergeToParent()
+
+                    # First token isn't text - might be an expression or query.
+                    # Either way, skip it for now. We're just examining structure
+                    # and looking for keywords or text patterns.
+                    elif type(currentClause.terms[0]) is not str:
+                        currentClause = currentClause.parent
+                        dbg(f'tag')
+
+                    elif m := re.match(re_comment, currentClause.terms[0]):
+                        currentClause.kind = ClauseKind.COMMENT
+                        currentClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
+                        currentClause = currentClause.parent
+                        dbg(f'comment tag')
+
+                    elif m := re.match(re_if, currentClause.terms[0]):
+                        ifClause = currentClause.insertClause()
+                        ifClause.kind = ClauseKind.IF
+                        condClause = ifClause.terms[0]
+                        condClause.terms[0] = condClause.terms[0][len(m.group(1)):]
+                        condClause.kind = ClauseKind.IFCONDITIONAL
+                        currentClause = ifClause
+                        currentClause = currentClause.appendClause()
+                        currentClause.kind = ClauseKind.THEN
+                        dbg(f'if tag')
+
+                    elif m := re.match(re_elif, currentClause.terms[0]):
+                        thenClause = currentClause.parent
+                        ifClause = thenClause.parent    # pop out of THEN
+                        ifCondClause = ifClause.appendClause()
+                        ifCondClause.kind = ClauseKind.ELIFCONDITIONAL
+                        ifCondClause.terms = currentClause.terms
+                        currentClause.terms = []
+                        currentClause.mergeToParent()
+                        ifCondClause.terms[0] = ifCondClause.terms[0][len(m.group(1)):]
+                        currentClause = ifClause
+                        currentClause = currentClause.appendClause()
+                        currentClause.kind = ClauseKind.THEN
+                        dbg(f'elif tag')
+
+                    elif m := re.match(re_else, currentClause.terms[0]):
+                        currentClause.terms = []
+                        currentClause = currentClause.mergeToParent()
+                        currentClause = currentClause.parent    # pop out of ELSE
+                        currentClause = currentClause.appendClause()
+                        currentClause.kind = ClauseKind.ELSE
+                        currentClause.append("True")
+                        currentClause = currentClause.parent    # pop out of ELSE
+                        currentClause = currentClause.appendClause()
+                        currentClause.kind = ClauseKind.THEN
+                        dbg(f'else tag')
+
+                    elif m := re.match(re_endif, currentClause.terms[0]):
+                        currentClause.terms = []
+                        currentClause = currentClause.mergeToParent()
+                        currentClause = currentClause.parent
+                        if currentClause.kind != ClauseKind.IF:
+                            raise RuntimeError(f'{self.props.getProp("inFile")} ({line}, {col}): $<endif> does not match a preceding $<if>')
+                        currentClause = currentClause.parent
+                        dbg(f'endif -> {accum}')
+
+                    elif m := re.match(re_join, currentClause.terms[0]):
+                        joinClause = currentClause.insertClause()
+                        joinClause.kind = ClauseKind.JOIN
+                        condClause = joinClause.terms[0]
+                        condClause.terms[0] = condClause.terms[0][len(m.group(1)):]
+                        condClause.kind = ClauseKind.JOINCOMPREHENSION
+                        currentClause = joinClause
+                        currentClause = currentClause.appendClause()
+                        currentClause.kind = ClauseKind.THEN
+                        dbg(f'join tag')
+
+                    elif m := re.match(re_delim, currentClause.terms[0]):
+                        thenClause = currentClause.parent
+                        joinClause = thenClause.parent    # pop out of ELSE
+                        delimClause = joinClause.appendClause()
+                        delimClause.kind = ClauseKind.DELIM
+                        delimClause.terms = currentClause.terms
+                        delimClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
+                        currentClause.terms = []
+                        currentClause.mergeToParent()
+                        currentClause = joinClause.appendClause()
+                        currentClause.kind = ClauseKind.THEN
+                        dbg(f'delim tag')
+
+                    elif m := re.match(re_endjoin, currentClause.terms[0]):
+                        currentClause.terms = []
+                        currentClause = currentClause.mergeToParent()
+                        currentClause = currentClause.parent
+                        if currentClause.kind != ClauseKind.JOIN:
+                            raise RuntimeError(f'({line}, {col}): $<endjoin> does not match a preceding $<join>')
+                        currentClause = currentClause.parent
+                        dbg(f'endjoin tag')
+
+                    elif m := re.match(re_in, currentClause.terms[0]):
+                        currentClause.kind = ClauseKind.PATH
+                        currentClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
+                        currentClause = currentClause.insertClause()
+                        currentClause.kind = ClauseKind.IN
+                        currentClause = currentClause.parent
+                        dbg(f'in tag')
+
+                    elif m := re.match(re_out, currentClause.terms[0]):
+                        currentClause.kind = ClauseKind.PATH
+                        currentClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
+                        outClause = currentClause.insertClause()
+                        outClause.kind = ClauseKind.OUT
+                        currentClause = outClause.appendClause()
+                        dbg(f'out tag')
+
+                    elif m := re.match(re_endout, currentClause.terms[0]):
+                        currentClause.terms = []
+                        currentClause = currentClause.mergeToParent()
+                        currentClause = currentClause.parent
+                        if currentClause.kind != ClauseKind.OUT:
+                            raise RuntimeError(f'({line}, {col}): $<endout> does not match a preceding $<out>')
+                        currentClause = currentClause.parent
+                        dbg(f'endout tag')
+
+                    elif m := re.match(re_set, currentClause.terms[0]):
+                        currentClause.kind = ClauseKind.SETASSIGNMENT
+                        currentClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
+                        setClause = currentClause.insertClause()
+                        setClause.kind = ClauseKind.SET
+                        currentClause = setClause.appendClause()
+                        currentClause.kind = ClauseKind.THEN
+                        dbg(f'set tag')
+
+                    elif m := re.match(re_endset, currentClause.terms[0]):
+                        currentClause.terms = []
+                        currentClause = currentClause.mergeToParent()
+                        currentClause = currentClause.parent
+                        if currentClause.kind != ClauseKind.SET:
+                            raise RuntimeError(f'({line}, {col}): $<endset> does not match a preceding $<set>')
+                        currentClause = currentClause.parent
+                        dbg(f'endset tag')
+
+                    elif m := re.match(re_fmt, currentClause.terms[0]):
+                        currentClause.kind = ClauseKind.FMTCODE
+                        currentClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
+                        fmtClause = currentClause.insertClause()
+                        fmtClause.kind = ClauseKind.FMT
+                        currentClause = fmtClause.appendClause()
+                        currentClause.kind = ClauseKind.THEN
+                        dbg(f'fmt tag')
+
+                    elif m := re.match(re_endfmt, currentClause.terms[0]):
+                        currentClause.terms = []
+                        currentClause = currentClause.mergeToParent()
+                        currentClause = currentClause.parent
+                        if currentClause.kind != ClauseKind.FMT:
+                            raise RuntimeError(f'({line}, {col}): $<endfmt> does not match a preceding $<fmt>')
+                        currentClause = currentClause.parent
+                        dbg(f'endfmt tag')
+
+                    else:
+                        currentClause.kind = ClauseKind.EXPRESSION
+                        currentClause = currentClause.parent
+                        dbg(f'expr tag')
 
             else:   # all other chars before $ or >
                 accum = ''
@@ -860,6 +872,7 @@ class Scribe:
 
         elif clause.kind == ClauseKind.SET:
             keyIdx = 0
+            #breakpoint()
 
             setString = clause.terms[keyIdx].terms[0]
             varname = ''

@@ -10,13 +10,13 @@ namespace $namespace
 {
     $+  $<join for enum in $enums>$+
             $<if not $enum.alreadyDefined>
-    enum $<if $enum.isScoped >class $<endif>$<$enum.codeDecl >
+    enum $<if $enum.isScoped >class $<endif>$<$enum.codeDecl>
     {
-        $+  $<join for val in $enum.vals >$+
-        $+  $<if $val.numberValueSpecified >$+
-        $<$val.codeDecl > = $<$val.numberValue >
+        $+  $<join for val in $enum.vals>$+
+        $+  $<if $val.numberValueSpecified>$+
+        $<$val.codeDecl> = $<$val.numberValue>$+
         $+  $<else>$+
-        $<$val.codeDecl >$+
+        $<$val.codeDecl>$+
         $+  $<endif>$<delim>,
         $<endjoin>
     };$<endif>$<delim>
@@ -29,14 +29,14 @@ namespace hu
 {
     $+  $<join for enum in $enums>
     template <>
-    struct val<$<$enum.fullCodeDecl>$+ >        $<# TODO: the space before the gt shouldn't have to be there>
+    struct val<$<$enum.fullCodeDecl>>
     {
         static inline $<$enum.fullCodeDecl> extract(const Node & node) noexcept
         {
-            $+  $<if not $enum.flags >
+            $+  $<if not $enum.flags>
             auto nodeVal = node.value().str().data();
             $+  $<join for val in $enum.vals>
-            if (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName) >) == 0) { return $+
+            if (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName)>) == 0) { return $+
             $<if $enum.isScoped>$+
                 $<$enum.fullCodeDecl>::$<$val.codeDecl>$+
             $<else>$+
@@ -45,7 +45,7 @@ namespace hu
             $<endjoin>
             return {};$+
             $<else>
-            using enumIntType = std::underlying_type<$<$enum.fullCodeDecl > >::type;
+            using enumIntType = std::underlying_type<$<$enum.fullCodeDecl>>::type;
             enumIntType e = 0;
             bool fromList = node.kind() == hu::NodeKind::list;
             Node chNode = node;
@@ -55,14 +55,14 @@ namespace hu
             {
                 auto nodeVal = chNode.value().str().data();
                 if      $<join for val in $enum.vals>$+
-                (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName) >) == 0) { e |= static_cast<enumIntType>($<$val.fullCodeDecl>); }$+
+                (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName)>) == 0) { e |= static_cast<enumIntType>($<$val.fullCodeDecl>); }$+
                 $<delim>
                 else if $<endjoin>
                 chNode = chNode.nextSibling();
             }
             while(fromList && chNode);
 
-            return static_cast<$<$enum.fullCodeDecl> >(e);$<endif>  $<# enum.flags>
+            return static_cast<$<$enum.fullCodeDecl>>(e);$<endif>  $<# enum.flags>
         }
     };
 $<endjoin>$+ $<# enum>
@@ -91,7 +91,7 @@ $<endif>
     $+
 $<if 'humon' in $serializeTo>$+
 $+  $<join for enum in $enums>$+
-    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.codeDecl>$+ > & obj);$<delim>
+    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.codeDecl>> & obj);$<delim>
     $<endjoin>
 }
 $<endif $<# humon>>$+

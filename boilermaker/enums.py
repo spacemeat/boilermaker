@@ -3,7 +3,8 @@ from .type import Type
 
 
 class EnumVal:
-    def __init__(self, bomaName, numberValue, numberValueSpecified, isDuplicate):
+    def __init__(self, enumType, bomaName, numberValue, numberValueSpecified, isDuplicate):
+        self.enumType = enumType
         self.bomaName = bomaName
         self.codeDecl = ''
         self.fullCodeDecl = ''
@@ -26,15 +27,16 @@ class EnumType(Type):
         cidx = 0
         seenNums = set()
         for val in vals:
-            idx = cidx
-            if type(val) is list:
+            idx = -1
+            if type(val) is list and type(val) is not str:
                 idx = int(val[1])    # TODO: Allow idx to be a name we've seen earlier
                 val = val[0]
-                cidx = idx
-                ev = EnumVal(val, idx, True, idx in seenNums)
+                ev = EnumVal(self, val, idx, True, idx in seenNums)
                 self.vals.append(ev)
+                cidx = idx
             else:
-                ev = EnumVal(val, idx, False, idx in seenNums)
+                idx = cidx
+                ev = EnumVal(self, val, idx, False, idx in seenNums)
                 self.vals.append(ev)
             seenNums.add(idx)
             cidx += 1
@@ -44,9 +46,7 @@ class EnumType(Type):
         self.toDecl_prefix = enumProps.get('prefix', '')
         self.toDecl_suffix = enumProps.get('suffix', '')
         self.toDecl_case = enumProps.get('case', '')
-
         self.alreadyDefined = False
-        self.declVals = []
 
 
     def computeDeclVals(self, makeFullDecl):

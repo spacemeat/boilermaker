@@ -2,25 +2,31 @@ $<out $enumsSourcePath>$+
 
 $sourceTopComment
 
-#include "../../inc/boma/enums.hpp"
+#include "$srcToHeader/$enumsHeaderFile"
 #include <iostream>
 
 $<if 'humon' in $serializeTo>
+$<set scope as $scope + '::' + $namespace>
 namespace $namespace
 {
     $+
     $<join for enum in $enums>
-    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.codeDecl > > & obj)
+    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$rescope($enum)>> & obj)
     {
-        using enumIntType = std::underlying_type<$<$enum.codeDecl> >::type;
+        using enumIntType = std::underlying_type<$<$rescope($enum)>>::type;
         $<if not $enum.flags>
         switch(* obj)
         {
         $+  $<join for val in $enum.vals>$+
-        $<if not $val.isDuplicate>$+
-        case $<$val.codeDecl>: out << "$<$val.bomaName>"; break;$+
-        $<endif>$+
-        $<endjoin>
+        $+  $<if not $val.isDuplicate>$+
+                $<if $enum.isScoped>$+
+                    case $<$rescope($enum)>::$<$val.codeDecl>$+
+                $<else>$+
+                    case $<$rescope($val)>$+    $<#$val.fullCodeDecl>$+
+                $<endif>$+
+                        : out << "$<$val.bomaName>"; break;
+        $+  $<endif>$+
+        $<endjoin>$+
         default: out << static_cast<enumIntType$>(* obj); break;
         }$<else>
         enumIntType bits = static_cast<enumIntType$>(* obj);
@@ -42,5 +48,6 @@ namespace $namespace
     }
 $<endjoin $<# enum >>
 }
+$<endset>
 $<endif $<# humon >>
 $<endout>
