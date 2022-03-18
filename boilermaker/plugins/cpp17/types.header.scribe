@@ -1,28 +1,47 @@
-$<join for type in $bomaTypes>
------------------- Building $headerDir/$typeHeaderFile.
-$<out $headerDir + '/' + $typeHeaderFile>$+
+$<join for type in $types>
+
+$<out $typeHeaderPath>$+
 #pragma once
 
 $headerTopComment
 
-$<join for header in $<$includes.type.header>>
-#include $header$<endjoin>
+#include "$commonHeaderFile"
+$+  $<if $diffable>
+#include "diffs.hpp"
+#include <bitset>
+$+  $<endif>$+
+$+  $<if 'humon' in $serializeTo or 'humon' in $deserializeFrom>$+
+#include <humon/humon.hpp>
+$+  $<endif>$+
+#include <string>
 
+$<set scope as $scope + '::' + $namespace>
 namespace $namespace
 {
-    $<$type.typetype> $<$type.name>;$<if $swap>
-    void swap($<$type.name> & lhs, $<$type.name> & rhs) noexcept;$<endif>$<if 'humon' in $serializeTo>
-    std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$type.name>$>)> & obj');$<endif>$<if 'binary' in $serializeTo>
-    std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$type.name>$>)> & obj');$<endif>$<if $comparable>
+    $classOrStruct $<$rescope($type)>;
+    $+  $<if $swap>
+    void swap($<$rescope($type)> & lhs, $<$rescope($type)> & rhs) noexcept;$+
+    $<endif>
+    $<if 'humon' in $serializeTo>$+
+    std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$rescope($type)>$>')> & obj);
+    $<endif>$+
+    $<if 'binary' in $serializeTo>$+
+    std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$rescope($type)>$>')> & obj);
+    $<endif>$+
+    $<#$`
+    $<if $comparable>
     bool operator ==($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);
-    bool operator !=($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);$<endif>
-$<if $diffable>
+    bool operator !=($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);$+
+    $<endif>$+
+
+    $<if $diffable>
     template<>
     struct Diff<$<$type.name>$>
-    {$<if $type.members.length $> 0>
+    {
+        $+  $<if $type.members.length $> 0>
         enum class Members : std::size_t
         {
-$<join for member in $type.members>$tab$tab$tab$<$member.name>,$<delim>
+            $+  $<join for member in $type.members>$tab$tab$tab$<$member.name>,$<delim>
 $<endjoin>
             numMembers
         };
@@ -30,7 +49,9 @@ $<endjoin>
         Diff();
         Diff($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);
 
-        std::bitset<static<cast<std::size_t>(Members::numMembers)> memberDiffs;$<endif>$<join for member in type.members>
+        std::bitset<static<cast<std::size_t>(Members::numMembers)> memberDiffs;$+
+        $<endif>$+
+        $<join for member in type.members>
         Diff<$<$member.type>$> $<$member.name>_diffs;$<endjoin>
     };$<endif>
 
@@ -49,10 +70,10 @@ $<endjoin>
         friend void swap($<$type.name> & lhs, $<$type.name> & rhs) noexcept;$<endif>$<join for member in $type.members>$<if $getters>
         $<$member.type.name>         get_$<$member.name>() &&$<if $inlineGetters>      { return $<$member.name>; }$<else>;$<endif>$<endif>$<if $constGetters>
         $<$const($member.type.name>) & get_$<$member.name>() const &$<if $inlineGetters> { return $<$member.name>; }$<else>;$<endif>$<endif>$<if $nonConstGetters>
-`        $<$member.type.name>       & get_$<$member.name>() &$<if $inlineGetters>       { return $<$member.name>; }$<else>;$<endif>$<endif>$<endjoin>$<join for member in $<$type.members>>$<if $setByCopy>
+        $<$member.type.name>       & get_$<$member.name>() &$<if $inlineGetters>       { return $<$member.name>; }$<else>;$<endif>$<endif>$<endjoin>$<join for member in $<$type.members>>$<if $setByCopy>
         void set_$<$member.name>($<$const($member.type.name)> & new_$<$member.name>)$<if $inlineSetters>  { $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = new_$<$member.name>;$<endif> }$<else>;$<endif>$<endif>$<if $setByMove>
         void set_$<$member.name>($<$member.type.name> && new_$<$member.name>)$<if 'humon' in $inlineSetters>         { $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = std::move(new_$<$member.name>);$<endif> }$<else>;$<endif>$<endif>$<endjoin>$<if $serializeTo>
-`        friend std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$type.name>>)> & obj')>;$<endif>$<if 'binary' in $serializeTo>
+        friend std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$type.name>>)> & obj')>;$<endif>$<if 'binary' in $serializeTo>
         friend std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$type.name>>)> & obj')>;$<endif>$<if $comparable>
         friend bool operator ==($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);
         friend bool operator !=($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);$<endif>$<if $diffable>
@@ -63,6 +84,9 @@ $<if $privateMembers>
         $<$member.type> $<$member.name>;$<endjoin>
     };
 $<if 'humon' in $deserializeFrom>
+}
+$<endset>
+$<set scope as $scope + '::hu'>
 namespace hu
 {
     template<>
@@ -74,9 +98,11 @@ namespace hu
         }
     };
 }
-$<endif>$<if 'binary' in $deserializeFrom>
+$<endset>
+$<set scope as $scope + '::' + $namespace>
 namespace $namespace
 {
+$<endif>$<if 'binary' in $deserializeFrom>
     template <$>
     struct BinaryReader<$<$type.name>$>
     {
@@ -85,5 +111,10 @@ namespace $namespace
             return $<$type.name>(buffer, size);
         }
     };
+$<endif>
+    `>
+$<endset>
 }
-$<endif>$<endout>$<endjoin>
+
+
+$<endout>$<endjoin>

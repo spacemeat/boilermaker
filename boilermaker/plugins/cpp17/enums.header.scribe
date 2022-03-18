@@ -6,11 +6,12 @@ $headerTopComment
 #include "$commonHeaderFile"
 
 $<if len([e for _, e in $enums.items() if e.alreadyDefined]) $> 0>
+$<set scope as $scope + '::' + $namespace>
 namespace $namespace
 {
     $+  $<join for enum in $enums>$+
             $<if not $enum.alreadyDefined>
-    enum $<if $enum.isScoped >class $<endif>$<$enum.codeDecl>
+    enum $<if $enum.isScoped>class $<endif>$<$enum.codeDecl>
     {
         $+  $<join for val in $enum.vals>$+
         $+  $<if $val.numberValueSpecified>$+
@@ -22,30 +23,32 @@ namespace $namespace
     };$<endif>$<delim>
 
     $<endjoin>
-}$<endif>
+}$<endset>$<endif>
 
 $+  $<if 'humon' in $deserializeFrom>
+$<set scope as $scope + '::hu'>
 namespace hu
 {
     $+  $<join for enum in $enums>
     template <>
-    struct val<$<$enum.fullCodeDecl>>
+    struct val<$<$rescope($enum)>>
     {
-        static inline $<$enum.fullCodeDecl> extract(const Node & node) noexcept
+        static inline $<$rescope($enum)> extract($<$const('Node')> & node) noexcept
         {
             $+  $<if not $enum.flags>
             auto nodeVal = node.value().str().data();
             $+  $<join for val in $enum.vals>
             if (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName)>) == 0) { return $+
             $<if $enum.isScoped>$+
-                $<$enum.fullCodeDecl>::$<$val.codeDecl>$+
+                $<$rescope($enum)>::$<$val.codeDecl>$+
             $<else>$+
-                $<$val.fullCodeDecl>$+
-            $<endif>; }$+
+                $<$rescope($val)>$+
+            $<endif>$+
+                    ; }$+
             $<endjoin>
             return {};$+
             $<else>
-            using enumIntType = std::underlying_type<$<$enum.fullCodeDecl>>::type;
+            using enumIntType = std::underlying_type<$<$rescope($enum)>>::type;
             enumIntType e = 0;
             bool fromList = node.kind() == hu::NodeKind::list;
             Node chNode = node;
@@ -55,19 +58,26 @@ namespace hu
             {
                 auto nodeVal = chNode.value().str().data();
                 if      $<join for val in $enum.vals>$+
-                (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName)>) == 0) { e |= static_cast<enumIntType>($<$val.fullCodeDecl>); }$+
+                (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName)>) == 0) { e |= static_cast<enumIntType>($+
+                $<if $enum.isScoped>$+
+                    $<$rescope($enum)>::$<$val.codeDecl>$+
+                $<else>$+
+                    $<$rescope($val)>$+
+                $<endif>$+
+                ); }$+
                 $<delim>
                 else if $<endjoin>
                 chNode = chNode.nextSibling();
             }
             while(fromList && chNode);
 
-            return static_cast<$<$enum.fullCodeDecl>>(e);$<endif>  $<# enum.flags>
+            return static_cast<$<$rescope($enum)>>(e);$<endif>  $<# enum.flags>
         }
     };
-$<endjoin>$+ $<# enum>
+$<endjoin>$+  $<# enum>
 }
-$<endif> $<# humon>
+$<endset>$<endif>$+  $<# humon>
+$<set scope as $scope + '::' + $namespace>
 $+  $<if 'binary' in $deserializeFrom and len($enums) $> 0>
 namespace $namespace
 {
@@ -77,10 +87,11 @@ namespace $namespace
         static inline T extract(const char *& buffer, std::size_t & size)
         {$+
             $<if 'deserializeBinary' in $cave>
-            $caveStream << "Reading enum\n";$<endif>$<if $checkBinaryOverruns>
+            $caveStream << "Reading enum\n";$<endif>$+
+            $<if $checkBinaryOverruns>
             if (size < sizeof(T))
-                { throw std::runtime_error("Binary buffer too small."); }
-$<endif>
+                { throw std::runtime_error("Binary buffer too small."); }$+
+            $<endif>
             auto t = * reinterpret_cast<const T *>(buffer);
             buffer += sizeof(T);
             size -= sizeof(T);
@@ -91,8 +102,9 @@ $<endif>
     $+
 $<if 'humon' in $serializeTo>$+
 $+  $<join for enum in $enums>$+
-    std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.codeDecl>> & obj);$<delim>
+    std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<' + $rescope($enum) + '$>')> & obj);$<delim>
     $<endjoin>
 }
 $<endif $<# humon>>$+
-$<endout>
+$<endset>$+
+$<endout>$+
