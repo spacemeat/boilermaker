@@ -1,5 +1,4 @@
-$<join for type in $types>
-
+$<join for t in $types>
 $<out $typeHeaderPath>$+
 #pragma once
 
@@ -18,103 +17,209 @@ $+  $<endif>$+
 $<set scope as $scope + '::' + $namespace>
 namespace $namespace
 {
-    $classOrStruct $<$rescope($type)>;
+    $classOrStruct $<$rescope($t)>;
     $+  $<if $swap>
-    void swap($<$rescope($type)> & lhs, $<$rescope($type)> & rhs) noexcept;$+
+    void swap($<$rescope($t)> & lhs, $<$rescope($t)> & rhs) noexcept;$+
     $<endif>
     $<if 'humon' in $serializeTo>$+
-    std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$rescope($type)>$>')> & obj);
+    std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$rescope($t)>$>')> & obj);
     $<endif>$+
     $<if 'binary' in $serializeTo>$+
-    std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$rescope($type)>$>')> & obj);
+    std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$rescope($t)>$>')> & obj);
     $<endif>$+
-    $<#$`
     $<if $comparable>
-    bool operator ==($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);
-    bool operator !=($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);$+
-    $<endif>$+
+    bool operator ==($<$const('$<$rescope($t)>')> & lhs, $<$const('$<$rescope($t)>')> & rhs);
+    bool operator !=($<$const('$<$rescope($t)>')> & lhs, $<$const('$<$rescope($t)>')> & rhs);$+
+    $<endif>
+    $+
 
     $<if $diffable>
     template<>
-    struct Diff<$<$type.name>$>
+    struct Diff<$<$rescope($t)>>
     {
-        $+  $<if $type.members.length $> 0>
+        $+  $<if len($t.members) $> 0>
         enum class Members : std::size_t
         {
-            $+  $<join for member in $type.members>$tab$tab$tab$<$member.name>,$<delim>
-$<endjoin>
+            $+  $<join for member in $t.members>$+
+            $<$member.name>,$<delim>
+            $<endjoin>
             numMembers
         };
 
         Diff();
-        Diff($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);
+        Diff($<$const('$<$rescope($t)>')> & lhs, $<$const('$<$rescope($t)>')> & rhs);
 
-        std::bitset<static<cast<std::size_t>(Members::numMembers)> memberDiffs;$+
+        std::bitset<static_cast<std::size_t>(Members::numMembers)> memberDiffs;
         $<endif>$+
-        $<join for member in type.members>
-        Diff<$<$member.type>$> $<$member.name>_diffs;$<endjoin>
-    };$<endif>
-
-    $<$type.typetype> $<$type.name>
-    {$<if $<$type.typetype> == 'class'>
-    public:$<endif>$<if $defaultConstructible>
-        $<$type.name>();$<endif>$<if $memberwiseConstructible>
-        $<$type.name>($<join for member in $<$type.members>>$<$const($<$member.type.name>)> & $<$member.name>$<delim>, $<endjoin>);$<endif>$<if 'humon' in $deserializeFrom>
-        $<$type.name>($<$const('hu::Node')> & node);$<endif>$<if 'binary' in $deserializeFrom>
-        $<$type.name>($<$const('char *')> & buffer, std::size_t & size);$<endif>$<if $copy != 'omit'>
-        $<$type.name>($<$const($<$type.name>)> & rhs)$<if $copy == 'default'> default$<elif copy == delete> delete$<endif>;$<endif>$<if $move != omit>
-        $<$type.name>($<$type.name> && rhs)$<if $move == 'default'> default$<elif move == 'delete'> delete$<else> noexcept$<endif>;$<endif>$<if $copy != omit>
-        $<$type.name> & operator =($<$const($<$type.name>)> & rhs)$<if $copy == 'default'> default$<elif copy == delete> delete$<endif>;$<endif>$<if $move != omit>
-        $<$type.name> & operator =($<$type.name> && rhs)$<if $move == 'default'> default$<elif move == 'delete'> delete$<else> noexcept$<endif>;$<endif>$<if $destructor != omit>
-        $<if $destructor == virtual>virtual $<endif>~$<$type.name>()$<if $destructor == 'default'> = default$<elif destructor == 'delete'> = delete$<endif>;$<endif>$<if $swap>
-        friend void swap($<$type.name> & lhs, $<$type.name> & rhs) noexcept;$<endif>$<join for member in $type.members>$<if $getters>
-        $<$member.type.name>         get_$<$member.name>() &&$<if $inlineGetters>      { return $<$member.name>; }$<else>;$<endif>$<endif>$<if $constGetters>
-        $<$const($member.type.name>) & get_$<$member.name>() const &$<if $inlineGetters> { return $<$member.name>; }$<else>;$<endif>$<endif>$<if $nonConstGetters>
-        $<$member.type.name>       & get_$<$member.name>() &$<if $inlineGetters>       { return $<$member.name>; }$<else>;$<endif>$<endif>$<endjoin>$<join for member in $<$type.members>>$<if $setByCopy>
-        void set_$<$member.name>($<$const($member.type.name)> & new_$<$member.name>)$<if $inlineSetters>  { $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = new_$<$member.name>;$<endif> }$<else>;$<endif>$<endif>$<if $setByMove>
-        void set_$<$member.name>($<$member.type.name> && new_$<$member.name>)$<if 'humon' in $inlineSetters>         { $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$<else>$<$member.name> = std::move(new_$<$member.name>);$<endif> }$<else>;$<endif>$<endif>$<endjoin>$<if $serializeTo>
-        friend std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$type.name>>)> & obj')>;$<endif>$<if 'binary' in $serializeTo>
-        friend std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$type.name>>)> & obj')>;$<endif>$<if $comparable>
-        friend bool operator ==($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);
-        friend bool operator !=($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);$<endif>$<if $diffable>
-        friend Diff<$<$type.name>>::Diff();
-        friend Diff<$<$type.name>>::Diff($<$const($<$type.name>)> & lhs, $<$const($<$type.name>)> & rhs);$<endif>
-$<if $privateMembers>
-    private:$<endif>$<join for member in $<$type.members>>
-        $<$member.type> $<$member.name>;$<endjoin>
+        $<join for member in $t.members>
+        Diff<$<$rescope($member.type)>> $<$member.name>_diffs;$<endjoin>
     };
+
+    $+  $<endif>
+
+    $<$classOrStruct> $<$t.codeDecl>
+    {
+    $<if $classOrStruct == 'class'>$+
+    public:
+    $<endif>    $+
+    $<if $defaultConstructible>$+
+        $<$t.codeDecl>();
+    $<endif>    $+
+    $<if $memberwiseConstructible>
+        $<$t.codeDecl>($+
+        $<join for member in $t.members>$+
+            $<$const($rescope($member.type))> & $<$member.name>$<delim>, $+
+        $<endjoin>$+
+            );
+    $<endif>    $+
+    $<if 'humon' in $deserializeFrom>
+        $<$t.codeDecl>($<$const('hu::Node')> & node);
+    $<endif>    $+
+    $<if 'binary' in $deserializeFrom>
+        $<$t.codeDecl>($<$const('char *')> & buffer, std::size_t & size);
+    $<endif>
+    $<if $copy != 'omit'>
+        $<$t.codeDecl>($<$const($rescope($t))> & rhs)
+        $<if $copy == 'default'> default
+        $<elif $copy == 'delete'> delete
+        $<endif>$+
+            ;
+    $<endif>
+    $<#$`
+    $<if $move != omit>
+        $<$t.codeDecl>($<$rescope($t)> && rhs)
+        $<if $move == 'default'> default
+        $<elif $move == 'delete'> delete
+        $<else> noexcept
+        $<endif>
+            ;
+    $<endif>
+    $<if $copy != omit>
+        $<$rescope($t)> & operator =($<$const('$<$rescope($t)>')> & rhs)$+
+            $<if $copy == 'default'> default
+            $<elif $copy == 'delete'> delete
+            $<endif>
+        ;
+        $<endif>
+        $<if $move != omit>
+        $<$rescope($t)> & operator =($<$rescope($t)> && rhs)$+
+            $<if $move == 'default'> default
+            $<elif $move == 'delete'> delete
+            $<else> noexcept
+            $<endif>
+        ;
+        $<endif>
+        $<if $destructor != omit>
+            $<if $destructor == virtual>
+        virtual $+
+            $<endif>
+        ~$<$t.codeDecl>()
+        $<if $destructor == 'default'> = default
+        $<elif $destructor == 'delete'> = delete
+        $<endif>
+        ;
+    $<endif>
+    $<if $swap>
+        friend void swap($<$rescope($t)> & lhs, $<$rescope($t)> & rhs) noexcept;
+    $<endif>
+    $<join for member in $t.members>
+        $<if $getters>
+        $<$rescope($member.type)>         get_$<$member.name>() &&
+            $<if $inlineGetters>      { return $<$member.name>; }
+            $<else>
+        ;
+            $<endif>
+        $<endif>
+        $<if $constGetters>
+        $<$const('$member.type.name')> & get_$<$member.name>() const &
+            $<if $inlineGetters> { return $<$member.name>; }
+            $<else>
+        ;
+            $<endif>
+        $<endif>
+        $<if $nonConstGetters>
+        $<$rescope($member.type)>       & get_$<$member.name>() &
+            $<if $inlineGetters>       { return $<$member.name>; }
+            $<else>
+            ;
+            $<endif>
+        $<endif>
+    $<endjoin>
+    $<join for member in $<$t.members>>
+        $<if $setByCopy>
+        void set_$<$member.name>($<$const($member.type.name)> & new_$<$member.name>)
+            $<if $inlineSetters>  { $+
+                $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);
+                $<else>$<$member.name> = new_$<$member.name>;
+                $<endif> $+
+                     }
+            $<else>;
+            $<endif>
+        $<endif>
+        $<if $setByMove>
+        void set_$<$member.name>($<$rescope($member.type)> && new_$<$member.name>)
+            $<if 'humon' in $inlineSetters>         { $+
+                $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);
+                $<else>$<$member.name> = std::move(new_$<$member.name>);
+                $<endif> $+
+                        }
+            $<else>;
+        $<endif>
+    $<endjoin>
+    $<if $serializeTo>
+        friend std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$rescope($t)>>)> & obj')>;
+    $<endif>
+    $<if 'binary' in $serializeTo>
+        friend std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$rescope($t)>>)> & obj')>;
+    $<endif>
+    $<if $comparable>
+        friend bool operator ==($<$const('$<$rescope($t)>')> & lhs, $<$const('$<$rescope($t)>')> & rhs);
+        friend bool operator !=($<$const('$<$rescope($t)>')> & lhs, $<$const('$<$rescope($t)>')> & rhs);
+    $<endif>
+    $<if $diffable>
+        friend Diff<$<$rescope($t)>>::Diff();
+        friend Diff<$<$rescope($t)>>::Diff($<$const('$<$rescope($t)>')> & lhs, $<$const('$<$rescope($t)>')> & rhs);
+    $<endif>
+    $<if $privateMembers>
+    private:
+    $<endif>
+    $<join for member in $<$t.members>>
+        $<$member.type> $<$member.name>;
+    $<endjoin>
+     `>
+    };
+$<endset>$+
 $<if 'humon' in $deserializeFrom>
 }
-$<endset>
-$<set scope as $scope + '::hu'>
+    $<set scope as $scope + '::hu'>
 namespace hu
 {
     template<>
-    struct val<$namespace::$<$type.name>>
+    struct val<$<$rescope($t)>>
     {
-        static inline val<$namespace::$<$type.name> extract($<$const('Node')> & node)
+        static inline val<$<$rescope($t)>> extract($<$const('Node')> & node)
         {
-            return val<$namespace::$<$type.name>(node);
+            return $<$rescope($t)>(node);
         }
     };
 }
-$<endset>
-$<set scope as $scope + '::' + $namespace>
+    $<endset>
 namespace $namespace
 {
-$<endif>$<if 'binary' in $deserializeFrom>
+    $<endif>$+
+$<set scope as $scope + '::' + $namespace>
+    $+  $<if 'binary' in $deserializeFrom>
     template <$>
-    struct BinaryReader<$<$type.name>$>
+    struct BinaryReader<$<$rescope($t)>$>
     {
-        static inline $<$type.name> extract($<$const('char *')>& buffer, std::size_t & size)
+        static inline $<$rescope($t)> extract($<$const('char *')>& buffer, std::size_t & size)
         {
-            return $<$type.name>(buffer, size);
+            return $<$rescope($t)>(buffer, size);
         }
     };
-$<endif>
-    `>
-$<endset>
+$+    $<endif>$+
+$<endset>$+
 }
-
-
-$<endout>$<endjoin>
+$+
+$<endout>
+$<endjoin>

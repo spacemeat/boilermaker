@@ -168,9 +168,11 @@ class cpp17Provider(Provider):
         props.setProp('commonHeaderFwdDecls', fwds)
 
         def computeCodeDecls_rec(subtype):
-            subtype.codeDecl = subtype.type
+            subtype.codeDecl = subtype.type.replace('.', '::')
             if subtype.type in standardTypes:
                 subtype.codeDecl = standardTypes[subtype.type].codeDecl
+            elif subtype.type in bomaEnums:
+                subtype.codeDecl = bomaEnums[subtype.type].codeDecl
             if subtype.subtypes:
                 templateArgs = [computeCodeDecls_rec(st) for st in subtype.subtypes]
                 if subtype.isLess:
@@ -186,8 +188,8 @@ class cpp17Provider(Provider):
 
         for tn, t in bomaTypes.items():
             for mn, m in t.members.items():
-                computeCodeDecls_rec(m.subtype)
-                computeFullCodeDecls_rec(m.subtype, '')
+                computeCodeDecls_rec(m.type)
+                computeFullCodeDecls_rec(m.type, '')
 
         needVariantTypeNamesBase = False
         for tn, t in bomaTypes.items():

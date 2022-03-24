@@ -276,8 +276,9 @@ class Props:
 
 
 class Scribe:
-    def __init__(self, props):
+    def __init__(self, props, execGlobals = {}):
         self.props = props
+        self.execGlobals = execGlobals
         self.previousPaths = set()
         self.pathStack = []
         self.debug = False
@@ -346,7 +347,7 @@ class Scribe:
     def _eval(self, expr):
         if self.debug:
             print (f'{ansi.dk_red_fg}Eval expression: {ansi.lt_red_fg}{expr}{ansi.all_off}')
-        res = eval(expr, {}, {'props': self.props})
+        res = eval(expr, self.execGlobals, {'props': self.props})
         if self.debug:
             print (f'{ansi.dk_red_fg}     expression returned: {ansi.lt_red_fg}{res}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(res)}{ansi.dk_red_fg}){ansi.all_off}')
         return res
@@ -357,7 +358,7 @@ class Scribe:
         if self.debug:
             print (f'{ansi.dk_red_fg}Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
         try:
-            exec(stmnts, {}, locs)
+            exec(stmnts, self.execGlobals, locs)
         except BaseException as e:
             if not self.debug:
                 print (f'{ansi.dk_red_fg}Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')

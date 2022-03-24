@@ -34,7 +34,7 @@
     types: {
         couple: {
             a: string
-            b: .VkResult
+            b: VkResult
             -props: { movable: false }
         }
 

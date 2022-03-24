@@ -111,7 +111,7 @@ class BomaTypeMember:
             return properties
 
         self.properties = normalize(properties, fullName, 0)
-        self.subtype = BomaSubtype(self.properties, self.fullName)
+        self.type = BomaSubtype(self.properties, self.fullName)
 
     def __repr__(self):
         endl = '\n'
@@ -138,24 +138,24 @@ class BomaTypeMember:
         return src
 
     def subtypesWithIsLess(self):
-        return self.subtype.subtypesWithIsLess()
+        return self.type.subtypesWithIsLess()
 
     def allSubtypes(self):
-        return self.subtype.allSubtypes()
+        return self.type.allSubtypes()
 
     def allSubtypesOfIsLessTypes(self):
-        return self.subtype.allSubtypesOfIsLessTypes()
+        return self.type.allSubtypesOfIsLessTypes()
 
     def allVariantSubtypes(self):
-        return self.subtype.allVariantSubtypes()
+        return self.type.allVariantSubtypes()
 
 
 class BomaType(Type):
     def __init__(self, name, namespace, members):
         super().__init__(name, namespace)
         '''members is always a dict of memberName: memberProperties.'''
-        self.members = {memberName: BomaTypeMember(memberName, f'{name}_{memberName}', memProperties)
-                        for memberName, memProperties in members.items() if re_cppName.match(memberName)}
+        self.members = { memberName: BomaTypeMember(memberName, f'{name}_{memberName}', memProperties)
+                         for memberName, memProperties in members.items() if re_cppName.match(memberName) }
 
     def __repr__(self):
         endl = '\n'

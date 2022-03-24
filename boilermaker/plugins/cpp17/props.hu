@@ -51,8 +51,11 @@
     copyByCopySwap: true    // requires swap and copyable
     moveByCopySwap: true    // requires swap and copyable
     copyable: true
+    copy: moveMembers      // [omit | default | delete | swap | moveMembers | copyMembers]
     movable: true       // i think requires virtualDestructor to be false
     getters: '$<$inlineGetters or $constGetters or $nonConstGetters>'
+    getterVariants: [ returnByValue | returnByConstRef | returnByNonconstRef ]
+    getterRefVariants: [ ref, rvaleRef ]    // &, && variants
     inlineGetters: true     // requires getters
     constGetters: true      // requires getters
     nonConstGetters: true   // requires getters, privateMembers
@@ -75,9 +78,9 @@
     enumsHeaderFile:        enums.hpp
     enumsInlineFile:        enums.inl.hpp
     enumsSourceFile:        enums.cpp
-    typeHeaderFile:         $<$type.name>.hpp
-    typeInlineFile:         $<$type.name>.inl.hpp
-    typeSourceFile:         $<$type.name>.cpp
+    typeHeaderFile:         $<$t.name>.hpp
+    typeInlineFile:         $<$t.name>.inl.hpp
+    typeSourceFile:         $<$t.name>.cpp
 
     mainHeaderPath:         $headerDir/$mainHeaderFile
     commonHeaderPath:       $headerDir/$commonHeaderFile
