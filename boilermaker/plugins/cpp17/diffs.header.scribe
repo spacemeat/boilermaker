@@ -5,9 +5,13 @@ $<out $diffsHeaderPath>$+
 $headerTopComment
 
 #include <bitset>
-$+  $<join for type in vars($std)>$<if $type.usedInBomaType> $<#TODO: we're heavy handed with this includes>
-#include $<$type.include>$<endif>$<endjoin>
-
+$+  $<join for type in vars($std)>
+    $<if $type.usedInBomaType> $<#TODO: we're heavy handed with this includes>
+        $<join for inc in $type.include>
+$''#include $inc
+$+        $<endjoin>
+$+  $<endif>
+$<endjoin>$''
 namespace $namespace
 {
     template <class StructType>

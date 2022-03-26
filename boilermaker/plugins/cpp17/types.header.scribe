@@ -120,7 +120,7 @@ namespace $namespace
     $<if $swap>
         friend void swap($<$rescope($t)> & lhs, $<$rescope($t)> & rhs) noexcept;$+
     $<endif>$''    $+
-    $<set maxLen as max([len(m.type.codeDecl) for m in $t.members.values()])>
+    $<set maxLen as max([len($rescope(m.type)) for m in $t.members.values()])>
     $<join for member in $t.members>$''
         $+  $<if $getters>
         $<fmt left $maxLen + 6>$<$rescope($member.type)>$<endfmt>   get_$<$member.name>() && $+

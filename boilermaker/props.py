@@ -372,9 +372,10 @@ class Scribe:
 
     def _eval(self, expr):
         expr = self.parseText(expr)
+        globlocs = {**self.execGlobals, 'props': self.props}
         if self.debug:
             print (f'{ansi.dk_red_fg}Eval expression: {ansi.lt_red_fg}{expr}{ansi.all_off}')
-        res = eval(expr, self.execGlobals, {'props': self.props})
+        res = eval(expr, globlocs)
         if self.debug:
             print (f'{ansi.dk_red_fg}     expression returned: {ansi.lt_red_fg}{res}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(res)}{ansi.dk_red_fg}){ansi.all_off}')
         return res
@@ -382,11 +383,12 @@ class Scribe:
     def _exec(self, stmnts):
         stmnts = self.parseText(stmnts)
         res = ''
-        locs = { 'props': self.props, 'res': '' }
+        locs = {'props': self.props, 'res': ''}
+        globlocs = {**self.execGlobals, **locs}
         if self.debug:
             print (f'{ansi.dk_red_fg}Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
         try:
-            exec(stmnts, self.execGlobals, locs)
+            exec(stmnts, globlocs)
         except BaseException as e:
             if not self.debug:
                 print (f'{ansi.dk_red_fg}Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
@@ -394,7 +396,7 @@ class Scribe:
             raise e
         if self.debug:
             print (f'{ansi.dk_red_fg}     statements returned: {ansi.lt_red_fg}{locs["res"]}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(locs["res"])}{ansi.dk_red_fg}){ansi.all_off}')
-        return locs['res']
+        return globlocs['res']
 
     def _parseTagStructure(self, val):
         idx = 0
