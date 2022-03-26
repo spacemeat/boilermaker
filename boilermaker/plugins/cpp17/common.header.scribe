@@ -769,6 +769,7 @@ $<if 'binary' in $serializeTo>
     }
     $<endif>$+
 $<endif $<# binary>>
+
     $+  $<if 'humon' in $serializeTo>
     // ---------------------------
     // Write types to humon format
@@ -788,6 +789,7 @@ $<endif $<# binary>>
 
         return out;
     }
+
     $+  $<if $std.array.usedInBomaType>
     template <class T, unsigned long N>
     std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::array<T, N$>$>')> & obj)

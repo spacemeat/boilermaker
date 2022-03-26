@@ -23,7 +23,7 @@ class grokCppProvider(Provider):
 
     def _parseSources(self, props):
         s = Scribe(props)
-        projectDir = Path(s.X('projectDir'))
+        projectDir = Path(s.getXProp('projectDir'))
 
         self.quotedSearchPaths, self.systemSearchPaths  = getSearchPaths_gnu(projectDir)
 

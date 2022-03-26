@@ -59,6 +59,7 @@ re_fmtexpr = re.compile(r'(right|left|center\s*)')
 
 class ClauseKind(Enum):
     TEXT = auto(),
+    QUOTE = auto(),
     COMMENT = auto(),
     QUERY = auto(),
     EXPRESSION = auto(),
@@ -83,7 +84,8 @@ class ClauseKind(Enum):
     FMT = auto(),
     FMTCODE = auto(),
     ENDFMT = auto(),
-    EATSPACE = auto()
+    EATSPACE = auto(),
+    DEBUG = auto()
 
 class Clause:
     def __init__(self):
@@ -285,14 +287,38 @@ class Scribe:
 
     def parseText(self, val):
         try:
+            accum = self._parseText(val)
+            # find all \a, and eat ws until non-ws or \v
+            eat = False
+            final = ''
+            for i, ch in enumerate(accum):
+                if eat:
+                    #breakpoint()
+                    if ch not in [' ', '\r', '\n', '\t', '\a']:
+                        eat = False
+                        if ch != '\v':
+                            final += ch
+                elif ch == '\a':
+                    eat = True
+                elif ch == '\v':    # a quoted thing that doesn't get et
+                    pass
+                else:
+                    final += ch
+            return final
+        except BaseException as e:
+            print(f'{self.props.getProp("inFile")}: {e}')
+            raise e
+
+    X = parseText
+
+    def _parseText(self, val):
+        try:
             clause = self._parseTagStructure(val)
             return self._parseClause(clause)
 
         except BaseException as e:
             print(f'{self.props.getProp("inFile")}: {e}')
             raise e
-
-    X = parseText
 
     def getXProp(self, key, default = None):
         def rec(v):
@@ -345,6 +371,7 @@ class Scribe:
         del self.pathStack[-1]
 
     def _eval(self, expr):
+        expr = self.parseText(expr)
         if self.debug:
             print (f'{ansi.dk_red_fg}Eval expression: {ansi.lt_red_fg}{expr}{ansi.all_off}')
         res = eval(expr, self.execGlobals, {'props': self.props})
@@ -353,6 +380,7 @@ class Scribe:
         return res
 
     def _exec(self, stmnts):
+        stmnts = self.parseText(stmnts)
         res = ''
         locs = { 'props': self.props, 'res': '' }
         if self.debug:
@@ -362,7 +390,7 @@ class Scribe:
         except BaseException as e:
             if not self.debug:
                 print (f'{ansi.dk_red_fg}Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
-            print (f'{ansi.dk_red_fg}     exception raised: {ansi.lt_red_fg}{e}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(locs["res"])}{ansi.dk_red_fg}){ansi.all_off}')
+            print (f'{ansi.dk_red_fg}     exception raised: {ansi.lt_red_fg}{e}{ansi.dk_red_fg}{ansi.all_off}')
             raise e
         if self.debug:
             print (f'{ansi.dk_red_fg}     statements returned: {ansi.lt_red_fg}{locs["res"]}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(locs["res"])}{ansi.dk_red_fg}){ansi.all_off}')
@@ -404,14 +432,14 @@ class Scribe:
                     quoteChar = val[idx]
                     incIdx()
                     accum = ''
-                    #accum = f'${quoteChar}'
                     while idx < end and val[idx] != quoteChar:
                         accum += val[idx]
                         incIdx()
                     incIdx()
-                    #accum += f'{quoteChar}'
                     dbg(f'quote-tag: {accum}')
-                    currentClause.append(accum)
+                    quotedClause = currentClause.appendClause()
+                    quotedClause.kind = ClauseKind.QUOTE
+                    quotedClause.append(accum)
 
                 elif val[idx] == '<':
                     inTagCounter += 1
@@ -422,24 +450,29 @@ class Scribe:
 
                 elif val[idx] == '$':   #  $$ is a way to escape $ so as not to start a tag.
                     incIdx()
+                    quotedClause = currentClause.appendClause()
+                    quotedClause.kind = ClauseKind.QUOTE
+                    quotedClause.append('$')
                     dbg(f'$$ tag')
-                    currentClause.append('$')
 
                 elif val[idx] == '>':   #  $> is a way to escape > so as not to close a tag.
                     incIdx()
+                    quotedClause = currentClause.appendClause()
+                    quotedClause.kind = ClauseKind.QUOTE
+                    quotedClause.append('>')
                     dbg(f'$> tag')
-                    currentClause.append('>')
 
                 elif val[idx] == '+':   #  $+ marks the next non-whitespace start
                     incIdx()
-                    exprClause = currentClause.appendClause()
-                    exprClause.kind = ClauseKind.EATSPACE
+                    eatWsClause = currentClause.appendClause()
+                    eatWsClause.kind = ClauseKind.EATSPACE
                     dbg(f'$+ tag')
 
                 elif val[idx] == '!':   #  $! traps in a running debugger
                     incIdx()
+                    eatWsClause = currentClause.appendClause()
+                    eatWsClause.kind = ClauseKind.DEBUG
                     dbg(f'$! tag')
-                    breakpoint()
 
                 elif val[idx].isalpha() or val[idx] == '_':
                     # eval props.get which must resolve to a string (because we are not inTag)
@@ -650,14 +683,24 @@ class Scribe:
         acc = ''
         eatSpace = False
         def accum(string):
-            nonlocal eatSpace, acc
-            if eatSpace:
-                string = string.lstrip(' \n\t')
-                if len(string) > 0:
-                    eatSpace = False
+            nonlocal acc
             acc += string
             if self.debug:
                 print (f'{ansi.dk_green_fg}Accum: {"  " * depth}{ansi.lt_green_fg}{string}{ansi.all_off}')
+        # def accum(string, quoted = False):
+        #     nonlocal eatSpace, acc
+        #     if quoted:
+        #         if string.startswith(' '):
+        #             breakpoint()
+        #         eatSpace = False        # here a 0-length quote ($'') WILL disable eatSpace
+        #         acc += '\v'
+        #     if eatSpace:
+        #         string = string.lstrip(' \n\t')
+        #         if len(string) > 0:     # here a 0-length accum will NOT disable eatSpace
+        #             eatSpace = False
+        #     acc += string
+        #     if self.debug:
+        #         print (f'{ansi.dk_green_fg}Accum: {"  " * depth}{ansi.lt_green_fg}{string}{ansi.all_off}')
 
         def dbg(msg):
             if self.debug:
@@ -671,6 +714,10 @@ class Scribe:
         if type(clause) is str:
             accum(clause)
 
+        elif clause.kind == ClauseKind.DEBUG:
+            breakpoint()
+            print(clause)
+
         elif clause.kind == ClauseKind.COMMENT:
             pass
 
@@ -678,9 +725,12 @@ class Scribe:
               clause.kind == ClauseKind.THEN):
             for tidx, t in enumerate(clause.terms):
                 if type(t) is Clause and t.kind == ClauseKind.EATSPACE:
-                    eatSpace = True
+                    accum('\a') #eatSpace = True
                 else:
                     accum(self._parseClause(t, depth + 1))
+
+        elif clause.kind == ClauseKind.QUOTE:
+            accum('\v' + clause.terms[0])
 
         elif clause.kind == ClauseKind.QUERY:
             expr = f'props.getProp("{clause.terms[0]}")'
@@ -699,7 +749,7 @@ class Scribe:
                 res = self._eval(expr)
                 if res:
                     if type(res) is str:
-                        res = self.parseText(res)
+                        res = self._parseText(res)
                     accum(str(res))
                 else:
                     accum(f'$<!{clause.terms[0]}>')
@@ -720,18 +770,18 @@ class Scribe:
                     expr += self._parseClause(t, depth + 1)
                 elif t.kind == ClauseKind.QUERY:
                     setters += self._parseClause(t, depth + 1)
-                    expr += f'(boma_{t.terms[0]})'
+                    expr += f'boma_{t.terms[0]}'
                 else:
                     text = self._parseClause(t, depth + 1)
                     expr += f'{text}'
 
             res = ''
             if expr.strip() != '':
-                expr = f'{setters}res = ({expr})'
+                expr = f'{setters}res = {expr}'
                 res = expr
                 if clause.kind == ClauseKind.EXPRESSION:
                     res = str(self._exec(expr))
-                    res = self.parseText(res)
+                    res = self._parseText(res)
                 accum(res)
 
         elif clause.kind == ClauseKind.IF:
@@ -834,13 +884,13 @@ class Scribe:
             expr = self._parseClause(clause.terms[0], depth + 1)
             path = self._exec(expr)
             if type(path) is str:
-                path = self.parseText(path)
+                path = self._parseText(path)
             try:
                 with open(path, 'r') as file:
                     self.props.push({'inFile': Path(path).name, 'inPath': path, 'inDir': str(Path(path).parent)})
                     string = file.read()
                     try:
-                        string = self.parseText(string)
+                        string = self._parseText(string)
                     finally:
                         self.props.pop()
                     accum(string)
@@ -851,7 +901,7 @@ class Scribe:
             expr = self._parseClause(clause.terms[0], depth + 1)
             path = self._exec(expr)
             if type(path) is str:
-                path = self.parseText(path)
+                path = self._parseText(path)
             f = None
             try:
                 Path(path).parent.mkdir(exist_ok=True, parents=True)
@@ -862,7 +912,7 @@ class Scribe:
                 finally:
                     self.props.pop()
                 try:
-                    f.write(string)
+                    f.write(self.parseText(string))
                 except EnvironmentError:
                     accum(f'!<Could not write to file {path}>')
                 finally:
@@ -891,12 +941,12 @@ class Scribe:
 
             obj = self._exec(expr)
             if type(obj) is str:
-                obj = self.parseText(obj)
+                obj = self._parseText(obj)
                 self.props.push({varname: obj})
             elif matched == 0 and type(obj) is dict:
                 for k, v in obj.items():
                     varname = k
-                    pv = self.parseText(v)
+                    pv = self._parseText(v)
                     self.props.push({varname: pv})
             else:
                 self.props.push({varname: obj})
@@ -973,7 +1023,7 @@ if __name__ == "__main__":
         print (f'Test src: {ansi.dk_cyan_fg}{src}{ansi.all_off}')
         try:
             s = Scribe(p)
-            res = s.parseText(src)
+            res = s._parseText(src)
             if res == exp:
                 print (f'  {passStr}')
             else:

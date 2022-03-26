@@ -14,7 +14,7 @@ namespace $namespace
     std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$rescope($enum)>> & obj)
     {
         using enumIntType = std::underlying_type<$<$rescope($enum)>>::type;
-        $<if not $enum.flags>
+        $+  $<if not $enum.flags>
         switch(* obj)
         {
         $+  $<join for val in $enum.vals>$+
@@ -31,15 +31,14 @@ namespace $namespace
         }$<else>
         enumIntType bits = static_cast<enumIntType$>(* obj);
         out << "[";
-
-        $+  $<join for val in $enum.vals>
+        $+  $<join for val in $enum.vals>$+
         if (bits & static_cast<enumIntType>($<$val.codeDecl>))
         {
             out << " $<$val.bomaName>";
             bits &= ~static_cast<enumIntType>($<$val.codeDecl>);
             if (! bits)
                 { goto done; }
-        }$+
+        }
         $<endjoin>
     done:
         out << " ]";

@@ -13,13 +13,13 @@ namespace $namespace
             $<if not $enum.alreadyDefined>
     enum $<if $enum.isScoped>class $<endif>$<$enum.codeDecl>
     {
-        $+  $<join for val in $enum.vals>$+
+        $<join for val in $enum.vals>$+
         $+  $<if $val.numberValueSpecified>$+
         $<$val.codeDecl> = $<$val.numberValue>$+
         $+  $<else>$+
         $<$val.codeDecl>$+
         $+  $<endif>$<delim>,
-        $<endjoin>
+        $<endjoin>$''
     };$<endif>$<delim>
 
     $<endjoin>
@@ -37,15 +37,15 @@ namespace hu
         {
             $+  $<if not $enum.flags>
             auto nodeVal = node.value().str().data();
-            $+  $<join for val in $enum.vals>
+            $+  $<join for val in $enum.vals>$+
             if (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName)>) == 0) { return $+
             $<if $enum.isScoped>$+
                 $<$rescope($enum)>::$<$val.codeDecl>$+
             $<else>$+
                 $<$rescope($val)>$+
             $<endif>$+
-                    ; }$+
-            $<endjoin>
+                    ; }
+            $<endjoin>$+
             return {};$+
             $<else>
             using enumIntType = std::underlying_type<$<$rescope($enum)>>::type;
@@ -65,13 +65,13 @@ namespace hu
                     $<$rescope($val)>$+
                 $<endif>$+
                 ); }$+
-                $<delim>
-                else if $<endjoin>
+                $<delim>$''
+                else if $<endjoin>$''
                 chNode = chNode.nextSibling();
             }
             while(fromList && chNode);
-
-            return static_cast<$<$rescope($enum)>>(e);$<endif>  $<# enum.flags>
+            return static_cast<$<$rescope($enum)>>(e);$+
+            $<endif $<# enum.flags>>$''
         }
     };
 $<endjoin>$+  $<# enum>

@@ -19,20 +19,19 @@ namespace $namespace
 {
     $classOrStruct $<$rescope($t)>;
     $+  $<if $swap>
-    void swap($<$rescope($t)> & lhs, $<$rescope($t)> & rhs) noexcept;$+
-    $<endif>
+    void swap($<$rescope($t)> & lhs, $<$rescope($t)> & rhs) noexcept;
+    $<endif>$''$+
     $<if 'humon' in $serializeTo>$+
     std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$rescope($t)>$>')> & obj);
-    $<endif>$+
+    $<endif>$''$+
     $<if 'binary' in $serializeTo>$+
     std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$rescope($t)>$>')> & obj);
-    $<endif>$+
+    $<endif>$''$+
     $<if $comparable>
-    bool operator ==($<$const('$<$rescope($t)>')> & lhs, $<$const('$<$rescope($t)>')> & rhs);
-    bool operator !=($<$const('$<$rescope($t)>')> & lhs, $<$const('$<$rescope($t)>')> & rhs);$+
+    bool operator ==($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);
+    bool operator !=($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);
     $<endif>
     $+
-
     $<if $diffable>
     template<>
     struct Diff<$<$rescope($t)>>
@@ -47,7 +46,7 @@ namespace $namespace
         };
 
         Diff();
-        Diff($<$const('$<$rescope($t)>')> & lhs, $<$const('$<$rescope($t)>')> & rhs);
+        Diff($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);
 
         std::bitset<static_cast<std::size_t>(Members::numMembers)> memberDiffs;
         $<endif>$+
@@ -77,119 +76,120 @@ namespace $namespace
     $<endif>    $+
     $<if 'binary' in $deserializeFrom>
         $<$t.codeDecl>($<$const('char *')> & buffer, std::size_t & size);
-    $<endif>
-    $<if $copy != 'omit'>
-        $<$t.codeDecl>($<$const($rescope($t))> & rhs)
+    $<endif>    $+
+    $<if $copy != 'omit'>$+
+        $<$t.codeDecl>($<$const($rescope($t))> & rhs)$+
         $<if $copy == 'default'> default
         $<elif $copy == 'delete'> delete
         $<endif>$+
             ;
-    $<endif>
-    $<#$`
-    $<if $move != omit>
-        $<$t.codeDecl>($<$rescope($t)> && rhs)
-        $<if $move == 'default'> default
-        $<elif $move == 'delete'> delete
-        $<else> noexcept
-        $<endif>
+    $<endif>    $+
+    $<if $move != 'omit'>$+
+        $<$t.codeDecl>($<$rescope($t)> && rhs) $+
+        $<if $move == 'default'>default$+
+        $<elif $move == 'delete'>delete$+
+        $<else> noexcept$+
+        $<endif>$+
             ;
-    $<endif>
-    $<if $copy != omit>
-        $<$rescope($t)> & operator =($<$const('$<$rescope($t)>')> & rhs)$+
-            $<if $copy == 'default'> default
-            $<elif $copy == 'delete'> delete
-            $<endif>
-        ;
-        $<endif>
-        $<if $move != omit>
+    $<endif>    $+
+    $<if $copy != 'omit'>$+
+        $<$rescope($t)> & operator =($<$const($rescope($t))> & rhs)$+
+            $<if $copy == 'default'>default$+
+            $<elif $copy == 'delete'>delete$+
+            $<endif>$+
+                ;
+        $<endif>$+
+        $<if $move != 'omit'>$+
         $<$rescope($t)> & operator =($<$rescope($t)> && rhs)$+
-            $<if $move == 'default'> default
-            $<elif $move == 'delete'> delete
-            $<else> noexcept
-            $<endif>
-        ;
-        $<endif>
-        $<if $destructor != omit>
-            $<if $destructor == virtual>
+            $<if $move == 'default'>$' 'default$+
+            $<elif $move == 'delete'>$!$' 'delete$+
+            $<else>$' 'noexcept$+
+            $<endif>$+
+                ;
+        $<endif>$+
+        $<if $destructor != 'omit'>$+
+            $<if $destructor == 'virtual'>$+
         virtual $+
-            $<endif>
-        ~$<$t.codeDecl>()
-        $<if $destructor == 'default'> = default
-        $<elif $destructor == 'delete'> = delete
-        $<endif>
+            $<endif>$+
+        ~$<$t.codeDecl>()$+
+        $<if $destructor == 'default'>$' '= default$+
+        $<elif $destructor == 'delete'>$' '= delete$+
+        $<endif>$+
         ;
-    $<endif>
+    $<endif>    $+
     $<if $swap>
-        friend void swap($<$rescope($t)> & lhs, $<$rescope($t)> & rhs) noexcept;
-    $<endif>
-    $<join for member in $t.members>
-        $<if $getters>
-        $<$rescope($member.type)>         get_$<$member.name>() &&
-            $<if $inlineGetters>      { return $<$member.name>; }
-            $<else>
-        ;
-            $<endif>
-        $<endif>
-        $<if $constGetters>
-        $<$const('$member.type.name')> & get_$<$member.name>() const &
-            $<if $inlineGetters> { return $<$member.name>; }
-            $<else>
-        ;
-            $<endif>
-        $<endif>
-        $<if $nonConstGetters>
-        $<$rescope($member.type)>       & get_$<$member.name>() &
-            $<if $inlineGetters>       { return $<$member.name>; }
-            $<else>
-            ;
-            $<endif>
-        $<endif>
-    $<endjoin>
-    $<join for member in $<$t.members>>
-        $<if $setByCopy>
-        void set_$<$member.name>($<$const($member.type.name)> & new_$<$member.name>)
-            $<if $inlineSetters>  { $+
-                $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);
-                $<else>$<$member.name> = new_$<$member.name>;
+        friend void swap($<$rescope($t)> & lhs, $<$rescope($t)> & rhs) noexcept;$+
+    $<endif>$''    $+
+    $<set maxLen as max([len(m.type.codeDecl) for m in $t.members.values()])>
+    $<join for member in $t.members>$''
+        $+  $<if $getters>
+        $<fmt left $maxLen + 6>$<$rescope($member.type)>$<endfmt>   get_$<$member.name>() && $+
+            $<if $inlineGetters>$''     { return $<$member.name>; }$+
+            $<else>$+
+        ;$+
+            $<endif>$+
+        $<endif>$''
+        $+  $<if $constGetters>
+        $<fmt left $maxLen + 6>$<$const($rescope($member.type))>$<endfmt> & get_$<$member.name>() const & $+
+            $<if $inlineGetters>$''{ return $<$member.name>; }$+
+            $<else>$+
+        ;$+
+            $<endif>$+
+        $<endif>$''
+        $+  $<if $nonConstGetters>
+        $<fmt left $maxLen + 6>$<$rescope($member.type)>$<endfmt> & get_$<$member.name>() & $+
+            $<if $inlineGetters>$''      { return $<$member.name>; }$+
+            $<else>$+
+        ;$+
+            $<endif>$+
+        $<endif>$''$+
+    $<endjoin>$''$+
+    $+  $<join for member in $t.members>$''
+        $+  $<if $setByCopy>
+        void set_$<$member.name>($<$rescope($member.type)> new_$<$member.name>)$+
+            $<if $inlineSetters>$''$<fmt left $maxLen - len($member.type.codeDecl) + 3>$<endfmt> { $+
+                $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
+                $<else>$<$member.name> = new_$<$member.name>;$+
                 $<endif> $+
-                     }
-            $<else>;
-            $<endif>
-        $<endif>
-        $<if $setByMove>
-        void set_$<$member.name>($<$rescope($member.type)> && new_$<$member.name>)
-            $<if 'humon' in $inlineSetters>         { $+
-                $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);
-                $<else>$<$member.name> = std::move(new_$<$member.name>);
+                    $' '}$+
+            $<else>;$+
+            $<endif>$+
+        $<endif>$''
+        $+  $<if $setByMove>
+        void set_$<$member.name>($<$rescope($member.type)> && new_$<$member.name>)$+
+            $<if $inlineSetters>$''$<fmt left $maxLen - len($member.type.codeDecl)>$<endfmt> { $+
+                $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
+                $<else>$<$member.name> = std::move(new_$<$member.name>);$+
                 $<endif> $+
-                        }
-            $<else>;
-        $<endif>
-    $<endjoin>
-    $<if $serializeTo>
-        friend std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$rescope($t)>>)> & obj')>;
-    $<endif>
-    $<if 'binary' in $serializeTo>
-        friend std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$rescope($t)>>)> & obj')>;
-    $<endif>
-    $<if $comparable>
-        friend bool operator ==($<$const('$<$rescope($t)>')> & lhs, $<$const('$<$rescope($t)>')> & rhs);
-        friend bool operator !=($<$const('$<$rescope($t)>')> & lhs, $<$const('$<$rescope($t)>')> & rhs);
-    $<endif>
-    $<if $diffable>
+                    $' '}$+
+            $<else>;$+
+            $<endif>$+
+        $<endif>$+
+    $<endjoin>$''
+    $<endset>    $+
+    $<if 'humon' in $serializeTo>    $+
+        friend std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<' + $rescope($t) + '$>')> & obj);$+
+    $<endif>$''
+    $<if 'binary' in $serializeTo>    $+
+        friend std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<' + $rescope($t) + '$>')> & obj);$+
+    $<endif>$''
+    $<if $comparable>    $+
+        friend bool operator ==($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);
+        friend bool operator !=($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);$+
+    $<endif>$''
+    $<if $diffable>    $+
         friend Diff<$<$rescope($t)>>::Diff();
-        friend Diff<$<$rescope($t)>>::Diff($<$const('$<$rescope($t)>')> & lhs, $<$const('$<$rescope($t)>')> & rhs);
-    $<endif>
-    $<if $privateMembers>
-    private:
-    $<endif>
-    $<join for member in $<$t.members>>
-        $<$member.type> $<$member.name>;
-    $<endjoin>
-     `>
+        friend Diff<$<$rescope($t)>>::Diff($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);$+
+    $<endif>$''
+    $+  $<if $privateMembers>
+    private:$+
+    $<endif>$''
+    $<join for member in $t.members>    $+
+        $<$rescope($member.type)> $<$member.name>;
+    $<endjoin>$''$+
     };
 $<endset>$+
-$<if 'humon' in $deserializeFrom>
+$<if 'humon' in $deserializeFrom>$+
 }
     $<set scope as $scope + '::hu'>
 namespace hu
@@ -197,7 +197,7 @@ namespace hu
     template<>
     struct val<$<$rescope($t)>>
     {
-        static inline val<$<$rescope($t)>> extract($<$const('Node')> & node)
+        static inline $<$rescope($t)> extract($<$const('Node')> & node)
         {
             return $<$rescope($t)>(node);
         }

@@ -3,7 +3,7 @@ $<out $mainHeaderPath>$+
 
 $mainHeaderTopComment
 
-$+  $<if len($enums) $> 0>#include "$enumHeaderFile"$<endif>
+$+  $<if len($enums) $> 0>#include "$enumsHeaderFile"$<endif>
 $+  $<if $computeTypes>$<join for type in $bomaTypes>#include "$typeHeaderFile"$<delim>
 $<endjoin>$<endif>
 $<endout>
