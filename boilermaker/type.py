@@ -189,5 +189,3 @@ class BomaType(Type):
         for _, m in self.members.items():
             mts.extend(m.allVariantSubtypes() or [])
         return mts
-
-

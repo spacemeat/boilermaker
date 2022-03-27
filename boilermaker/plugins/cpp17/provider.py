@@ -143,18 +143,30 @@ class cpp17Provider(Provider):
             headers.add('<humon/humon.hpp>')
 
         for typeName, strType in bomaTypes.items():
+            if strType.alreadyDefined == False:
+                props.push({'t': strType})
+                strType.include = ['"' + s.X('$typeHeaderFile') + '"']
+                props.pop()
+            typeHeaders = set()
             subtypes = strType.allSubtypes()
             for st in subtypes:
                 if st.type in allTypes:
                     allTypes[st.type].usedInBomaType = True
                     for inc in allTypes[st.type].include:
+                        typeHeaders.add(inc)
                         headers.add(inc)
+            strType.dependencyIncludes = list(typeHeaders)
 
-        for _, bomaEnum in bomaEnums.items():
+        for bomaEnum in bomaEnums.values():
+            enumHeaders = set()
+            if bomaEnum.alreadyDefined == False:
+                bomaEnum.include = [s.X('$enumsHeaderPath')]
             for inc in bomaEnum.include:
+                enumHeaders.add(inc)
                 headers.add(inc)
+            bomaEnum.dependencyIncludes = list(enumHeaders)
 
-        for _, stdType in standardTypes.items():
+        for stdType in standardTypes.values():
             for inc in stdType.include:
                 headers.add(inc)
 

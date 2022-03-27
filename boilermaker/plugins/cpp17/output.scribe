@@ -19,7 +19,5 @@ $<in $inDir + '/enums.source.scribe'>
 ------------------ Building $headerDir/[type headers].
 $<in $inDir + '/types.header.scribe'>
 
-$<#$`
 ------------------ Building $sourceDir/[type sources].
 $<in $inDir + '/types.source.scribe'>
-`>

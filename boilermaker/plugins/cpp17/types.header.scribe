@@ -12,8 +12,11 @@ $+  $<endif>$+
 $+  $<if 'humon' in $serializeTo or 'humon' in $deserializeFrom>$+
 #include <humon/humon.hpp>
 $+  $<endif>$+
-#include <string>
+$+  $<join for inc in $t.dependencyIncludes>
+#include $inc
+$+  $<endjoin>$''
 
+$+
 $<set scope as $scope + '::' + $namespace>
 namespace $namespace
 {
