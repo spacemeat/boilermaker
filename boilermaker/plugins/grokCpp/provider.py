@@ -145,7 +145,6 @@ class grokCppProvider(Provider):
 
         bomaVals, flags = self._translateDeclValsToBomaVals(bomaEnumName, declVals)
 
-        #breakpoint()
         isScoped = (self.runDefs.get('isScoped', False) or
                     self.runDefs.get('language', 'c++') == 'c++')
         e = EnumType(bomaEnumName, bomaNamespace, bomaVals, {'isScoped': isScoped, 'flags': flags})

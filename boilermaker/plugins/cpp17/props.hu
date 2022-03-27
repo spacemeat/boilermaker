@@ -45,11 +45,11 @@
     deserializeFrom: [humon] // also accepts binary
     defaultConstructible: false
     memberwiseConstructible: false
+    destructor: source
     virtualDestructor: false
     privateMembers: true
-    swap: '$<$copyByCopySwap or $moveByCopySwap>'
-    copyByCopySwap: true    // requires swap and copyable
-    moveByCopySwap: true    // requires swap and copyable
+    swap: $useCopySwap
+    useCopySwap: true    // requires copy, defaultMoveConstructible, destructor!='omit'
     copyable: true
     copy: moveMembers      // [omit | default | delete | swap | moveMembers | copyMembers]
     movable: true       // i think requires virtualDestructor to be false

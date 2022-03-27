@@ -154,17 +154,21 @@ class cpp17Provider(Provider):
                     allTypes[st.type].usedInBomaType = True
                     for inc in allTypes[st.type].include:
                         typeHeaders.add(inc)
-                        headers.add(inc)
+                        #headers.add(inc)
             strType.dependencyIncludes = list(typeHeaders)
 
+        allEnumHeaders = set()
         for bomaEnum in bomaEnums.values():
             enumHeaders = set()
-            if bomaEnum.alreadyDefined == False:
-                bomaEnum.include = [s.X('$enumsHeaderPath')]
-            for inc in bomaEnum.include:
-                enumHeaders.add(inc)
-                headers.add(inc)
+            if bomaEnum.alreadyDefined:
+                for inc in bomaEnum.include:
+                   enumHeaders.add(inc)
+                    #headers.add(inc)
+            else:
+                bomaEnum.include = ['"' + s.X('$enumsHeaderFile') + '"']
             bomaEnum.dependencyIncludes = list(enumHeaders)
+            allEnumHeaders.update(enumHeaders)
+        props.setProp('enumHeaderIncludes', list(allEnumHeaders))
 
         for stdType in standardTypes.values():
             for inc in stdType.include:

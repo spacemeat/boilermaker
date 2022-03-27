@@ -16,22 +16,30 @@ $+  $<if 'humon' in $deserializeFrom or 'humon' in $serializeTo>
 $+  $<join for inc in $commonHeaderIncludes>
 #include $inc               // COMMONHEADERINCLUDES$<endjoin>
 $<# $`
-$+  $<join for type in vars($std)>$<if $type.usedInBomaType>
-$+  $<join for inc in $type.include>
+$+  $<join for type in vars($std)>$<if $t.usedInBomaType>
+$+  $<join for inc in $t.include>
 #include $inc               // TYPES$<endjoin>$<endif>$<endjoin>
 `>
 
 // -------------------
 // Common declarations
 
+$<set scope as $scope + '::' + $namespace>
 namespace $namespace
 {
-    $+  $<join for type in $commonHeaderFwdDecls>
-    class $<$type>;$<endjoin>
+    $+  $<join for t in $commonHeaderFwdDecls>
+    class $<$t>;$<endjoin>
 
     $+
-$<join for type in $bomaTypes>$+
-$<join for subtype in $type.subtypesWithIsLess()>
+$<join for t in $types>$+
+$<join for subtype in $t.subtypesWithIsLess()>
+    struct IsLess_$<$subtype.name>;
+    $+
+$<endjoin>$<endjoin>$''
+    $+
+
+$<join for t in $types>$+
+$<join for subtype in $t.subtypesWithIsLess()>
     // IsLess template argument for $<$subtype.codeDecl>
     struct IsLess_$<$subtype.name>
     {
@@ -53,8 +61,8 @@ $<endjoin>$<endjoin>
     };
 $<endif>
     $+
-$<join for type in $bomaTypes>
-$<join for subtype in $type.allVariantSubtypes()>
+$<join for t in $bomaTypes>
+$<join for subtype in $t.allVariantSubtypes()>
     template <$>
     struct VariantTypeNames<$<$subtype.codeDecl>$>
     {
@@ -398,12 +406,14 @@ $<if $std.string.usedInBomaType>
     };
 $+  $<endif>$+
 $+  $<endif $<# deserialize binary>>$+
-$+  $<if 'humon' in $deserializeFrom>
+$<endset>
+    $+  $<if 'humon' in $deserializeFrom>
 }
 
     // ----------------------------
     // Read types from humon format
 
+$<set scope as $scope + '::hu'>
 namespace hu
 {
     $+  $<if $std.array.usedInBomaType>
@@ -589,10 +599,12 @@ namespace hu
     };
 $<endif>$+
 }
+$<endset>
 $<endif $<# deserialize humon>>
 $+  $<if 'humon' in $serializeTo or 'binary' in $serializeTo>
 // ------------------------------------
 // Serializing types to humon or binary
+$<set scope as $scope + '::' + $namespace>
 namespace $namespace
 {
     // Base class for *Format<T> templates
@@ -651,7 +663,7 @@ $<if 'binary' in $serializeTo>
     template <class T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
     std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<T$>')> & obj)
     {
-        using enumIntType = std::underlying_type<::VkResult>::type;
+        using enumIntType = typename std::underlying_type<T>::type;
         out << BinaryFormat(static_cast<enumIntType>(* obj));
 
         return out;
@@ -899,7 +911,7 @@ $<endif $<# binary>>
     $<endif>
     $+  $<if $std.optional.usedInBomaType>
     template <class T>
-    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::optional<T$>$>')> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::optional<T$>$>')> & obj)
     {
         if (obj->has_value())
             { out << HumonFormat(** obj); }
@@ -911,7 +923,7 @@ $<endif $<# binary>>
     $<endif>
     $+  $<if $std.variant.usedInBomaType>
     template <class... Ts>
-    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::variant<Ts...$>$>')> const & obj)
+    std::ostream & operator << (std::ostream & out, $<$const('HumonFormat<std::variant<Ts...$>$>')> & obj)
     {
         constexpr auto const names = VariantTypeNames<std::variant<Ts...>>::names;
 
@@ -925,6 +937,7 @@ $<endif $<# binary>>
 $<endif>$+
 $<endif $<#/humon>>$+
 }
+$<endset>
 $<endif $<#binary or humon>>$+
 $<endout>
 

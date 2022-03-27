@@ -9,9 +9,11 @@
     serializeTo: [humon, binary]
     defaultConstructible: true      // done
     memberwiseConstructible: true   // done
-    virtualDestructor: false        // done
+    useCopySwap: true
     copyable: true                  // done
+    copy: source        // omit, default, delete, inline, source
     movable: true                   // done
+    move: source        // omit, default, delete, inline, source
     getters: true                   // done
     setters: true                   // done
     privateMembers: true            // done

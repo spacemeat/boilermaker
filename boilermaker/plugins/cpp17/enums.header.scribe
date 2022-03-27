@@ -4,8 +4,13 @@ $<out $enumsHeaderPath>$+
 $headerTopComment
 
 #include "$commonHeaderFile"
-
-$<if len([e for _, e in $enums.items() if e.alreadyDefined]) $> 0>
+$+
+$<join for inc in $enumHeaderIncludes>$+
+#include $inc
+$<endjoin>
+$''
+$+
+$<if len([e for _, e in $enums.items() if not e.alreadyDefined]) $> 0>
 $<set scope as $scope + '::' + $namespace>
 namespace $namespace
 {

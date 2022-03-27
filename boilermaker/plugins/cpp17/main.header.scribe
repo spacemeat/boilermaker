@@ -4,6 +4,6 @@ $<out $mainHeaderPath>$+
 $mainHeaderTopComment
 
 $+  $<if len($enums) $> 0>#include "$enumsHeaderFile"$<endif>
-$+  $<if $computeTypes>$<join for type in $bomaTypes>#include "$typeHeaderFile"$<delim>
-$<endjoin>$<endif>
+$+  $<join for t in $types>#include "$typeHeaderFile"$<delim>
+$<endjoin>
 $<endout>

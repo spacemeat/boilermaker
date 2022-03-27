@@ -84,41 +84,88 @@ namespace $namespace
         $<$t.codeDecl>($<$const($rescope($t))> & rhs)$+
         $<if $copy == 'default'> default
         $<elif $copy == 'delete'> delete
-        $<endif>$+
+        $<elif $copy == 'inline'>$''
+         : $<join for member in $t.members>$<$member.name>(rhs.$<$member.name>)$<delim>, $<endjoin>
+        { }
+
+        $<else>
             ;
+        $<endif>$+
     $<endif>    $+
     $<if $move != 'omit'>$+
-        $<$t.codeDecl>($<$rescope($t)> && rhs) $+
-        $<if $move == 'default'>default$+
-        $<elif $move == 'delete'>delete$+
-        $<else> noexcept$+
+        $<$t.codeDecl>($<$rescope($t)> && rhs)$+
+        $<if $move == 'default'>$'' default$+
+        $<elif $move == 'delete'>$'' delete$+
+        $<elif $move == 'inline'>$'' noexcept$+
+            $<if $useCopySwap>$''
+         : $<$t.name>()
+        {
+            swap(*this, rhs);
+        }
+$+            $<else>$''
+         : $<join for member in $t.members>$<$member.name>(std::move(rhs.$<$member.name>))$<delim>, $<endjoin>
+        { }
+
+$+            $<endif>
+        $<else>$'' noexcept;
         $<endif>$+
-            ;
     $<endif>    $+
     $<if $copy != 'omit'>$+
-        $<$rescope($t)> & operator =($<$const($rescope($t))> & rhs)$+
-            $<if $copy == 'default'>default$+
-            $<elif $copy == 'delete'>delete$+
-            $<endif>$+
+        $<if $useCopySwap>$''
+        $<$rescope($t)> & operator =($<$rescope($t)> rhs)$+
+            $<if $copy == 'inline'>$''
+        {
+            swap(*this, rhs);
+            return * this;
+        }
+$+            $<else>
                 ;
-        $<endif>$+
-        $<if $move != 'omit'>$+
+$+            $<endif>
+        $<else>
+$''        $<$rescope($t)> & operator =($<$const($rescope($t))> & rhs)$+
+            $<if $copy == 'default'>default;
+$+            $<elif $copy == 'delete'>delete;
+$+            $<elif $copy == 'inline'>$''
+        {
+            if (this != & rhs)
+            {
+$+              $<join for member in $t.members>$+
+$''                $<$member.name> = rhs.$<$member.name>;
+$+              $<endjoin>
+$''            }
+            return * this;
+        }
+$+          $<else>
+                ;
+$+          $<endif>$+
+        $<endif>
+    $<endif>$''$+
+
+    $<if $move != 'omit' and $useCopySwap == False>$''
         $<$rescope($t)> & operator =($<$rescope($t)> && rhs)$+
-            $<if $move == 'default'>$' 'default$+
-            $<elif $move == 'delete'>$!$' 'delete$+
-            $<else>$' 'noexcept$+
-            $<endif>$+
-                ;
+        $<if $move == 'default'>$' 'default$+
+        $<elif $move == 'delete'>$' 'delete$+
+        $<elif $move == 'inline'>$'' noexcept
+        {
+$+          $<join for member in $t.members>$+
+$''            $<$member.name> = std::move(rhs.$<$member.name>);
+$+          $<endjoin>
+$''            return * this;
+        }
+$+            $<else>$' 'noexcept;$+
         $<endif>$+
-        $<if $destructor != 'omit'>$+
-            $<if $destructor == 'virtual'>$+
+
+    $<endif>$''$+
+    $<if $destructor != 'omit'>$+
+        $<if $virtualDestructor>$''
         virtual $+
-            $<endif>$+
+        $<endif>$''
         ~$<$t.codeDecl>()$+
         $<if $destructor == 'default'>$' '= default$+
         $<elif $destructor == 'delete'>$' '= delete$+
+        $<elif $destructor == 'inline'>$' '{ }
+        $<else>;
         $<endif>$+
-        ;
     $<endif>    $+
     $<if $swap>
         friend void swap($<$rescope($t)> & lhs, $<$rescope($t)> & rhs) noexcept;$+
@@ -151,7 +198,7 @@ namespace $namespace
         $+  $<if $setByCopy>
         void set_$<$member.name>($<$rescope($member.type)> new_$<$member.name>)$+
             $<if $inlineSetters>$''$<fmt left $maxLen - len($member.type.codeDecl) + 3>$<endfmt> { $+
-                $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
+                $<if $useCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
                 $<else>$<$member.name> = new_$<$member.name>;$+
                 $<endif> $+
                     $' '}$+
@@ -161,7 +208,7 @@ namespace $namespace
         $+  $<if $setByMove>
         void set_$<$member.name>($<$rescope($member.type)> && new_$<$member.name>)$+
             $<if $inlineSetters>$''$<fmt left $maxLen - len($member.type.codeDecl)>$<endfmt> { $+
-                $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
+                $<if $useCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
                 $<else>$<$member.name> = std::move(new_$<$member.name>);$+
                 $<endif> $+
                     $' '}$+

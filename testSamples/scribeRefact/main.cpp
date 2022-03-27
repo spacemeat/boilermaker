@@ -1,4 +1,4 @@
-#include "gen-cpp/txtToBin/inc/boma/txtToBin.hpp"
+#include "gen-cpp/txtToBin/inc/txtToBin.hpp"
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
@@ -134,7 +134,7 @@ int testBinaryWut(string_view dir)
 
         BinaryDeserializer bd(binPath);
         auto nuwut = bd.deserialize<txtToBin::wut>();
-        
+
         cout << HumonFormat(nuwut) << "\n\n";
 
         return 0;
@@ -165,11 +165,11 @@ int main(int argc, char ** argv)
     ret = testWut(path);
     if (ret)
         { return ret; }
-    
+
     ret = testPrintingWut(path);
     if (ret)
         { return ret; }
-    
+
     ret = testBinaryWut(path);
     if (ret)
         { return ret; }

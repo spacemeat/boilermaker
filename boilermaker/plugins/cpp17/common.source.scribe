@@ -8,7 +8,7 @@ $+$<join for type in $commonHeaderFwdDecls>
 namespace $namespace
 {
     $+
-$<join for type in $bomaTypes>$+
+$<join for type in $types>$+
 $<join for subtype in $type.subtypesWithIsLess()>
     // IsLess impl for $<$subtype.codeDecl>
     bool IsLess_$<$subtype.name>::operator()($<$const($subtype.subtypes[0].codeDecl)> & lhs, $<$const($subtype.subtypes[0].codeDecl)> & rhs) const

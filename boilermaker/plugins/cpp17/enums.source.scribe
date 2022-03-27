@@ -40,10 +40,10 @@ namespace $namespace
                 { goto done; }
         }
         $<endjoin>
-    done:
+    done:$<endif>
         out << " ]";
 
-        return out;$<endif>
+        return out;
     }
 $<endjoin $<# enum >>
 }

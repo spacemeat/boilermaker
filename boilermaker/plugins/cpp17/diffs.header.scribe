@@ -11,7 +11,11 @@ $+  $<join for type in vars($std)>
 $''#include $inc
 $+        $<endjoin>
 $+  $<endif>
-$<endjoin>$''
+$<endjoin>$''$+
+$<if $std.tuple.usedInBomaType>
+#include <functional>
+$<endif>
+$''
 namespace $namespace
 {
     template <class StructType>

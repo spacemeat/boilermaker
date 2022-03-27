@@ -44,60 +44,56 @@ namespace $namespace
 
     $<endif>$''$+
     $<if $copy == 'source'>
-        $<if $copyByCopySwap == False>
-    $<$rescope($t)>::$<$t.name>($<$const($rescope(t))> & rhs)
-     : $<join for member in $t.members>$<$member.name>(rhs.$member.name>)$<delim>, $<endjoin>
+    $<$rescope($t)>::$<$t.name>($<$const($rescope($t))> & rhs)
+    $'' : $<join for member in $t.members>$<$member.name>(rhs.$<$member.name>)$<delim>, $<endjoin>
     {
-    }$+ $<else>
-    {
-        using std::swap;$<join for member in $t.members>
-        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>
-    }$+ $<endif>
-
-    $<endif>$''$+
-    $<if $move == 'source'>
-        $<if $moveByCopySwap == False>
-    $<$rescope($t)>::$<$t.name>($<$t.name> && rhs) noexcept
-     : $<join for member in $t.members>$<$member.name>(std::move(rhs.$member.name>))$<delim>, $<endjoin>
-    {
-    }$+ $<else>
-    {
-        using std::swap;$<join for member in $t.members>
-        swap($<$member.name>, rhs.$<$member.name>);$<endjoin>
-    }$+ $<endif>
-
-    $<endif>$''$+
-    $<if $copy == 'source'>
-    $<$t.name> & $<$rescope($t)>::operator =($<$const($rescope(t))> & rhs)
-    {
-        $+  $<if $copyByCopySwap == False>
-                $<join for member in $t.members>
-        $<$member.name> = rhs.$<$member.name>;$+
-                $<endjoin>
-            $<else>
-        using std::swap;$+
-                $<join for member in $t.members>
-        swap($<$member.name>, rhs.$<$member.name>);
-            $<endjoin>
-        $<endif>
-        return * this;
     }
 
     $<endif>$''$+
-    $<if $move == 'source'>
-    $<$t.name> & $<$rescope($t)>::operator =($<$rescope(t)> && rhs)
+
+    $+$<if $move == 'source'>
+    $<$rescope($t)>::$<$t.name>($<$rescope($t)> && rhs) noexcept
+    $+  $<if $useCopySwap == False>
+    $'' : $<join for member in $t.members>$<$member.name>(std::move(rhs.$<$member.name>))$<delim>, $<endjoin>
     {
-        $+  $<if $moveByCopySwap == False>
-                $<join for member in $t.members>
-        $<$member.name> = std::move(rhs.$<$member.name>);
-                $<endjoin>
-            $<else>
-        using std::swap;
-                $<join for member in $t.members>
-        swap($<$member.name>, rhs.$<$member.name>);
-                $<endjoin>
-            $<endif>
+    }
+
+    $+  $<else>
+    $'' : $<$t.name>()
+    {
+        swap(*this, rhs);
+    }
+
+    $+  $<endif>
+    $<endif>$''$+
+
+    $+$<if $copy == 'source'>
+    $+  $<if $useCopySwap>
+    $<$t.name> & $<$rescope($t)>::operator =($<$rescope($t)> rhs)
+    {
+        swap(*this, rhs);
         return * this;
+    }
+        $<else>
+    $<$t.name> & $<$rescope($t)>::operator =($<$const($rescope($t))> & rhs)
+    {
+        if (this != & rhs)
+        {
+$+          $<join for member in $t.members>$+
+$''            $<$member.name> = rhs.$<$member.name>;
+$+          $<endjoin>
+$''        }
+        return * this;
+    }
+        $<endif>
+    $<endif>$''$+
+    $<if $move == 'source' and not $useCopySwap>
+    $<$t.name> & $<$rescope($t)>::operator =($<$rescope($t)> && rhs) noexcept
+    {
+$+      $<join for member in $t.members>$+
+$''        $<$member.name> = std::move(rhs.$<$member.name>);
+$+      $<endjoin>
+$''        return * this;
     }
 
     $<endif>$''$+
@@ -133,13 +129,13 @@ namespace $namespace
         $<join for member in $type.members>
             $<if $setByCopy>
     void $<$rescope($t)>::set_$<$member.name>($<$const($rescope($member.type))> & new_$<$member.name>) { $+
-                $<if $copyByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
+                $<if $useCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
                 $<else>$<$member.name> = new_$<$member.name>;$+
                 $<endif> }
             $<endif>
             $<if $setByMove>
     void $<$rescope($t)>::set_$<$member.name>($<$rescope($member.type)> && new_$<$member.name>) noexcept { $+
-                $<if $moveByCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
+                $<if $useCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
                 $<else>$<$member.name> = std::move(new_$<$member.name>);$+
                 $<endif> }
             $<endif>
