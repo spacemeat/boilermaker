@@ -16,7 +16,7 @@ $<join for subtype in $type.subtypesWithIsLess()>
         $<$subtype.isLess>$<# I haaaaaate that I'm asking user to specify language-specific key resolution.>
     }
 $<endjoin>$+
-$<endjoin>
+$<endjoin>$''
     $+  $<if $std.string.usedInBomaType>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::string$>')> & obj)
     {
@@ -24,7 +24,7 @@ $<endjoin>
         out.write(obj->data(), obj->size());
 
         return out;
-    }
+    }$+
 $<endif>
     $+  $<if $std.stringView.usedInBomaType>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::string_view$>')> & obj)
@@ -33,7 +33,7 @@ $<endif>
         out.write(obj->data(), obj->size());
 
         return out;
-    }
-$<endif>$+
+    }$+
+$<endif>$''
 }
 $<endout>

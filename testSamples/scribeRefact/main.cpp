@@ -35,7 +35,7 @@ int testEnums()
 
 int testWut(string_view dir)
 {
-    string path = string(dir) + string("/testSamples/newsamp/wut.hu");
+    string path = string(dir) + string("/testSamples/scribeRefact/wut.hu");
     cout << "path = " << path << '\n';
     auto res = hu::Trove::fromFile(path);
     cout << "Trove loaded." << '\n';
@@ -61,7 +61,7 @@ int testWut(string_view dir)
         auto & ma1 = get<3>(*opt3);
         for (auto const & [k, v] : ma1)
         {
-            cout << "unordered_map entry: " << k << ": " << v << '\n';
+            cout << "unorderedMap entry: " << k << ": " << v << '\n';
         }
 
         auto & opt4 = huh[1][0];
@@ -70,7 +70,7 @@ int testWut(string_view dir)
         {
             for (auto const & [k, v]: e)
             {
-                cout << "set->umap entry: " << k << ": " << HumonFormat(v) << '\n';
+                cout << "set entry: " << k << ": " << HumonFormat(v) << '\n';
             }
         }
 
@@ -78,7 +78,7 @@ int testWut(string_view dir)
         auto & use = get<5>(*opt5);
         for (auto const & e : use)
         {
-            cout << "unordered_set entry: " << e << '\n';
+            cout << "unorderedSet entry: " << e << '\n';
         }
 
 
@@ -88,7 +88,7 @@ int testWut(string_view dir)
         {
             for (auto const & [k, v]: e)
             {
-                cout << "set->map entry: " << k << ": " << v << '\n';
+                cout << "setOfMaps entry: " << k << ": " << v << '\n';
             }
         }
 
@@ -102,7 +102,7 @@ int testWut(string_view dir)
 
 int testPrintingWut(string_view dir)
 {
-    string path = string(dir) + string("/testSamples/newsamp/wut.hu");
+    string path = string(dir) + string("/testSamples/scribeRefact/wut.hu");
     cout << "path = " << path << '\n';
     auto res = hu::Trove::fromFile(path);
     if (auto t = get_if<hu::Trove>(&res))
@@ -120,14 +120,14 @@ int testPrintingWut(string_view dir)
 
 int testBinaryWut(string_view dir)
 {
-    string path = string(dir) + string("/testSamples/newsamp/wut.hu");
+    string path = string(dir) + string("/testSamples/scribeRefact/wut.hu");
     cout << "path = " << path << '\n';
     auto res = hu::Trove::fromFile(path);
     if (auto t = get_if<hu::Trove>(&res))
     {
         auto whaa = t->root() / "whaa" % hu::val<txtToBin::wut> {};
 
-        string binPath = string(dir) + string("/testSamples/newsamp/wutBinary.bin");
+        string binPath = string(dir) + string("/testSamples/scribeRefact/wutBinary.bin");
         auto out = ofstream(binPath, std::ios::binary);
         out << BinaryFormat(whaa);
         out.close();

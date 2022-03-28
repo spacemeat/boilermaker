@@ -46,8 +46,7 @@ $<join for subtype in $t.subtypesWithIsLess()>
         bool operator()($<$const($subtype.subtypes[0].codeDecl)> & lhs, $<$const($subtype.subtypes[0].codeDecl)> & rhs) const;
     };
     $+
-$<endjoin>$<endjoin>
-    $+
+$<endjoin>$<endjoin>$''
     // ----------------------------------------
     // Deserializing types from humon or binary
 
@@ -73,7 +72,7 @@ $<join for subtype in $t.allVariantSubtypes()>
         static constexpr std::size_t size = $<len($subtype.subtypes)>;
     };
     $+
-$<endjoin>$<endjoin>
+$<endjoin>$<endjoin>$''
     $+
 
 $<if 'binary' in $deserializeFrom>

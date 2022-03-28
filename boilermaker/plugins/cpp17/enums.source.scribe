@@ -40,8 +40,8 @@ namespace $namespace
                 { goto done; }
         }
         $<endjoin>
-    done:$<endif>
-        out << " ]";
+    done:
+        out << " ]";$<endif>
 
         return out;
     }
