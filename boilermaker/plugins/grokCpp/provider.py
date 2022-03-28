@@ -47,7 +47,8 @@ class grokCppProvider(Provider):
         generator_path, generator_name = pygccxml.utils.find_xml_generator()
 
         isSystemInclude = sourceFilename.startswith('<') and sourceFilename.endswith('>')
-        if isSystemInclude:
+        isLocalInclude = sourceFilename.startswith('"') and sourceFilename.endswith('"')
+        if isSystemInclude or isLocalInclude:
             sourceFilename = sourceFilename[1:len(sourceFilename) - 1]
 
         # Configure the xml generator

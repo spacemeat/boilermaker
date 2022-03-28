@@ -1,17 +1,50 @@
 @{ app: boma, boma-version: 0.0.4 }
 {
-    inherit: c++|gnu
-    enums: [{
-            tools: gnu
-            source: [enums.h]
-            languageVersion: c|gnu17
-            platform: vulkan
+    inherit: [cpp17]
+
+    namespace: shortTest
+    deserializeFrom: [humon, binary]
+    defaultConstructible: true      // done
+    memberwiseConstructible: true   // done
+    virtualDestructor: true         // done
+    serializeTo: [humon, binary]
+    comparable: true                // done
+    diffable: true                  // done
+
+    run: {
+        plugin:         grokCpp
+        provider:       provider
+        ops:            { parseSource: $vulkanCreatePropsSequence }
+        sources:        '"enums.h"'
+        tools:          gnu
+        language:       c
+        languageVersion: 17
+        languageStandard: gnu17
+        enums: {
+            flags: {
+                nameContains: FlagBits
+            }
+
+            prefix: {
+                exclude: common
+                delimit: _
+            }
+
+            suffix: {
+                exclude: common
+                delimit: _
+            }
+
+            case: {
+                encode: lower
+            }
         }
-    ]
+    }
+
     types: {
         couple: {
             a: string
-            bee: int
+            bee: eFoodFlagBits
         }
 
         v_of_couples: {
@@ -20,26 +53,6 @@
 
         a_of_v_of_couples: {
             coupleses: { type: array of: [{ type: vector of: couple }, 4] }
-        }
-    }
-
-    variants: {
-        shortTest: {
-            outputForm: compiled
-
-            namespace: shortTest
-            deserializeFrom: [humon, binary]
-            defaultConstructible: true      // done
-            memberwiseConstructible: true   // done
-            virtualDestructor: true         // done
-            copyable: true                  // done
-            movable: true                   // done
-            getters: true                   // done
-            setters: true                   // done
-            privateMembers: true            // done
-            serializeTo: [humon, binary]
-            comparable: true                // done
-            diffable: true                  // done
         }
     }
 }

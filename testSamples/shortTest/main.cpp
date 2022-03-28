@@ -1,23 +1,24 @@
-#include "gen-cpp/inc/boma/shortTest.hpp"
+#include "gen-cpp/shortTest/inc/shortTest.hpp"
 #include <iostream>
 
 int main(int argc, char ** argv)
 {
+    (void) argc;
     (void) argv;
 
     auto hu = R"(
 {
-    coup: {a: foo, bee: 3}
+    coup: {a: foo, bee: [cat, dog]}
     vacoup: {
         coupleses: [
             [
-                { a: bar, bee: 4 }
-                { a: baa, bee: 5 }
+                { a: bar, bee: cat }
+                { a: baa, bee: dog }
             ]
             []
             [
-                { a: sna, bee: 6 }
-                { a: flu, bee: 7 }
+                { a: sna, bee: pig }
+                { a: flu, bee: [cat, pig] }
             ]
             []
         ]
@@ -30,7 +31,7 @@ int main(int argc, char ** argv)
         auto ev = t->root() / "coup" % hu::val<shortTest::couple>();
         std::cout << "Got value: '" << shortTest::HumonFormat(ev) << "'.\n";
         auto ev2 = t->root() / "vacoup" % hu::val<shortTest::a_of_v_of_couples>();
-        std::cout << t << "Got value: '" << shortTest::HumonFormat(ev2) << "'.\n";
+        std::cout << "Got value: '" << shortTest::HumonFormat(ev2) << "'.\n";
     }
 
     return 0;

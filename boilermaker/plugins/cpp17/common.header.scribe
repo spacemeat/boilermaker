@@ -186,7 +186,7 @@ $<if $std.string.usedInBomaType>
     $+  $<if $std.stringView.usedInBomaType>
     template <>
     struct BinaryReader<std::string_view>
-    {  // NOTE: Returning std::string, until we get a string table
+    {
         static inline std::string_view extract($<$const('char')> *& buffer, std::size_t & size)
         {
             auto strSize = BinaryReader<std::size_t>::extract(buffer, size);

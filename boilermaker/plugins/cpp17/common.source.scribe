@@ -5,6 +5,8 @@ $sourceTopComment
 $+$<join for type in $commonHeaderFwdDecls>
 #include "$srcToHeader/$type.hpp"$<endjoin>
 
+$<if 'binary' in $serializeTo>
+
 namespace $namespace
 {
     $+
@@ -36,4 +38,5 @@ $<endif>
     }$+
 $<endif>$''
 }
+$+$<endif>
 $<endout>

@@ -59,16 +59,16 @@
                                         type: variant
                                         of: [ {
                                                 type: pair
-                                                of: [string, string]
+                                                of: [stringView, stringView]
                                             } {
                                                 type: tuple
                                                 of: [size_t, int, double]
                                             } {
                                                 type: map
-                                                of: [string, int]
+                                                of: [stringView, int]
                                             } {
                                                 type: unorderedMap
-                                                of: [string, int]
+                                                of: [stringView, int]
                                             } {
                                                 type: set
                                                 of: [ {
@@ -79,7 +79,7 @@
                                                 isLess: '$"return lhs.begin()->second.get_a() < rhs.begin()->second.get_a();"'
                                             } {
                                                 type: unorderedSet
-                                                of: string
+                                                of: stringView
                                             } {
                                                 alias: setOfMaps
                                                 type: set

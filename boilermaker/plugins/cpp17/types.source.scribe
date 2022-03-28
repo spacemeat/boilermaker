@@ -187,8 +187,8 @@ $''      $<$member.name>_diffs(lhs.$<$member.name>, rhs.$<$member.name>)$<delim>
 $<endjoin>$<endif>
     {
     }
-$''$+    $<endif>
-}
+$''$+    $<endif>$''
+$''}
 $<endset>
 
 

@@ -49,11 +49,12 @@
     virtualDestructor: false
     privateMembers: true
     swap: $useCopySwap
-    useCopySwap: true    // requires copy, defaultMoveConstructible, destructor!='omit'
+    useCopySwap: false  // requires copy, defaultMoveConstructible, destructor!='omit'
     copyable: true
-    copy: moveMembers      // [omit | default | delete | swap | moveMembers | copyMembers]
+    copy: source        // one of: omit, default, delete, inline, source
     movable: true       // i think requires virtualDestructor to be false
-    getters: '$<$inlineGetters or $constGetters or $nonConstGetters>'
+    move: source        // one of: omit, default, delete, inline, source
+    getters: '$<$len($getterVariants) > 0>'
     getterVariants: [ returnByValue | returnByConstRef | returnByNonconstRef ]
     getterRefVariants: [ ref, rvaleRef ]    // &, && variants
     inlineGetters: true     // requires getters

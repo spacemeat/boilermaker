@@ -82,8 +82,8 @@ namespace $namespace
     $<endif>    $+
     $<if $copy != 'omit'>$+
         $<$t.codeDecl>($<$const($rescope($t))> & rhs)$+
-        $<if $copy == 'default'> default
-        $<elif $copy == 'delete'> delete
+        $<if $copy == 'default'> = default
+        $<elif $copy == 'delete'> = delete
         $<elif $copy == 'inline'>$''
          : $<join for member in $t.members>$<$member.name>(rhs.$<$member.name>)$<delim>, $<endjoin>
         { }
@@ -94,8 +94,8 @@ namespace $namespace
     $<endif>    $+
     $<if $move != 'omit'>$+
         $<$t.codeDecl>($<$rescope($t)> && rhs)$+
-        $<if $move == 'default'>$'' default$+
-        $<elif $move == 'delete'>$'' delete$+
+        $<if $move == 'default'>$'' noexcept = default$+
+        $<elif $move == 'delete'>$''  = delete$+
         $<elif $move == 'inline'>$'' noexcept$+
             $<if $useCopySwap>$''
          : $<$t.name>()
@@ -105,9 +105,9 @@ namespace $namespace
 $+            $<else>$''
          : $<join for member in $t.members>$<$member.name>(std::move(rhs.$<$member.name>))$<delim>, $<endjoin>
         { }
-
-$+            $<endif>
-        $<else>$'' noexcept;
+$+
+            $<endif>
+        $<else>$'' noexcept;$+
         $<endif>$+
     $<endif>    $+
     $<if $copy != 'omit'>$+
@@ -117,14 +117,14 @@ $+            $<endif>
         {
             swap(*this, rhs);
             return * this;
-        }
-$+            $<else>
-                ;
-$+            $<endif>
-        $<else>
-$''        $<$rescope($t)> & operator =($<$const($rescope($t))> & rhs)$+
-            $<if $copy == 'default'>default;
-$+            $<elif $copy == 'delete'>delete;
+        }$+
+            $<else>
+                ;$+
+            $<endif>
+        $<else>$''
+        $<$rescope($t)> & operator =($<$const($rescope($t))> & rhs)$+
+            $<if $copy == ' = default'>default;
+$+            $<elif $copy == ' = delete'>delete;
 $+            $<elif $copy == 'inline'>$''
         {
             if (this != & rhs)
@@ -141,10 +141,10 @@ $+          $<endif>$+
         $<endif>
     $<endif>$''$+
 
-    $<if $move != 'omit' and $useCopySwap == False>$''
-        $<$rescope($t)> & operator =($<$rescope($t)> && rhs)$+
-        $<if $move == 'default'>$' 'default$+
-        $<elif $move == 'delete'>$' 'delete$+
+    $<if $move != 'omit' and $useCopySwap == False>$+
+$''        $<$rescope($t)> & operator =($<$rescope($t)> && rhs)$+
+        $<if $move == 'default'>$' 'noexcept = default$+
+        $<elif $move == 'delete'>$' ' = delete$+
         $<elif $move == 'inline'>$'' noexcept
         {
 $+          $<join for member in $t.members>$+
@@ -219,14 +219,14 @@ $+            $<else>$' 'noexcept;$+
     $<endset>    $+
     $<if 'humon' in $serializeTo>    $+
         friend std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<' + $rescope($t) + '$>')> & obj);$+
-    $<endif>$''
-    $<if 'binary' in $serializeTo>    $+
+    $<endif>$''$+
+    $<if 'binary' in $serializeTo>$+
         friend std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<' + $rescope($t) + '$>')> & obj);$+
-    $<endif>$''
+    $<endif>$''$+
     $<if $comparable>    $+
         friend bool operator ==($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);
         friend bool operator !=($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);$+
-    $<endif>$''
+    $<endif>$''    $+
     $<if $diffable>    $+
         friend Diff<$<$rescope($t)>>::Diff();
         friend Diff<$<$rescope($t)>>::Diff($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);$+
@@ -268,7 +268,7 @@ $<set scope as $scope + '::' + $namespace>
         }
     };
 $+    $<endif>$+
-$<endset>$+
+$<endset>$''
 }
 $+
 $<endout>

@@ -83,9 +83,10 @@ $<endjoin>$+  $<# enum>
 }
 $<endset>$<endif>$+  $<# humon>
 $<set scope as $scope + '::' + $namespace>
-$+  $<if 'binary' in $deserializeFrom and len($enums) $> 0>
+$<if 'humon' in $serializeTo or ('binary' in $deserializeFrom and len($enums) $> 0)>$+
 namespace $namespace
 {
+    $+  $<if 'binary' in $deserializeFrom and len($enums) $> 0>
     template <class T>
     struct BinaryReader<T, typename std::enable_if_t<std::is_enum_v<T>>>
     {
@@ -111,5 +112,6 @@ $+  $<join for enum in $enums>$+
     $<endjoin>
 }
 $<endif $<# humon>>$+
+$<endif $<# binary or humon>>$+
 $<endset>$+
 $<endout>$+

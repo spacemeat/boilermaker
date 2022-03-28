@@ -1,6 +1,6 @@
 @{ app: boma, boma-version: 0.0.4 }
 {
-    inherit: c++|gnu
+    inherit: cpp17
     types: {
         couple: {
             a: string

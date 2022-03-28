@@ -1,21 +1,19 @@
 @{ app: boma, boma-version: 1.0.0 }
 {
-    inherit: c++|gnu
-    headerDir: $<baseDir>/gen-cpp/inc
-    inlineDir: $<baseDir>/gen-cpp/inc/inl
-    sourceDir: $<baseDir>/gen-cpp/src
+    inherit: cpp17
+    headerDir: $baseDir/gen-cpp/inc
+    inlineDir: $baseDir/gen-cpp/inc/inl
+    sourceDir: $baseDir/gen-cpp/src
     namespace: testCompare
-    const: east
-    headerOnly: true
+    constStyle: east
     defaultConstructible: true
     copyable: true
     setters: false
     setByMovers: false
-    getters: true
-    privateMembers: true
-    outputForm: compiled
+    getters: false
     deserializeFrom: [humon]
     serializeTo: [humon]
+    comparable: true
     diffable: true
 
     types: {
@@ -32,7 +30,7 @@
             lastLoggedIn: 'long long'
             lastTitlePlayed: int
             achievements: { type: vector of: achievement }
-            metatags: { type: unordered_map of: [string, string]}
+            metatags: { type: unorderedMap of: [string, string]}
         }
         testRoot: {
             v_of_ints: { type: vector of: int }
