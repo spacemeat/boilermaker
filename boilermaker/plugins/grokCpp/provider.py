@@ -118,7 +118,6 @@ class grokCppProvider(Provider):
                 typedefName = decl.partial_decl_string.replace('::', '.')
                 declType = decl.decl_type.decl_string.replace('::', '.')
                 if enum := accruedEnums.get(declType):
-                    # self.enumTypedefs[typedefName] = EnumTypedef(typedefName, declType, ns.name)
                     # instead of above, just find the EnumType object, and then give it an alias
                     enum.aliases.append(typedefName)
                     # NOTE: Need to make Types.find() that matches type names AND aliases

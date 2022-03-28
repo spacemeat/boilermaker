@@ -1,4 +1,3 @@
-from . import utilities
 from .type import Type
 
 
@@ -64,51 +63,3 @@ class EnumType(Type):
         for val in self.vals:
             val.codeDecl = translateEnumVal(val.bomaName)
             val.fullCodeDecl = makeFullDecl(val)
-
-
-class Enums_old:
-    def __init__(self, props, enumProps):
-        self.props = props
-        self.enumProps = enumProps
-        self.flagsAttribute = self.enumProps.get('flags', {})
-        self.prefixAttribute = self.enumProps.get('prefix', {})
-        self.suffixAttribute = self.enumProps.get('suffix', {})
-        self.caseAttribute = self.enumProps.get('case', {})
-
-
-class Enum_old:
-    def __init__(self, enumName, namespaceName, enumsObject):
-        super().__init__(self, enumName)
-        self.enumName = enumName
-        self._values = {}
-        self._attribs = set()
-        self.namespaceName = namespaceName
-        self.enumsObject = enumsObject
-        self.props = enumsObject.props
-        self.enumProps = enumsObject.enumProps
-
-        self.flags = False
-        self.prefixLen = 0
-        self.suffixLen = 0
-        self.case = 'leaveIt'
-
-
-    def _translateEnumVal(self, enumVal):
-        val = enumVal
-        val = val[self.prefixLen:]
-        if self.suffixLen > 0:
-            val = val[:-self.suffixLen]
-        if self.case == 'lower':
-            val = val.lower()
-        elif self.case == 'upper':
-            val = val.upper()
-        return val
-
-
-
-class EnumTypedef_old:
-    def __init__(self, typedefName, enumName, namespaceName):
-        self.name = typedefName
-        self.enumName = enumName
-        self.attribs = set()
-        self.namespaceName = namespaceName

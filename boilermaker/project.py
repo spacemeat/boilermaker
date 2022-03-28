@@ -1,16 +1,8 @@
-from tkinter import E
-from . import utilities, ansi
-
-# TODO: Make this a plugin thing.
-#from .enums import Enums as Enums
-#from .plugins.grokCpp.enums import CfamilyEnums
 import re
+from . import utilities, ansi
 from .props import Props, PropertyBag, Scribe
 from pathlib import Path
 from .plugin import PluginCollection
-
-# TODO: Make this a plugin thing. Nice info: https://realpython.com/python-import/
-from .plugins.cpp17.project import CppProject
 
 # read ${captured}, when not preceded by a '\'
 defArgumentPattern = r'(?<!\\)\$\s*\<\s*([A-Za-z0-9_.]+?)\s*\>'
@@ -18,13 +10,14 @@ defArgumentReg = re.compile(defArgumentPattern)
 
 
 class Project:
-    def __init__(self, A, propsPath):
+    def __init__(self, A, propsPath, reports):
         if type(propsPath) is not Path:
             propsPath = Path(propsPath)
         self.propsPath = propsPath
         self.bomaPath = Path(__file__).parent
         self.enumsMade = False
         self.loadedProviders = {}
+        self.reports = reports
 
     def run(self):
         try:
@@ -70,8 +63,6 @@ class Project:
 
 
     def getPathFromInherit(self, inh :str, originPath :Path):
-        #if path := utilities.getBuiltinDefsPath(inh):
-        #    return path
         inhPath = originPath.parent / 'inh.hu'
         if inhPath.exists():
             return inhPath
@@ -114,7 +105,8 @@ class Project:
                          'projectDir': self.propsPath.parent,
                          'bomaDir': Path(__file__).parent,
                          'pluginsDir': Path(__file__).parent / 'plugins',
-                         'mainHeaderIncludes': []})
+                         'mainHeaderIncludes': [],
+                         'bomaReports': self.reports})
 
 
     def loadProvider(self, provider):

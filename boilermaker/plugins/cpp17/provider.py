@@ -3,7 +3,6 @@ import os
 from ... import utilities
 from ...plugin import Provider, PluginCollection
 from ...props import Scribe
-#from .project import CppProject
 from ...type import Type
 
 
@@ -33,7 +32,6 @@ class cpp17Provider(Provider):
         elif op == 'generateCode':
             self.removeAllFiles(props)
             s = Scribe(props)
-            #s.debug = True
             scribePath = PluginCollection(s.getXProp('pluginsDir')).locateScribe(self.runDefs['plugin'], self.runDefs['output'])
             print (s.X(f'$<in "{scribePath}">'))
 
@@ -62,7 +60,7 @@ class cpp17Provider(Provider):
 
         # convenience function for namespace/scoping
         def rescope(type):
-            # TODO: This is probably losy perf
+            # TODO: This is probably lousy perf
             s = Scribe(props)
             currentScope = s.getXProp('scope').split('::')
             fullName = type.fullCodeDecl.split('::')
@@ -71,7 +69,6 @@ class cpp17Provider(Provider):
             for i in range(min(len(currentScope), len(fullName))):
                 if currentScope[i] == fullName[i]:
                     skip += 1
-            #breakpoint()
             return '::'.join(fullName[skip:])
         props.setProp('rescope', rescope)
 
@@ -142,7 +139,7 @@ class cpp17Provider(Provider):
             'humon' in s.X('$serializeTo')):
             headers.add('<humon/humon.hpp>')
 
-        for typeName, strType in bomaTypes.items():
+        for strType in bomaTypes.values():
             if strType.alreadyDefined == False:
                 props.push({'t': strType})
                 strType.include = ['"' + s.X('$typeHeaderFile') + '"']
@@ -154,7 +151,6 @@ class cpp17Provider(Provider):
                     allTypes[st.type].usedInBomaType = True
                     for inc in allTypes[st.type].include:
                         typeHeaders.add(inc)
-                        #headers.add(inc)
             strType.dependencyIncludes = list(typeHeaders)
 
         allEnumHeaders = set()
@@ -163,7 +159,6 @@ class cpp17Provider(Provider):
             if bomaEnum.alreadyDefined:
                 for inc in bomaEnum.include:
                    enumHeaders.add(inc)
-                    #headers.add(inc)
             else:
                 bomaEnum.include = ['"' + s.X('$enumsHeaderFile') + '"']
             bomaEnum.dependencyIncludes = list(enumHeaders)

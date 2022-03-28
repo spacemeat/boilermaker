@@ -14,9 +14,9 @@
     bomaProvider:               provider
     bomaScribe:                 output
     bomaCreateEnumsSequence:    1
-    bomaCreateTypesSequence:    2
-    bomaOutputSequence:         3
-    bomaReports:                [props, enums, types]
+    bomaCreateTypesSequence:    1.1
+    bomaOutputSequence:         6.9         // nice
+    bomaReports:                [props, enums, types, writes]
 
     outputEnums:    true
     outputTypes:    true

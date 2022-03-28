@@ -1,4 +1,3 @@
-# TODO: This is intended to replace boma.py
 import sys
 import os
 from .ansi import Ansi
@@ -37,25 +36,23 @@ In general, unless a plugin is disabled it will run transform. Output must be op
 # $ python -m boilermaker boma.hu [--props || -p || --enums || -e || --types || -t || --write || -w]
 
 def main():
-    reportProps = False
-    reportEnums = False
-    reportTypes = False
-    write = False
     propsFile = None
     A = Ansi()
 
+    reports = []
+
     for arg in sys.argv:
         if arg == '--props' or arg == '-p':
-            reportProps = True
+            reports.append('props')
         elif arg == '--enums' or arg == '-e':
-            reportEnums = True
+            reports.append('enums')
         elif arg == '--types' or arg == '-t':
-            reportTypes = True
+            reports.append('types')
         elif arg == '--write' or arg == '-w':
-            write = True
+            reports.append('writes')
         else:
             propsFile = arg
 
     path = os.path.abspath(propsFile)
-    project = Project(A, path)
+    project = Project(A, path, reports)
     return 0 if project.run() else 1

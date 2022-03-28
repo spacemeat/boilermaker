@@ -1,5 +1,3 @@
-from unicodedata import name
-from . import utilities
 from .ansi import Ansi as ansi
 import re
 
@@ -16,11 +14,6 @@ class Type:
         self.alreadyDefined = False
         self.codeDecl = ''
         self.fullCodeDecl = ''
-
-
-class Types:
-    def __init__(self):
-        self.types = {}
 
 
 class BomaSubtype:

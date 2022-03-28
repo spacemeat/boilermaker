@@ -2,7 +2,6 @@ from ...plugin import Provider
 from ...props import Scribe
 from ...type import BomaType
 from ...enums import EnumType
-#from ..grokCpp.enums import CfamilyEnums
 
 
 class BomaProvider(Provider):
@@ -53,17 +52,28 @@ class BomaProvider(Provider):
 
 
     def reportEnums(self, props):
-        pass
+        s = Scribe(props)
+        for ts in s.getXPropAll('bomaEnums'):
+            for t in ts:
+                print (t)
+
 
     def reportTypes(self, props):
-        for typeName, t in self.types.items():
-            print (t)
+        s = Scribe(props)
+        for ts in s.getXPropAll('bomaTypes'):
+            for t in ts:
+                print (t)
 
 
     def generateOutput(self, props):
-        self.reportProps(props)
-        self.reportEnums(props)
-        self.reportTypes(props)
+        s = Scribe(props)
+        reports = s.getXProp('bomaReports')
+        if 'props' in reports:
+            self.reportProps(props)
+        if 'enums' in reports:
+            self.reportEnums(props)
+        if 'types' in reports:
+            self.reportTypes(props)
 
 
 
