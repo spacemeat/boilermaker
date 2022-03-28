@@ -26,24 +26,3 @@ def loadHumonFile(defsFile):
 
     print (f"{ansi.dk_yellow_fg}Loaded humon file {ansi.lt_yellow_fg}{defsFile}{ansi.dk_yellow_fg}: version: {ansi.lt_yellow_fg}{bomaVersion}{ansi.all_off}")
     return (trove, bomaVersion)
-
-
-def listify(thing):
-    if thing:
-        if type(thing) is not list:
-            return [thing]
-        else:
-            return thing
-    else:
-        return []
-
-
-def dictify(thing, key):
-    if thing:
-        if type(thing) is not dict:
-            return {key: thing}
-        else:
-            return thing
-    else:
-        return {}
-

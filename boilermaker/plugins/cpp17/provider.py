@@ -230,36 +230,3 @@ class cpp17Provider(Provider):
         s = Scribe(props)
         t.codeDecl = t.name.replace('.', '::')
         t.fullCodeDecl = '::' + s.X('$namespace') + '::' + t.name.replace('.', '::')
-
-
-    def makeNative_old(self, bomaName, useNamespace=False):
-        if bomaName in ['less', 'monostate', 'size_t', 'string', 'string_view', 'array', 'pair', 'tuple', 'vector', 'set', 'unordered_set', 'map', 'unordered_map', 'optional', 'variant']:
-            return 'std::' + bomaName
-        elif useNamespace and bomaName in self.types:
-            bomaName = f'{self.P("namespace")}::{bomaName}'
-        return bomaName.replace('.', '::')
-
-
-    def makeNativeSubtype_old(self, properties, useNamespace=False):
-        builtType = self.makeNative(properties['type'], useNamespace)
-        of = properties.get('of')
-        if of:
-            builtType += '<'
-            if type(of) is list:
-                builtType += ', '.join([self.makeNativeSubtype(utilities.dictify(ch, 'type'), useNamespace) for ch in of])
-            elif type(of) is dict:
-                builtType += self.makeNativeSubtype(of, useNamespace)
-            else:
-                builtType += self.makeNative(of, useNamespace)
-            if properties['type'] == 'set' or properties['type'] == 'map':
-                if 'isLess' in properties:
-                    ns = f'{self.P("namespace")}::' if useNamespace else ''
-                    builtType += f', {ns}IsLess_{properties["fullName"]}'
-            builtType += '>'
-        return builtType
-
-
-    def makeNativeMemberType_old(self, properties, useNamespace=False):
-        return self.makeNativeSubtype(utilities.dictify(properties, 'type'), useNamespace)
-
-
