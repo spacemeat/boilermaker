@@ -25,10 +25,14 @@ class EnumType(Type):
         self.vals = []
         cidx = 0
         seenNums = set()
+        seenVals = dict()
         for val in vals:
             idx = -1
             if type(val) is list and type(val) is not str:
-                idx = int(val[1])    # TODO: Allow idx to be a name we've seen earlier
+                if type(val[1]) is int:
+                    idx = int(val[1])    # TODO: Allow idx to be a name we've seen earlier
+                #elif type(val[1]) is str:
+                #    idx = seenVals.get(val[1], val[1])
                 val = val[0]
                 ev = EnumVal(self, val, idx, True, idx in seenNums)
                 self.vals.append(ev)
@@ -38,6 +42,7 @@ class EnumType(Type):
                 ev = EnumVal(self, val, idx, False, idx in seenNums)
                 self.vals.append(ev)
             seenNums.add(idx)
+            seenVals[val] = idx
             cidx += 1
 
         self.isScoped = enumProps.get('isScoped', True)

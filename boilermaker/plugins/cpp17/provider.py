@@ -130,6 +130,21 @@ class cpp17Provider(Provider):
             return f'{decl} const' if s.X('$constStyle') == 'east' else f'const {decl}'
         props.setProp('const', const)
 
+        # binary reader for std::string needs std::memcpy
+        if ('binary' in s.X('$deserializeFrom') and
+            stdObj.string.usedInBomaType):
+            stdObj.cstring.usedInBomaType = True
+
+        # humon reader for enums needs std::strncmp
+        if ('humon' in s.X('$deserializeFrom') and
+            len(props.getProp('enums')) > 0):
+            stdObj.cstring.usedInBomaType = True
+
+        # binary ready for std::variant needs std::optional
+        if ('binary' in s.X('$deserializeFrom') and
+            stdObj.variant.usedInBomaType):
+            stdObj.optional.usedInBomaType = True
+
         headers = set()
 
         if len(s.X('$cave') or []) > 0:
@@ -138,20 +153,6 @@ class cpp17Provider(Provider):
         if ('humon' in s.X('$deserializeFrom') or
             'humon' in s.X('$serializeTo')):
             headers.add('<humon/humon.hpp>')
-
-        for strType in bomaTypes.values():
-            if strType.alreadyDefined == False:
-                props.push({'t': strType})
-                strType.include = ['"' + s.X('$typeHeaderFile') + '"']
-                props.pop()
-            typeHeaders = set()
-            subtypes = strType.allSubtypes()
-            for st in subtypes:
-                if st.type in allTypes:
-                    allTypes[st.type].usedInBomaType = True
-                    for inc in allTypes[st.type].include:
-                        typeHeaders.add(inc)
-            strType.dependencyIncludes = list(typeHeaders)
 
         allEnumHeaders = set()
         for bomaEnum in bomaEnums.values():
@@ -165,9 +166,26 @@ class cpp17Provider(Provider):
             allEnumHeaders.update(enumHeaders)
         props.setProp('enumHeaderIncludes', list(allEnumHeaders))
 
+        for strType in bomaTypes.values():
+            if strType.alreadyDefined == False:
+                props.push({'t': strType})
+                strType.include = ['"' + s.X('$typeHeaderFile') + '"']
+                props.pop()
+
+        for strType in bomaTypes.values():
+            typeHeaders = set()
+            subtypes = strType.allSubtypes()
+            for st in subtypes:
+                if st.type in allTypes: # TODO: This isn't finding all the types it should
+                    allTypes[st.type].usedInBomaType = True
+                    for inc in allTypes[st.type].include:
+                        typeHeaders.add(inc)
+            strType.dependencyIncludes = list(typeHeaders)
+
         for stdType in standardTypes.values():
             for inc in stdType.include:
-                headers.add(inc)
+                if stdType.usedInBomaType:
+                    headers.add(inc)
 
         props.setProp('commonHeaderIncludes', list(headers))
 
@@ -208,20 +226,6 @@ class cpp17Provider(Provider):
                 needVariantTypeNamesBase = True
         props.setProp('needVariantTypeNamesBase', needVariantTypeNamesBase)
 
-        # binary reader for std::string needs std::memcpy
-        if ('binary' in s.X('$deserializeFrom') and
-            stdObj.string.usedInBomaType):
-            stdObj.cstring.usedInBomaType = True
-
-        # humon reader for enums needs std::strncmp
-        if ('humon' in s.X('$deserializeFrom') and
-            len(props.getProp('enums')) > 0):
-            stdObj.cstring.usedInBomaType = True
-
-        # binary ready for std::variant needs std::optional
-        if ('binary' in s.X('$deserializeFrom') and
-            stdObj.variant.usedInBomaType):
-            stdObj.optional.usedInBomaType = True
 
 
     def computeDecl(self, t :Type, props):

@@ -6,20 +6,8 @@ $<out $commonHeaderPath>$+
 
 $headerTopComment
 
-$<# $`
-$+  $<if len($cave) $> 0>
-#include <iostream>$<endif>
-$+  $<if $outputEnums>$<join for enum in $enums>$<join for inc in $enum.include>
-#include $inc               // ENUMS$<endjoin>$<endjoin>$<endif>
-$+  $<if 'humon' in $deserializeFrom or 'humon' in $serializeTo>
-#include <humon/humon.hpp>  // HUMON$<endif>`>
 $+  $<join for inc in $commonHeaderIncludes>
 #include $inc               // COMMONHEADERINCLUDES$<endjoin>
-$<# $`
-$+  $<join for type in vars($std)>$<if $t.usedInBomaType>
-$+  $<join for inc in $t.include>
-#include $inc               // TYPES$<endjoin>$<endif>$<endjoin>
-`>
 
 // -------------------
 // Common declarations
