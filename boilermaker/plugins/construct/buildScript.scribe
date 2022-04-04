@@ -18,8 +18,8 @@ echo -e " ... already up to date."
 $<else>
 
     $<join for source in $sources>
-echo -e "Building $temporaryPath ($buildKind)..."
-        $<if $modDate($source.path) > $modDate($temporaryPath)>
+echo -e "Building $outputObjectPath ($buildKind)..."
+        $<if $modDate($source.path) > $modDate($outputObjectPath)>
 $<$makeBuildCommand(source)>
 if [ $$? != 0 ] ; then
     echo -e "FAIL"

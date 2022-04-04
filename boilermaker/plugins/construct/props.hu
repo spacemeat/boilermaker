@@ -9,18 +9,12 @@
 
     constructPlugin:                construct
     constructProvider:              provider
-    constructScribe:                output
 
     constructbuildPojectSequence:     9
 
-    temporaryPath:          $tempOutputDir/$srcDir/$<$source.stem()>.o
+    outputObjectPath:       $tempOutputDir/$<$source.stem>.o
     outputExeName:          a.out
     outputExePath:          $outputDir/$exeName.$buildKind
-
-    outputBuildScript:  false
-    buildScriptDir:     $projectDir
-    buildScriptFile:    do.sh
-    buildScriptPath:    $buildScriptDir/$buildScriptFile
 
     buildKind:          debug   // or release
     tools:              gnu
@@ -31,6 +25,8 @@
     warns:              [Wall, Wextra, pedantic]
 
     wholeProject:       true
+    clearTempDir:       false
+    forceRebuild:       false
 
     buildDir: build
     tempOutputDir: $buildDir/int
@@ -43,6 +39,6 @@
     sources: []
     includeDirs: []
     linkDirs: []
-    libraries: []
+    libs: []
     pkgs: []
 }

@@ -3,6 +3,15 @@ from ...plugin import Provider, PluginCollection
 from ...props import Scribe
 from ...ansi import Ansi as a
 import subprocess
+import os
+
+
+def ensureDirExists(dir :Path, clearExisting :bool):
+    if not dir.is_dir():
+        dir.mkdir(parents=True, exist_ok=True)
+    if clearExisting:
+        for f in os.scandir(dir):
+            os.remove(f.path)
 
 
 class ConstructProvider(Provider):
@@ -56,6 +65,7 @@ class ConstructProvider(Provider):
         tools = s.getXProp('tools')
         language = s.getXProp('language')
         languageStandard = s.getXProp('languageStandard')
+        clearTempDir = s.getXProp('clearTempDir')
         includeDirses = s.getXPropAll('includeDirs')
         includeDirs = set()
         for ids in includeDirses:
@@ -66,9 +76,15 @@ class ConstructProvider(Provider):
         self.generateAllSources()
 
         outputExePath = Path(s.getXProp('outputExePath'))
-        outputFileTime = 0
+        outputExeFileTime = 0
         if outputExePath.is_file():
-            outputFileTime = outputExePath.stat().st_mtime
+            outputExeFileTime = outputExePath.stat().st_mtime
+
+        # empty the build target dirs
+        tempOutputDir = Path(s.getXProp('tempOutputDir'))
+        ensureDirExists(tempOutputDir, clearTempDir)
+
+        forceRebuild = s.getXProp('forceRebuild')
 
         #   create the sequence of commands:
         #   if  wholeProject:
@@ -77,11 +93,11 @@ class ConstructProvider(Provider):
         #           makeBuildOutputFileScript()
 
         if s.getXProp('wholeProject'):
-            deps = self.sources.copy()
+            deps = set(self.sources)
             deps.update(self.getDependencies(self.sources))
             newestTime = max([dep.stat().st_mtime for dep in deps])
             print(f'{a.dk_blue_fg}Building {a.lt_blue_fg}{outputExePath}{a.dk_blue_fg} from all sources')
-            if newestTime > outputFileTime:
+            if newestTime > outputExeFileTime or forceRebuild:
                 cmd = self.makeBuildAllSourcesScript()
                 ret, _, _ = self.runShellCommand(cmd)
                 print(f'  {a.dk_blue_fg}returned {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
@@ -98,7 +114,38 @@ class ConstructProvider(Provider):
         #           if obj is newer than outputFile:
         #               makeLinkObjectsScript()
         else:
-            pass
+            objectPaths = []
+            for source in self.sources:
+                self.props.push({'source': source})
+                outputObjectPath = Path(s.getXProp('outputObjectPath'))
+                self.props.pop()
+                objectPaths.append(outputObjectPath)
+                outputObjectFileTime = 0
+                if outputObjectPath.is_file():
+                    outputObjectFileTime = outputObjectPath.stat().st_mtime
+
+                deps = set(self.getDependencies(source))
+                newestTime = max([dep.stat().st_mtime for dep in deps])
+                print(f'{a.dk_blue_fg}Building {a.lt_blue_fg}{outputObjectPath}{a.dk_blue_fg} from source {a.lt_blue_fg}{str(source)}{a.dk_blue_fg}.{a.all_off}')
+                if newestTime > outputObjectFileTime or forceRebuild:
+                    cmd = self.makeBuildOneSourceScript(source)
+                    ret, _, _ = self.runShellCommand(cmd)
+                    print(f'  {a.dk_blue_fg}returned {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
+                else:
+                    print(f'  {a.lt_blue_fg}{outputObjectPath}{a.dk_blue_fg} already up to date.{a.all_off}')
+
+            # if any objs aren't there, they failed to build. No buildy the exe.
+            print(f'{a.dk_blue_fg}Building {a.lt_blue_fg}{outputExePath}{a.dk_blue_fg} from {a.lt_blue_fg}{len(objectPaths)}{a.dk_blue_fg} objects.{a.all_off}')
+            if all([obj.is_file() for obj in objectPaths]):
+                newestTime = max([obj.stat().st_mtime for obj in objectPaths])
+                if newestTime > outputExeFileTime or forceRebuild:
+                    cmd = self.makeLinkAllObjectsScript(objectPaths)
+                    ret, _, _ = self.runShellCommand(cmd)
+                    print(f'  {a.dk_blue_fg}returned {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
+                else:
+                    print(f'  {a.lt_blue_fg}{outputExePath}{a.dk_blue_fg} already up to date.{a.all_off}')
+            else:
+                print(f'  {a.lt_blue_fg}{outputExePath}{a.dk_blue_fg} is {a.lt_red_fg}missing dependencies{a.dk_blue_fg} and cannot be built.{a.all_off}')
 
 
     def generateAllSources(self):
@@ -121,13 +168,17 @@ class ConstructProvider(Provider):
                         self.sources.add(src)
                     else:
                         self.errorSources.add(src)
+        self.sources = list(self.sources)
+        self.errorSources = list(self.errorSources)
         self.props.push({'sources': self.sources})
 
 
     def getDependencies(self, sources):
+        if type(sources) is not list:
+            sources = [sources]
         # return a list of Path objects, for all preprocessor dependencies of all sources.
         cmd = self.computeCommand('getDependencies', sources=sources)
-        print(f'{a.dk_blue_fg}Getting dependencies for {a.lt_blue_fg}{len(sources)}{a.dk_blue_fg} sources')
+        print(f'{a.dk_blue_fg}Getting dependencies for {a.lt_blue_fg}{len(sources)}{a.dk_blue_fg} sources{a.all_off}')
         ret, out, err = self.runShellCommand(cmd)
         if ret != 0:
             raise RuntimeError(f'Shell command {cmd} failed with code {ret} and has ruined everything.\n{err}')
@@ -150,11 +201,11 @@ class ConstructProvider(Provider):
 
 
     def makeBuildOneSourceScript(self, source):
-        return self.computeCommand('makeBuildOneSourceScript', source=source)
+        return self.computeCommand('compileFile', source=source)
 
 
-    def makeLinkAllObjectsScript(self):
-        return self.computeCommand('makeLinkAllObjectsScript')
+    def makeLinkAllObjectsScript(self, objectPaths):
+        return self.computeCommand('linkObjects', objectPaths=objectPaths)
 
 
     def computeCommand(self, operation, **kwargs):
@@ -169,13 +220,13 @@ class ConstructProvider(Provider):
             for id in ids:
                 includeDirs.add(id)
         includeDirs = [f'-I{id}' for id in includeDirs]
-        libraryDirses = s.getXPropAll('libraryDirs')
+        libraryDirses = s.getXPropAll('libDirs')
         libraryDirs = set()
         for libs in libraryDirses:
             for lib in libs:
                 libraryDirs.add(lib)
         libraryDirs = [f'-L{ld}' for ld in libraryDirs]
-        libses = s.getXPropAll('libraries')
+        libses = s.getXPropAll('libs')
         libraries = set()
         for libs in libses:
             for lib in libs:
@@ -194,56 +245,37 @@ class ConstructProvider(Provider):
         warnflags = [f'-{w}' for w in warnflags]
 
         if tools == 'gnu':
+            compilerTool = ''
+            if language == 'c':
+                compilerTool = 'gcc'
+            elif language == 'c++':
+                compilerTool = 'g++'
+            else:
+                raise RuntimeError(f'Unsupported language \'{language}\' for tools \'{tools}\' / tool kind \'{operation}\'.')
+
             if operation == 'getDependencies':
-                compilerTool = ''
-                if language == 'c':
-                    compilerTool = 'gcc'
-                elif language == 'c++':
-                    compilerTool = 'g++'
-                else:
-                    raise RuntimeError(f'Unsupported language \'{language}\' for tools \'{tools}\' / tool kind \'{operation}\'.')
                 return f'{compilerTool} -std={languageStandard} -E -M {" ".join(includeDirs)} {" ".join([str(s) for s in kwargs.get("sources", [])])}'
+
             elif operation == 'compileFile':
-                source = kwargs.get('sources', [''])[0]
-                compilerTool = ''
-                if language == 'c':
-                    compilerTool = 'gcc'
-                elif language == 'c++':
-                    compilerTool = 'g++'
-                    raise RuntimeError(f'Unsupported language \'{language}\' for tools \'{tools}\' / tool kind \'{operation}\'.')
+                source = kwargs.get('source')
                 self.props.push({'source': source})
-                dotoPath = s.getXProp('temporaryPath')
+                dotoPath = s.getXProp('outputObjectPath')
                 self.props.pop()
                 return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} -c {" ".join(opts)} {" ".join(includeDirs)} {str(source)} -o{dotoPath} {" ".join(libraryDirs)} {" ".join(libraries)}'
+
             elif operation == 'compileAndLinkFiles':
-                compilerTool = ''
-                if language == 'c':
-                    compilerTool = 'gcc'
-                elif language == 'c++':
-                    compilerTool = 'g++'
-                else:
-                    raise RuntimeError(f'Unsupported language \'{language}\' for tools \'{tools}\' / tool kind \'{operation}\'.')
                 return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} {" ".join(opts)} {" ".join(includeDirs)} {" ".join([str(s) for s in kwargs.get("sources", [])])} -o{outputExePath} {" ".join(libraryDirs)} {" ".join(libraries)}'
-            elif operation == 'link':
-                if language == 'c' or language == 'c++':
-                    return f'ld'
-                else:
-                    raise RuntimeError(f'Unsupported language \'{language}\' for tools \'{tools}\' / tool kind \'{operation}\'.')
+
+            elif operation == 'linkObjects':
+                return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} {" ".join(opts)} {" ".join([str(s) for s in kwargs.get("objectPaths", [])])} -o{outputExePath} {" ".join(libraryDirs)} {" ".join(libraries)}'
+                #if language == 'c' or language == 'c++':
+                #    return f'ld {" ".join([str(s) for s in kwargs.get("objectPaths", [])])} -o{outputExePath} {" ".join(libraryDirs)} {" ".join(libraries)}'
+                #else:
+                #    raise RuntimeError(f'Unsupported language \'{language}\' for tools \'{tools}\' / tool kind \'{operation}\'.')
         elif tools == 'llvm':
             raise RuntimeError(f'Unsupported tools \'{tools}\'. Patience.')
         elif tools == 'vs':
             raise RuntimeError(f'Unsupported tools \'{tools}\'. Patience.')
         else:
             raise RuntimeError(f'Unsupported tools \'{tools}\'.')
-
-
-    def createScript(self):
-        s = Scribe(self.props)
-        scribePath = PluginCollection(s.getXProp('pluginsDir')).locateScribe(self.runDefs['plugin'], self.runDefs['output'])
-        print (s.X(f'$<in "{scribePath}">'))
-
-
-    def runScript(self):
-        pass
-
 
