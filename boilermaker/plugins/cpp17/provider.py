@@ -1,6 +1,5 @@
 from pathlib import Path
 import os
-from ... import utilities
 from ...plugin import Provider, PluginCollection
 from ...props import Scribe
 from ...type import Type

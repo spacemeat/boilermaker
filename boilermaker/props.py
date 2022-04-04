@@ -856,7 +856,7 @@ class Scribe:
                 path = self._parseText(path)
             try:
                 with open(path, 'r') as file:
-                    self.props.push({'inFile': Path(path).name, 'inPath': path, 'inDir': str(Path(path).parent)})
+                    self.props.push({'inFile': Path(path).name, 'inPath': str(Path(path)), 'inDir': str(Path(path).parent)})
                     string = file.read()
                     try:
                         string = self._parseText(string)

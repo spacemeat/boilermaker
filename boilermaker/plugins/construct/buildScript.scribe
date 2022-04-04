@@ -1,0 +1,41 @@
+$'#!/bin/bash'
+
+curdir = $$(pwd)
+cd $projectDir
+
+$<if $wholeProject>
+
+echo -e "Building $exeName ($buildKind)..."
+    $<if $newestSourceModDate > $modDate($outputPath)>
+$<$makeBuildAndLinkCommand()>
+if [ $$? != 0 ] ; then
+    echo -e "FAIL"
+    exit 1
+    $<else>
+echo -e " ... already up to date."
+    $<endif>
+
+$<else>
+
+    $<join for source in $sources>
+echo -e "Building $temporaryPath ($buildKind)..."
+        $<if $modDate($source.path) > $modDate($temporaryPath)>
+$<$makeBuildCommand(source)>
+if [ $$? != 0 ] ; then
+    echo -e "FAIL"
+    exit 1
+        $<else>
+echo -e " ... already up to date."
+        $<endif>
+
+echo -e "Linking $outputPath ($buildKind)..."
+        $<if $newestSourceModDate > $modDate($outputPath)>
+$<makeLinkCommand()>
+if [ $$? != 0 ] ; then
+    echo -e "FAIL"
+    exit 1
+        $<else>
+echo -e " ... already up to date."
+        $<endif>
+    $<endjoin>
+$<endif>

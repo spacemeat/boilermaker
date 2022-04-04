@@ -24,35 +24,31 @@ class Project:
             self.loadProps()
 
             s = Scribe(self.props)
-            runs = s.getXPropAll('run')
+            runDefses = s.getXPropAll('run')
             ops = []
-            for run in runs:
-                for op, seq in run['ops'].items():
-                    ops.append((f'{run["plugin"]}.{run["provider"]}', run, op, seq))
+            for runDefs in runDefses:
+                for op, seq in runDefs['ops'].items():
+                    ops.append((f'{runDefs["plugin"]}.{runDefs["provider"]}', runDefs, op, seq))
             ops.sort(key=lambda op: op[3])
 
             seenProvs = set()
+            startOrder = []
             for op in ops:
                 providerName = op[0]
                 if providerName in seenProvs:
                     continue
                 seenProvs.add(providerName)
                 provider = self.loadProvider(providerName)
+                startOrder.append(provider)
                 provider.start(op[1], self.props)
 
             for op in ops:
                 providerName = op[0]
                 provider = self.loadProvider(providerName)
-                provider.do(op[2], op[3], self.props)
+                provider.do(op[2], op[3])
 
-            seenProvs = set()
-            for op in ops:
-                providerName = op[0]
-                if providerName in seenProvs:
-                    continue
-                seenProvs.add(providerName)
-                provider = self.loadProvider(providerName)
-                provider.stop(self.props)
+            for provider in reversed(startOrder):
+                provider.stop()
 
             return True
 

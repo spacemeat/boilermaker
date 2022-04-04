@@ -1,0 +1,48 @@
+@{ app: boma, boma-version: 0.0.4 }
+{
+    run: {
+        plugin:         $constructPlugin
+        provider:       $constructProvider
+        output:         $constructScribe
+        ops:            { buildPoject:    $constructbuildPojectSequence }
+    }
+
+    constructPlugin:                construct
+    constructProvider:              provider
+    constructScribe:                output
+
+    constructbuildPojectSequence:     9
+
+    temporaryPath:          $tempOutputDir/$srcDir/$<$source.stem()>.o
+    outputExeName:          a.out
+    outputExePath:          $outputDir/$exeName.$buildKind
+
+    outputBuildScript:  false
+    buildScriptDir:     $projectDir
+    buildScriptFile:    do.sh
+    buildScriptPath:    $buildScriptDir/$buildScriptFile
+
+    buildKind:          debug   // or release
+    tools:              gnu
+    language:           c++
+    languageVersion:    17
+    languageStandard:   c++17
+
+    warns:              [Wall, Wextra, pedantic]
+
+    wholeProject:       true
+
+    buildDir: build
+    tempOutputDir: $buildDir/int
+    outputDir: $buildDir/bin
+    runScriptDir: $projectDir
+
+    outputRunScript: true
+    runScript: $runScriptDir/run$exeName.sh
+
+    sources: []
+    includeDirs: []
+    linkDirs: []
+    libraries: []
+    pkgs: []
+}

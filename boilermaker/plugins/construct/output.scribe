@@ -1,0 +1,8 @@
+------------------ Creating build script $buildScriptPath
+$<if $outputBuildScript>
+$<#out $buildScriptPath>
+$<in $inDir + '/buildScript.scribe'>
+$<#endout>
+$<else>
+$<in $inDir + '/buildScript.scribe'>
+$<endif>
