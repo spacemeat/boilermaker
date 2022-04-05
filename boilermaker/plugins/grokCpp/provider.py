@@ -10,19 +10,20 @@ class grokCppProvider(Provider):
     def start(self, runDefs, props):
         print (f'starting grokCppProvider')
         self.runDefs = runDefs
+        self.props = props
 
 
-    def do(self, op, seq, props):
+    def do(self, op, seq):
         print (f'grokCppProvider doing op {op} at sequence {seq}')
-        self._parseSources(props)
+        self._parseSources(self.props)
 
 
-    def stop(self, props):
+    def stop(self):
         print (f'stopping grokCppProvider')
 
 
-    def _parseSources(self, props):
-        s = Scribe(props)
+    def _parseSources(self):
+        s = Scribe(self.props)
         projectDir = Path(s.getXProp('projectDir'))
 
         self.quotedSearchPaths, self.systemSearchPaths  = getSearchPaths_gnu(projectDir)
@@ -36,12 +37,12 @@ class grokCppProvider(Provider):
         # enums = {} / types = {} / e, t = self._processSource(source)
         enums = {}
         for source in sources:
-            enums.update(self._processSource(source, props))
-        props.push({'bomaEnums': enums})
+            enums.update(self._processSource(source))
+        self.props.push({'bomaEnums': enums})
 
 
-    def _processSource(self, sourceFilename, props):
-        s = Scribe(props)
+    def _processSource(self, sourceFilename):
+        s = Scribe(self.props)
         tools = s.X(self.runDefs.get('tools', ''))
 
         generator_path, generator_name = pygccxml.utils.find_xml_generator()

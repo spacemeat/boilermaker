@@ -21,26 +21,27 @@ class cpp17Provider(Provider):
     def start(self, runDefs, props):
         print (f'starting cpp17Provider')
         self.runDefs = runDefs
+        self.props = props
 
 
-    def do(self, op, seq, props):
+    def do(self, op, seq):
         print (f'cpp17Provider doing op {op} at sequence {seq}')
         if op == 'createCppProps':
-            self.generateProps(props)
+            self.generateProps()
 
         elif op == 'generateCode':
-            self.removeAllFiles(props)
-            s = Scribe(props)
+            self.removeAllFiles()
+            s = Scribe(self.props)
             scribePath = PluginCollection(s.getXProp('pluginsDir')).locateScribe(self.runDefs['plugin'], self.runDefs['output'])
             print (s.X(f'$<in "{scribePath}">'))
 
 
-    def stop(self, props):
+    def stop(self):
         print (f'stopping cpp17Provider')
 
 
-    def removeAllFiles(self, props):
-        s = Scribe(props)
+    def removeAllFiles(self):
+        s = Scribe(self.props)
         def raf(self, direc):
             d = Path(s.X('$projectDir'), direc)
             if d.is_dir():
@@ -52,15 +53,15 @@ class cpp17Provider(Provider):
         raf(self, s.X('$sourceDir'))
 
 
-    def generateProps(self, props):
-        props.push()
+    def generateProps(self):
+        self.props.push()
 
-        props.setProp('scope', '')
+        self.props.setProp('scope', '')
 
         # convenience function for namespace/scoping
         def rescope(type):
             # TODO: This is probably lousy perf
-            s = Scribe(props)
+            s = Scribe(self.props)
             currentScope = s.getXProp('scope').split('::')
             fullName = type.fullCodeDecl.split('::')
             # find first n common names; the rest is the qualified name
@@ -69,18 +70,18 @@ class cpp17Provider(Provider):
                 if currentScope[i] == fullName[i]:
                     skip += 1
             return '::'.join(fullName[skip:])
-        props.setProp('rescope', rescope)
+        self.props.setProp('rescope', rescope)
 
-        s = Scribe(props)
+        s = Scribe(self.props)
         bomaEnums = {}
         for enumsCluster in s.getXPropAll('bomaEnums'):
             bomaEnums.update(enumsCluster)
-        props.setProp('enums', bomaEnums)
+        self.props.setProp('enums', bomaEnums)
 
         bomaTypes = {}
         for typesCluster in s.getXPropAll('bomaTypes'):
             bomaTypes.update(typesCluster)
-        props.setProp('types', bomaTypes)
+        self.props.setProp('types', bomaTypes)
 
         standardTypes = {
             'string':      StandardType('string',       'std', 'std::string',             '<string>'),
@@ -103,7 +104,7 @@ class cpp17Provider(Provider):
 
         # compute C++ names for all types
         for _, t in allTypes.items():
-            self.computeDecl(t, props)
+            self.computeDecl(t)
 
         # compute translated names for enums that aren't already defined
         for _, e in bomaEnums.items():
@@ -116,18 +117,18 @@ class cpp17Provider(Provider):
         stdObj = AllStandardObjects()
         for k, v in standardTypes.items():
             setattr(stdObj, k, v)
-        props.setProp('std', stdObj)
+        self.props.setProp('std', stdObj)
 
         # relative paths for local #includes
-        props.setProp('headerToInl',    os.path.relpath(s.X('$inlineDir'), s.X('$headerDir')))
-        props.setProp('srcToHeader',    os.path.relpath(s.X('$headerDir'), s.X('$sourceDir')))
-        props.setProp('srcToInl',       os.path.relpath(s.X('$inlineDir'), s.X('$sourceDir')))
+        self.props.setProp('headerToInl',    os.path.relpath(s.X('$inlineDir'), s.X('$headerDir')))
+        self.props.setProp('srcToHeader',    os.path.relpath(s.X('$headerDir'), s.X('$sourceDir')))
+        self.props.setProp('srcToInl',       os.path.relpath(s.X('$inlineDir'), s.X('$sourceDir')))
 
         # convenience function for $const
         def const(decl):
-            s = Scribe(props)
+            s = Scribe(self.props)
             return f'{decl} const' if s.X('$constStyle') == 'east' else f'const {decl}'
-        props.setProp('const', const)
+        self.props.setProp('const', const)
 
         # binary reader for std::string needs std::memcpy
         if ('binary' in s.X('$deserializeFrom') and
@@ -136,7 +137,7 @@ class cpp17Provider(Provider):
 
         # humon reader for enums needs std::strncmp
         if ('humon' in s.X('$deserializeFrom') and
-            len(props.getProp('enums')) > 0):
+            len(self.props.getProp('enums')) > 0):
             stdObj.cstring.usedInBomaType = True
 
         # binary ready for std::variant needs std::optional
@@ -163,13 +164,13 @@ class cpp17Provider(Provider):
                 bomaEnum.include = ['"' + s.X('$enumsHeaderFile') + '"']
             bomaEnum.dependencyIncludes = list(enumHeaders)
             allEnumHeaders.update(enumHeaders)
-        props.setProp('enumHeaderIncludes', list(allEnumHeaders))
+        self.props.setProp('enumHeaderIncludes', list(allEnumHeaders))
 
         for strType in bomaTypes.values():
             if strType.alreadyDefined == False:
-                props.push({'t': strType})
+                self.props.push({'t': strType})
                 strType.include = ['"' + s.X('$typeHeaderFile') + '"']
-                props.pop()
+                self.props.pop()
 
         for strType in bomaTypes.values():
             typeHeaders = set()
@@ -186,14 +187,14 @@ class cpp17Provider(Provider):
                 if stdType.usedInBomaType:
                     headers.add(inc)
 
-        props.setProp('commonHeaderIncludes', list(headers))
+        self.props.setProp('commonHeaderIncludes', list(headers))
 
         fwds = set()
         for typeName, strType in bomaTypes.items():
             subtypes = strType.allSubtypesOfIsLessTypes()
             subtypes = [st.type for st in subtypes if st.type in bomaTypes]
             fwds.update(subtypes)
-        props.setProp('commonHeaderFwdDecls', fwds)
+        self.props.setProp('commonHeaderFwdDecls', fwds)
 
         def computeCodeDecls_rec(subtype):
             subtype.codeDecl = subtype.type.replace('.', '::')
@@ -223,13 +224,13 @@ class cpp17Provider(Provider):
         for tn, t in bomaTypes.items():
             if len(t.allVariantSubtypes()) > 0:
                 needVariantTypeNamesBase = True
-        props.setProp('needVariantTypeNamesBase', needVariantTypeNamesBase)
+        self.props.setProp('needVariantTypeNamesBase', needVariantTypeNamesBase)
 
 
 
-    def computeDecl(self, t :Type, props):
+    def computeDecl(self, t :Type):
         if t.alreadyDefined:
             return
-        s = Scribe(props)
+        s = Scribe(self.props)
         t.codeDecl = t.name.replace('.', '::')
         t.fullCodeDecl = '::' + s.X('$namespace') + '::' + t.name.replace('.', '::')

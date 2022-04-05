@@ -8,26 +8,27 @@ class BomaProvider(Provider):
     def start(self, runDefs, props):
         print (f'starting BomaProvider')
         self.runDefs = runDefs
+        self.props = props
 
 
-    def do(self, op, seq, props):
+    def do(self, op, seq):
         print (f'BomaProvider doing op {op} at sequence {seq}')
         if op == 'createEnums':
-            self.makeEnums(props)
+            self.makeEnums()
 
         elif op == 'createTypes':
-            self.makeTypes(props)
+            self.makeTypes()
 
         elif op == 'createReports':
-            self.generateOutput(props)
+            self.generateOutput()
 
 
-    def stop(self, props):
+    def stop(self):
         print (f'stopping BomaProvider')
 
 
-    def makeEnums(self, props):
-        s = Scribe(props)
+    def makeEnums(self):
+        s = Scribe(self.props)
         self.enums = {}
         for enumDefs in s.getXPropAll('enums'):
             enumProps = enumDefs.get('-props', {})
@@ -35,45 +36,45 @@ class BomaProvider(Provider):
                 if enumName == '-props':
                     continue
                 self.enums[enumName] = EnumType(enumName, s.X('namespace'), enumDef, enumProps)
-        props.push({'bomaEnums': self.enums})
+        self.props.push({'bomaEnums': self.enums})
 
 
-    def makeTypes(self, props):
-        s = Scribe(props)
+    def makeTypes(self):
+        s = Scribe(self.props)
         self.types = {}
         for typeValues in s.getXPropAll('types'):
             for (typeName, typeData) in typeValues.items():
                 self.types[typeName] = BomaType(typeName, s.X('namespace'), typeData)
-        props.push({'bomaTypes': self.types})
+        self.props.push({'bomaTypes': self.types})
 
 
-    def reportProps(self, props):
-        print (str(props))
+    def reportProps(self):
+        print (str(self.props))
 
 
-    def reportEnums(self, props):
-        s = Scribe(props)
+    def reportEnums(self):
+        s = Scribe(self.props)
         for ts in s.getXPropAll('bomaEnums'):
             for t in ts:
                 print (t)
 
 
-    def reportTypes(self, props):
-        s = Scribe(props)
+    def reportTypes(self):
+        s = Scribe(self.props)
         for ts in s.getXPropAll('bomaTypes'):
             for t in ts:
                 print (t)
 
 
-    def generateOutput(self, props):
-        s = Scribe(props)
+    def generateOutput(self):
+        s = Scribe(self.props)
         reports = s.getXProp('bomaReports')
         if 'props' in reports:
-            self.reportProps(props)
+            self.reportProps()
         if 'enums' in reports:
-            self.reportEnums(props)
+            self.reportEnums()
         if 'types' in reports:
-            self.reportTypes(props)
+            self.reportTypes()
 
 
 
