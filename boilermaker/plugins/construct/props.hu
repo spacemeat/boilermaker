@@ -17,7 +17,7 @@
     outputDir: $buildDir/bin
     runScriptDir: $projectDir
 
-    outputObjectPath:       `$tempOutputDir/$<$source.stem>$<if $buildKind!="release">.$buildKind$<endif>.o`
+    outputObjectPath:       `$tempOutputDir/$<$source.srcPath.stem>$<if $buildKind!="release">.$buildKind$<endif>.o`
     exeName:                a.out
     outputExeName:          `$exeName$<if $buildKind!="release">.$buildKind$<endif>`
     outputExePath:          $outputDir/$outputExeName

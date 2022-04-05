@@ -55,8 +55,12 @@ class cpp17Provider(Provider):
 
     def generateProps(self):
         self.props.push()
+        s = Scribe(self.props)
 
         self.props.setProp('scope', '')
+
+        self.props.setProp('namespaceForFs', s.getXProp('namespace').replace('.', '_'))
+        self.props.setProp('namespace', s.getXProp('namespace').replace('.', '::'))
 
         # convenience function for namespace/scoping
         def rescope(type):
@@ -72,7 +76,6 @@ class cpp17Provider(Provider):
             return '::'.join(fullName[skip:])
         self.props.setProp('rescope', rescope)
 
-        s = Scribe(self.props)
         bomaEnums = {}
         for enumsCluster in s.getXPropAll('bomaEnums'):
             bomaEnums.update(enumsCluster)

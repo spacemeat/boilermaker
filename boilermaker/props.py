@@ -164,8 +164,8 @@ class PropertyBag:
         if key in self.props:
             v = self.props[key]
             if type(v) is str:
-                if v == 'true': v = True
-                elif v == 'false': v = False
+                if v.lower() == 'true': v = True
+                elif v.lower() == 'false': v = False
             return v
         for inh in reversed(self.parents):
             v = inh.getProp(key)
@@ -339,7 +339,7 @@ class Scribe:
 
     def _eval(self, expr):
         expr = self.parseText(expr)
-        globlocs = {**self.execGlobals, 'props': self.props}
+        globlocs = {**self.execGlobals, 'props': self.props, 'true': True, 'false': False}
         if self.debug:
             print (f'{ansi.dk_red_fg}Eval expression: {ansi.lt_red_fg}{expr}{ansi.all_off}')
         res = eval(expr, globlocs)
@@ -350,7 +350,7 @@ class Scribe:
     def _exec(self, stmnts):
         stmnts = self.parseText(stmnts)
         res = ''
-        locs = {'props': self.props, 'res': ''}
+        locs = {'props': self.props, 'res': '', 'true': True, 'false': False}
         globlocs = {**self.execGlobals, **locs}
         if self.debug:
             print (f'{ansi.dk_red_fg}Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
