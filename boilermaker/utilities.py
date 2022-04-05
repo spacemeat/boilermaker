@@ -24,5 +24,4 @@ def loadHumonFile(defsFile):
         if len(bomaVersion) != 3:
             raise ValueError(f"input file {defsFile}: boma-version must be a three-component semver.")
 
-    print (f"{ansi.dk_yellow_fg}Loaded humon file {ansi.lt_yellow_fg}{defsFile}{ansi.dk_yellow_fg}: version: {ansi.lt_yellow_fg}{bomaVersion}{ansi.all_off}")
     return (trove, bomaVersion)

@@ -1,5 +1,6 @@
 import re
-from . import utilities, ansi
+from . import utilities
+from .ansi import Ansi as ansi
 from .props import Props, PropertyBag, Scribe
 from pathlib import Path
 from .plugin import PluginCollection
@@ -10,14 +11,14 @@ defArgumentReg = re.compile(defArgumentPattern)
 
 
 class Project:
-    def __init__(self, A, propsPath, reports):
+    def __init__(self, A, propsPath, propAdds):
         if type(propsPath) is not Path:
             propsPath = Path(propsPath)
         self.propsPath = propsPath
         self.bomaPath = Path(__file__).parent
         self.enumsMade = False
         self.loadedProviders = {}
-        self.reports = reports
+        self.propAdds = propAdds
 
     def run(self):
         try:
@@ -70,7 +71,7 @@ class Project:
 
     def loadProps(self):
         def rec(bagPath):
-            print (f"Loading bag: {bagPath}")
+            print (f"{ansi.dk_white_fg}Loading props: {ansi.p(bagPath, 'cyan')}")
             trove, defsFileVersion = utilities.loadHumonFile(bagPath)
             propsDict = trove.root.objectify()
             if type(propsDict) is not dict:
@@ -96,13 +97,14 @@ class Project:
             return bag
 
         topBag = rec(self.propsPath)
+
         self.props = Props(topBag)
-        self.props.push({'projectPath': self.propsPath,
-                         'projectDir': self.propsPath.parent,
-                         'bomaDir': Path(__file__).parent,
-                         'pluginsDir': Path(__file__).parent / 'plugins',
-                         'mainHeaderIncludes': [],
-                         'bomaReports': self.reports})
+        self.props.push(self.propAdds)
+        self.props.setDict({'projectPath': self.propsPath,
+                            'projectDir': self.propsPath.parent,
+                            'bomaDir': Path(__file__).parent,
+                            'pluginsDir': Path(__file__).parent / 'plugins',
+                            'mainHeaderIncludes': []})
 
 
     def loadProvider(self, provider):

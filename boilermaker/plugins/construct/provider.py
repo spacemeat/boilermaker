@@ -19,6 +19,13 @@ class ConstructProvider(Provider):
         print (f'starting ConstructProvider')
         self.runDefs = runDefs
         self.props = props
+        self.substepColor_dk = a.dk_blue_fg
+        self.substepColor_lt = a.lt_blue_fg
+        self.substepFileColor = 'cyan'
+        self.warnColor_dk = a.dk_yellow_fg
+        self.warnColor_lt = a.lt_yellow_fg
+        self.errorColor_dk = a.dk_red_fg
+        self.errorColor_lt = a.lt_red_fg
 
 
     def do(self, op, seq):
@@ -96,13 +103,13 @@ class ConstructProvider(Provider):
             deps = set(self.sources)
             deps.update(self.getDependencies(self.sources))
             newestTime = max([dep.stat().st_mtime for dep in deps])
-            print(f'{a.dk_blue_fg}Building {a.lt_blue_fg}{outputExePath}{a.dk_blue_fg} from all sources')
+            print(f'{self.substepColor_dk}Building {self.substepColor_lt}{outputExePath}{self.substepColor_dk} from all sources')
             if newestTime > outputExeFileTime or forceRebuild:
                 cmd = self.makeBuildAllSourcesScript()
                 ret, _, _ = self.runShellCommand(cmd)
-                print(f'  {a.dk_blue_fg}returned {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
+                print(f'  {self.substepColor_dk}returned: {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
             else:
-                print(f'  {a.lt_blue_fg}{outputExePath}{a.dk_blue_fg} already up to date.{a.all_off}')
+                print(f'  {self.substepColor_lt}{outputExePath}{self.substepColor_dk} already up to date.{a.all_off}')
 
         #   else:
         #       for src in sources:
@@ -126,26 +133,26 @@ class ConstructProvider(Provider):
 
                 deps = set(self.getDependencies(source))
                 newestTime = max([dep.stat().st_mtime for dep in deps])
-                print(f'{a.dk_blue_fg}Building {a.lt_blue_fg}{outputObjectPath}{a.dk_blue_fg} from source {a.lt_blue_fg}{str(source)}{a.dk_blue_fg}.{a.all_off}')
+                print(f'{self.substepColor_dk}Building {a.p(outputObjectPath, self.substepFileColor)}{self.substepColor_dk}\n    from {a.p(source, self.substepFileColor)}{self.substepColor_dk}.{a.all_off}')
                 if newestTime > outputObjectFileTime or forceRebuild:
                     cmd = self.makeBuildOneSourceScript(source)
                     ret, _, _ = self.runShellCommand(cmd)
-                    print(f'  {a.dk_blue_fg}returned {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
+                    print(f'  {self.substepColor_dk}returned: {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
                 else:
-                    print(f'  {a.lt_blue_fg}{outputObjectPath}{a.dk_blue_fg} already up to date.{a.all_off}')
+                    print(f'  {a.p(outputObjectPath, self.substepFileColor)}{self.substepColor_dk} already up to date.{a.all_off}')
 
             # if any objs aren't there, they failed to build. No buildy the exe.
-            print(f'{a.dk_blue_fg}Building {a.lt_blue_fg}{outputExePath}{a.dk_blue_fg} from {a.lt_blue_fg}{len(objectPaths)}{a.dk_blue_fg} objects.{a.all_off}')
+            print(f'{self.substepColor_dk}Building {a.p(outputExePath, self.substepFileColor)}{self.substepColor_dk} from {self.substepColor_lt}{len(objectPaths)}{self.substepColor_dk} objects.{a.all_off}')
             if all([obj.is_file() for obj in objectPaths]):
                 newestTime = max([obj.stat().st_mtime for obj in objectPaths])
                 if newestTime > outputExeFileTime or forceRebuild:
                     cmd = self.makeLinkAllObjectsScript(objectPaths)
                     ret, _, _ = self.runShellCommand(cmd)
-                    print(f'  {a.dk_blue_fg}returned {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
+                    print(f'  {self.substepColor_dk}returned: {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
                 else:
-                    print(f'  {a.lt_blue_fg}{outputExePath}{a.dk_blue_fg} already up to date.{a.all_off}')
+                    print(f'  {a.p(outputExePath, self.substepFileColor)}{self.substepColor_dk} already up to date.{a.all_off}')
             else:
-                print(f'  {a.lt_blue_fg}{outputExePath}{a.dk_blue_fg} is {a.lt_red_fg}missing dependencies{a.dk_blue_fg} and cannot be built.{a.all_off}')
+                print(f'  {a.p(outputExePath, self.substepFileColor)}{self.substepColor_dk} is {a.lt_red_fg}missing dependencies{self.substepColor_dk} and cannot be built.{a.all_off}')
 
 
     def generateAllSources(self):
@@ -158,11 +165,12 @@ class ConstructProvider(Provider):
                 # could be multiiple files (*.cpp)
                 src = list(Path('.').glob(src))
                 if type(src) is list:
-                    for s in src:
-                        if s.is_file():
-                            self.sources.add(s)
+                    for sr in src:
+                        sr = s.getXProp('projectDir') / sr
+                        if sr.is_file():
+                            self.sources.add(sr)
                         else:
-                            self.errorSources.add(s)
+                            self.errorSources.add(sr)
                 else:
                     if src.is_file():
                         self.sources.add(src)
@@ -176,13 +184,14 @@ class ConstructProvider(Provider):
     def getDependencies(self, sources):
         if type(sources) is not list:
             sources = [sources]
+
         # return a list of Path objects, for all preprocessor dependencies of all sources.
         cmd = self.computeCommand('getDependencies', sources=sources)
-        print(f'{a.dk_blue_fg}Getting dependencies for {a.lt_blue_fg}{len(sources)}{a.dk_blue_fg} sources{a.all_off}')
+        print(f'{self.substepColor_dk}Getting dependencies for {self.substepColor_lt}{len(sources)}{self.substepColor_dk} sources.{a.all_off}')
         ret, out, err = self.runShellCommand(cmd)
+        print(f'  {self.substepColor_dk}returned: {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
         if ret != 0:
             raise RuntimeError(f'Shell command {cmd} failed with code {ret} and has ruined everything.\n{err}')
-        print(f'  {a.dk_blue_fg}done.{a.all_off}')
         out = out.replace('\\\n', '')
 
         deps = set()
@@ -209,40 +218,56 @@ class ConstructProvider(Provider):
 
 
     def computeCommand(self, operation, **kwargs):
+        def getAllFromListOfMaybeList(listOfMaybes, unique=True):
+            accrued = []
+            accruedUnique = set()
+            for maybe in listOfMaybes:
+                if type(maybe) is list:
+                    for elem in maybe:
+                        if unique:
+                            accruedUnique.add(elem)
+                        else:
+                            accrued.append(elem)
+                else:
+                    if unique:
+                        accruedUnique.add(maybe)
+                    else:
+                        accrued.append(maybe)
+            if unique:
+                return accruedUnique
+            else:
+                return accrued
+
+
         s = Scribe(self.props)
         buildKind = s.getXProp('buildKind')
         tools = s.getXProp('tools')
         language = s.getXProp('language')
         languageStandard = s.getXProp('languageStandard')
-        includeDirses = s.getXPropAll('includeDirs')
-        includeDirs = set()
-        for ids in includeDirses:
-            for id in ids:
-                includeDirs.add(id)
+        #includeDirses = s.getXPropAll('includeDirs')
+        #includeDirs = set()
+        #for ids in includeDirses:
+        #    for id in ids:
+        #        includeDirs.add(id)
+        includeDirs = getAllFromListOfMaybeList(s.getXPropAll('includeDirs'))
         includeDirs = [f'-I{id}' for id in includeDirs]
-        libraryDirses = s.getXPropAll('libDirs')
-        libraryDirs = set()
-        for libs in libraryDirses:
-            for lib in libs:
-                libraryDirs.add(lib)
+        libraryDirs = getAllFromListOfMaybeList(s.getXPropAll('libDirs'))
         libraryDirs = [f'-L{ld}' for ld in libraryDirs]
-        libses = s.getXPropAll('libs')
-        libraries = set()
-        for libs in libses:
-            for lib in libs:
-                libraries.add(lib)
-        libraries = [f'-l{l}' for l in libraries]
+        libs = getAllFromListOfMaybeList(s.getXPropAll('libs'))
+        libs = [f'-l{l}' for l in libs]
         # TODO: Package stuff here too
         outputExePath = s.getXProp('outputExePath')
         opts = ['-O0', '-g']
-        if buildKind == 'release':
+        if buildKind != 'debug':
             opts = ['-O3', '-s']
-        warnflags = set()
-        warnses = s.getXPropAll('warns')
-        for warns in warnses:
-            for warn in warns:
-                warnflags.add(warn)
+        warnflags = getAllFromListOfMaybeList(s.getXPropAll('warnS'))
         warnflags = [f'-{w}' for w in warnflags]
+        cOpts = getAllFromListOfMaybeList(s.getXPropAll('compileOptions'))
+        cOpts = [f'-{o}' for o in cOpts]
+        lOpts = getAllFromListOfMaybeList(s.getXPropAll('linkOptions'))
+        lOpts = [f'-{o}' for o in lOpts]
+        clOpts = getAllFromListOfMaybeList(s.getXPropAll('compileAndLinkOptions'))
+        clOpts = [f'-{o}' for o in clOpts]
 
         if tools == 'gnu':
             compilerTool = ''
@@ -254,28 +279,27 @@ class ConstructProvider(Provider):
                 raise RuntimeError(f'Unsupported language \'{language}\' for tools \'{tools}\' / tool kind \'{operation}\'.')
 
             if operation == 'getDependencies':
-                return f'{compilerTool} -std={languageStandard} -E -M {" ".join(includeDirs)} {" ".join([str(s) for s in kwargs.get("sources", [])])}'
+                return f'{compilerTool} -std={languageStandard} -E -M {" ".join(includeDirs)} {" ".join([str(src) for src in kwargs.get("sources", [])])} {" ".join(clOpts)} {" ".join(cOpts)} {" ".join(lOpts)}'
 
             elif operation == 'compileFile':
                 source = kwargs.get('source')
                 self.props.push({'source': source})
                 dotoPath = s.getXProp('outputObjectPath')
                 self.props.pop()
-                return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} -c {" ".join(opts)} {" ".join(includeDirs)} {str(source)} -o{dotoPath} {" ".join(libraryDirs)} {" ".join(libraries)}'
+                return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} -c {" ".join(opts)} {" ".join(includeDirs)} {str(source)} -o{dotoPath} {" ".join(clOpts)} {" ".join(cOpts)}'
 
             elif operation == 'compileAndLinkFiles':
-                return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} {" ".join(opts)} {" ".join(includeDirs)} {" ".join([str(s) for s in kwargs.get("sources", [])])} -o{outputExePath} {" ".join(libraryDirs)} {" ".join(libraries)}'
+                return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} {" ".join(opts)} {" ".join(includeDirs)} {" ".join([str(s) for s in kwargs.get("sources", [])])} -o{outputExePath} {" ".join(libraryDirs)} {" ".join(libs)} {" ".join(clOpts)} {" ".join(cOpts)} {" ".join(lOpts)}'
 
             elif operation == 'linkObjects':
-                return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} {" ".join(opts)} {" ".join([str(s) for s in kwargs.get("objectPaths", [])])} -o{outputExePath} {" ".join(libraryDirs)} {" ".join(libraries)}'
-                #if language == 'c' or language == 'c++':
-                #    return f'ld {" ".join([str(s) for s in kwargs.get("objectPaths", [])])} -o{outputExePath} {" ".join(libraryDirs)} {" ".join(libraries)}'
-                #else:
-                #    raise RuntimeError(f'Unsupported language \'{language}\' for tools \'{tools}\' / tool kind \'{operation}\'.')
+                return f'{compilerTool} {" ".join(warnflags)} {" ".join(opts)} {" ".join([str(s) for s in kwargs.get("objectPaths", [])])} -o{outputExePath} {" ".join(libraryDirs)} {" ".join(libs)} {" ".join(clOpts)} {" ".join(lOpts)}'
+
         elif tools == 'llvm':
             raise RuntimeError(f'Unsupported tools \'{tools}\'. Patience.')
+
         elif tools == 'vs':
             raise RuntimeError(f'Unsupported tools \'{tools}\'. Patience.')
+
         else:
             raise RuntimeError(f'Unsupported tools \'{tools}\'.')
 

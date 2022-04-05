@@ -12,9 +12,15 @@
 
     constructbuildPojectSequence:     9
 
-    outputObjectPath:       $tempOutputDir/$<$source.stem>.o
-    outputExeName:          a.out
-    outputExePath:          $outputDir/$exeName.$buildKind
+    buildDir: $projectDir/build
+    tempOutputDir: $buildDir/int
+    outputDir: $buildDir/bin
+    runScriptDir: $projectDir
+
+    outputObjectPath:       `$tempOutputDir/$<$source.stem>$<if $buildKind!="release">.$buildKind$<endif>.o`
+    exeName:                a.out
+    outputExeName:          `$exeName$<if $buildKind!="release">.$buildKind$<endif>`
+    outputExePath:          $outputDir/$outputExeName
 
     buildKind:          debug   // or release
     tools:              gnu
@@ -22,19 +28,17 @@
     languageVersion:    17
     languageStandard:   c++17
 
-    warns:              [Wall, Wextra, pedantic]
+    warns:                  [Wall, Wextra, pedantic]
+    compileOptions:         []
+    linkOptions:            []
+    compileAndLinkOptions:  []
 
-    wholeProject:       true
+    wholeProject:       false
     clearTempDir:       false
     forceRebuild:       false
 
-    buildDir: build
-    tempOutputDir: $buildDir/int
-    outputDir: $buildDir/bin
-    runScriptDir: $projectDir
-
     outputRunScript: true
-    runScript: $runScriptDir/run$exeName.sh
+    runScript: $runScriptDir/run$outputExeName.sh
 
     sources: []
     includeDirs: []

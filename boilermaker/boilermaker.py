@@ -41,18 +41,15 @@ def main():
 
     reports = []
 
+    propAdds = {}
     for arg in sys.argv:
-        if arg == '--props' or arg == '-p':
-            reports.append('props')
-        elif arg == '--enums' or arg == '-e':
-            reports.append('enums')
-        elif arg == '--types' or arg == '-t':
-            reports.append('types')
-        elif arg == '--write' or arg == '-w':
-            reports.append('writes')
+        vals = arg.split('=')
+        if len(vals) > 1:
+            for i in range(0, len(vals) - 1):
+                propAdds[vals[i]] = vals[-1]
         else:
             propsFile = arg
 
     path = os.path.abspath(propsFile)
-    project = Project(A, path, reports)
+    project = Project(A, path, propAdds)
     return 0 if project.run() else 1
