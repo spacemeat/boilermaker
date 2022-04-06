@@ -169,32 +169,36 @@ class cpp17Provider(Provider):
             allEnumHeaders.update(enumHeaders)
         self.props.setProp('enumHeaderIncludes', list(allEnumHeaders))
 
-        for strType in bomaTypes.values():
-            if strType.alreadyDefined == False:
-                self.props.push({'t': strType})
-                strType.include = ['"' + s.X('$typeHeaderFile') + '"']
+        for bomaType in bomaTypes.values():
+            if bomaType.alreadyDefined == False:
+                self.props.push({'t': bomaType})
+                bomaType.include = ['"' + s.X('$typeHeaderFile') + '"']
                 self.props.pop()
 
-        for strType in bomaTypes.values():
+        for bomaType in bomaTypes.values():
             typeHeaders = set()
-            subtypes = strType.allSubtypes()
+            subtypes = bomaType.allSubtypes()
             for st in subtypes:
                 if st.type in allTypes: # TODO: This isn't finding all the types it should
                     allTypes[st.type].usedInBomaType = True
                     for inc in allTypes[st.type].include:
                         typeHeaders.add(inc)
-            strType.dependencyIncludes = list(typeHeaders)
+            bomaType.dependencyIncludes = list(typeHeaders)
 
         for stdType in standardTypes.values():
             for inc in stdType.include:
                 if stdType.usedInBomaType:
                     headers.add(inc)
 
+        for bomaType in bomaTypes.values():
+            for member in bomaType.members.values():
+                member.makeDefaulValue(bomaEnums)
+
         self.props.setProp('commonHeaderIncludes', list(headers))
 
         fwds = set()
-        for typeName, strType in bomaTypes.items():
-            subtypes = strType.allSubtypesOfIsLessTypes()
+        for typeName, bomaType in bomaTypes.items():
+            subtypes = bomaType.allSubtypesOfIsLessTypes()
             subtypes = [st.type for st in subtypes if st.type in bomaTypes]
             fwds.update(subtypes)
         self.props.setProp('commonHeaderFwdDecls', fwds)

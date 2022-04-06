@@ -11,7 +11,7 @@ defArgumentReg = re.compile(defArgumentPattern)
 
 
 class Project:
-    def __init__(self, A, propsPath, propAdds):
+    def __init__(self, propsPath, propAdds):
         if type(propsPath) is not Path:
             propsPath = Path(propsPath)
         self.propsPath = propsPath

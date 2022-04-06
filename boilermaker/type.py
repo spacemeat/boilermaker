@@ -106,6 +106,7 @@ class BomaTypeMember:
         self.properties = normalize(properties, fullName, 0)
         self.type = BomaSubtype(self.properties, self.fullName)
 
+
     def __repr__(self):
         endl = '\n'
         def recurse(properties, level):
@@ -130,14 +131,46 @@ class BomaTypeMember:
         src += recurse(self.properties, 0)
         return src
 
+
+    def makeDefaulValue(self, enumTypes):
+        # TODO: transform enum value strings to cdecl typed version
+        # if is enum or number or string or stringView
+        defaultValue = self.properties.get('default', '')
+
+        def isInty(val):
+            try: int(val); return True
+            except ValueError: return False
+
+        def isFloaty(val):
+            try: float(val); return True
+            except ValueError: return False
+
+        if isInty(defaultValue) or isFloaty(defaultValue):
+            self.defaultValue = defaultValue
+
+        elif self.type in enumTypes:
+            for ev in self.type.vals:
+                if ev.bomaName == defaultValue:
+                    self.defaultValue = ev.fullCodeDecl
+
+        elif (self.type.type == 'string' or
+              self.type.type == 'stringView'):
+            self.defaultValue = f'"{defaultValue}"'
+        else:
+            self.defaultValue = defaultValue
+
+
     def subtypesWithIsLess(self):
         return self.type.subtypesWithIsLess()
+
 
     def allSubtypes(self):
         return self.type.allSubtypes()
 
+
     def allSubtypesOfIsLessTypes(self):
         return self.type.allSubtypesOfIsLessTypes()
+
 
     def allVariantSubtypes(self):
         return self.type.allVariantSubtypes()

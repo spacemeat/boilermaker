@@ -37,9 +37,6 @@ In general, unless a plugin is disabled it will run transform. Output must be op
 
 def main():
     propsFile = None
-    A = Ansi()
-
-    reports = []
 
     propAdds = {}
     for arg in sys.argv:
@@ -51,5 +48,5 @@ def main():
             propsFile = arg
 
     path = os.path.abspath(propsFile)
-    project = Project(A, path, propAdds)
+    project = Project(path, propAdds)
     return 0 if project.run() else 1

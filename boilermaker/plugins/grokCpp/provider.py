@@ -15,7 +15,7 @@ class grokCppProvider(Provider):
 
     def do(self, op, seq):
         print (f'grokCppProvider doing op {op} at sequence {seq}')
-        self._parseSources(self.props)
+        self._parseSources()
 
 
     def stop(self):

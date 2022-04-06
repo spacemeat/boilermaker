@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
-if [ $1. == debug. ] ; then
-    python -m pdb -m boilermaker testSamples/defaults/defs.hu -p -e -t -w
+if [ $1 == debug ] ; then
+    python3 -m pdb -m boilermaker testSamples/defaults/defs.hu
 else
-    python -m boilermaker testSamples/defaults/defs.hu -p -e -t -w
+    python3 -m boilermaker testSamples/defaults/defs.hu
 fi
