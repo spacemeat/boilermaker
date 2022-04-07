@@ -234,7 +234,6 @@ class cpp17Provider(Provider):
         self.props.setProp('needVariantTypeNamesBase', needVariantTypeNamesBase)
 
 
-
     def computeDecl(self, t :Type):
         if t.alreadyDefined:
             return

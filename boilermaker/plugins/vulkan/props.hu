@@ -9,6 +9,7 @@
         provider:       provider
         ops:            { parseSource: $vulkanCreatePropsSequence }
         sources:        $vulkanSources
+        macros:         { }
         tools:          gnu
         language:       $vulkanLanguage
         languageVersion: $vulkanLanguageVersion

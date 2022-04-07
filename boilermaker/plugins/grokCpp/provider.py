@@ -88,11 +88,15 @@ class grokCppProvider(Provider):
         else:
             RuntimeError(f'Invalid "tools" value: {tools}. Only "gnu" or "clang" are currently supported.')
 
+        defines = self.runDefs.get('macros', {})
+        defines = [f'{m} = {v}' if len(v) > 0 else f'{m}' for m, v in defines.items()]
+
         xml_generator_config = pygccxml.parser.xml_generator_configuration_t(
             xml_generator_path = generator_path,
             xml_generator = generator_name,
             cflags=cflags,
-            include_paths=incPaths)
+            include_paths=incPaths,
+            define_symbols=defines)
 
         # Parse the include file
         decls = pygccxml.parser.parse([sourceFilename], xml_generator_config)
