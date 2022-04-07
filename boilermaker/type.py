@@ -133,9 +133,10 @@ class BomaTypeMember:
 
 
     def makeDefaulValue(self, enumTypes):
-        # TODO: transform enum value strings to cdecl typed version
-        # if is enum or number or string or stringView
-        defaultValue = self.properties.get('default', '')
+        self.defaultValue = ''
+        defaultValue = self.properties.get('default', None)
+        if not defaultValue:
+            return
 
         def isInty(val):
             try: int(val); return True
@@ -145,13 +146,42 @@ class BomaTypeMember:
             try: float(val); return True
             except ValueError: return False
 
-        if isInty(defaultValue) or isFloaty(defaultValue):
-            self.defaultValue = defaultValue
+        if self.type.type in enumTypes:
+            enumType = enumTypes[self.type.type]
 
-        elif self.type in enumTypes:
-            for ev in self.type.vals:
-                if ev.bomaName == defaultValue:
-                    self.defaultValue = ev.fullCodeDecl
+            if enumType.flags:
+                allValues = ''
+                if type(defaultValue) is list:
+                    values = []
+                    for dvc in defaultValue:
+                        for ev in enumType.vals:
+                            if ev.bomaName == dvc:
+                                if enumType.isScoped:
+                                    values.append(f'static_cast<std::underlying_type<{self.type.fullCodeDecl}>>({ev.fullCodeDecl})')
+                                else:
+                                    values.append(f'{ev.fullCodeDecl}')
+                                break
+                    allValues = f'static_cast<{self.type.fullCodeDecl}>(' + ' | '.join(values) + ')'
+                else:
+                    if isInty(defaultValue):
+                        allValues = f'static_cast<{self.type.fullCodeDecl}>({defaultValue})'
+                    else:
+                        for ev in enumType.vals:
+                            if ev.bomaName == defaultValue:
+                                allValues = ev.fullCodeDecl
+                                break
+                self.defaultValue = f'{allValues}'
+
+            elif isInty(defaultValue):
+                self.defaultValue = f'static_cast<{self.type.fullCodeDecl}>({defaultValue})'
+            else:
+                for ev in enumType.vals:
+                    if ev.bomaName == defaultValue:
+                        self.defaultValue = ev.fullCodeDecl
+                        break
+
+        elif isInty(defaultValue) or isFloaty(defaultValue):
+            self.defaultValue = defaultValue
 
         elif (self.type.type == 'string' or
               self.type.type == 'stringView'):

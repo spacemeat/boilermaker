@@ -243,7 +243,7 @@ $+            $<else>$' 'noexcept;$+
     $<endif>$''
     $<join for member in $t.members>    $+
         $<$rescope($member.type)> $<$member.name>$+
-        $<if len($member.defaultValue) $> 0> = $<$member.defaultValue>$<endif>;
+        $<if len($member.defaultValue) $> 0>$'' = $<$member.defaultValue>$<endif>;
     $<endjoin>$''$+
     };
 $<endset>$+

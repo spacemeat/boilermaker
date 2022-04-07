@@ -190,10 +190,6 @@ class cpp17Provider(Provider):
                 if stdType.usedInBomaType:
                     headers.add(inc)
 
-        for bomaType in bomaTypes.values():
-            for member in bomaType.members.values():
-                member.makeDefaulValue(bomaEnums)
-
         self.props.setProp('commonHeaderIncludes', list(headers))
 
         fwds = set()
@@ -226,6 +222,10 @@ class cpp17Provider(Provider):
             for mn, m in t.members.items():
                 computeCodeDecls_rec(m.type)
                 computeFullCodeDecls_rec(m.type, '')
+
+        for bomaType in bomaTypes.values():
+            for member in bomaType.members.values():
+                member.makeDefaulValue(bomaEnums)
 
         needVariantTypeNamesBase = False
         for tn, t in bomaTypes.items():
