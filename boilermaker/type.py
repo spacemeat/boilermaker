@@ -14,6 +14,7 @@ class Type:
         self.alreadyDefined = False
         self.codeDecl = ''
         self.fullCodeDecl = ''
+        self.baseTypeDecl = ''  # only currently used for citing the base type in type header.
 
 
 class BomaSubtype:
@@ -210,8 +211,17 @@ class BomaType(Type):
     def __init__(self, name, namespace, members):
         super().__init__(name, namespace)
         '''members is always a dict of memberName: memberProperties.'''
-        self.members = { memberName: BomaTypeMember(memberName, f'{name}_{memberName}', memProperties)
-                         for memberName, memProperties in members.items() if re_cppName.match(memberName) }
+        self.members = dict()
+        for memberName, memProperties in members.items():
+            if re_cppName.match(memberName):
+                self.members[memberName] = BomaTypeMember(
+                    memberName, f'{name}_{memberName}', memProperties)
+            else:
+                if memberName == '-deriveFrom':
+                    # TODO: YUCK. We're doing a literal transliteration here.
+                    # I'd rather reason about the type and do scoping stuff.
+                    self.baseTypeDecl = memProperties
+
 
     def __repr__(self):
         endl = '\n'

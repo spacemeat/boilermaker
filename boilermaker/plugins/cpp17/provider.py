@@ -3,6 +3,7 @@ import os
 from ...plugin import Provider, PluginCollection
 from ...props import Scribe
 from ...type import Type
+from ...utilities import getRelativePath
 
 
 class StandardType(Type):
@@ -189,6 +190,22 @@ class cpp17Provider(Provider):
             for inc in stdType.include:
                 if stdType.usedInBomaType:
                     headers.add(inc)
+
+        incses = s.getXPropAll('include')
+        projectDir = Path(s.X('$projectDir'))
+        headerDir = Path(s.X('$headerDir'))
+        for incs in incses:
+            if type(incs) is not list:
+                incs = [incs]
+            for inc in incs:
+                quoted = False
+                if inc[0] == '"':
+                    quoted = True
+                    inc = inc[1:-1]
+                inc = getRelativePath(headerDir, projectDir / inc)
+                if quoted:
+                    inc = f'"{inc}"'
+                headers.add(inc)
 
         self.props.setProp('commonHeaderIncludes', list(headers))
 

@@ -68,9 +68,10 @@
     comparable: true
     diffable: false  // requires comparable
 
-    headerDir:              $baseDir/gen-cpp/$namespaceForFs/inc
-    inlineDir:              $baseDir/gen-cpp/$namespaceForFs/inc/inl
-    sourceDir:              $baseDir/gen-cpp/$namespaceForFs/src
+    genDir:                 gen-cpp/$namespaceForFs
+    headerDir:              $baseDir/$genDir/inc
+    inlineDir:              $baseDir/$genDir/inc/inl
+    sourceDir:              $baseDir/$genDir/src
     mainHeaderFile:         $namespaceForFs.hpp
     commonHeaderFile:       common.hpp
     commonInlineFile:       common.inl.hpp

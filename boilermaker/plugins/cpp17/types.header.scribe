@@ -57,7 +57,7 @@ namespace $namespace
 
     $+  $<endif>
 
-    $<$classOrStruct> $<$t.codeDecl>
+    $<$classOrStruct> $<$t.codeDecl>$<if len($t.baseTypeDecl) $> 0> : public $<$t.baseTypeDecl>$<endif>
     {
     $<if $classOrStruct == 'class'>$+
     public:
