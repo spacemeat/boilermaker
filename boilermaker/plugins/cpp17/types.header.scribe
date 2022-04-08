@@ -83,7 +83,8 @@ namespace $namespace
         $<if $copy == 'default'> = default
         $<elif $copy == 'delete'> = delete
         $<elif $copy == 'inline'>$''
-         : $<join for member in $t.members>$<$member.name>(rhs.$<$member.name>)$<delim>, $<endjoin>
+         : $<if len($t.baseTypeDecl) $> 0>$<$t.baseTypeDecl>(rhs), $<endif> $+
+           $<join for member in $t.members>$<$member.name>(rhs.$<$member.name>)$<delim>, $<endjoin>
         { }
 
         $<else>
@@ -96,12 +97,14 @@ namespace $namespace
         $<elif $move == 'delete'>$''  = delete$+
         $<elif $move == 'inline'>$'' noexcept$+
             $<if $useCopySwap>$''
-         : $<$t.name>()
+         : $<if len($t.baseTypeDecl) $> 0>$<$t.baseTypeDecl>(rhs), $<endif> $+
+           $<$t.name>()
         {
             swap(*this, rhs);
         }
 $+            $<else>$''
-         : $<join for member in $t.members>$<$member.name>(std::move(rhs.$<$member.name>))$<delim>, $<endjoin>
+         : $<if len($t.baseTypeDecl) $> 0>$<$t.baseTypeDecl>(rhs), $<endif> $+
+           $<join for member in $t.members>$<$member.name>(std::move(rhs.$<$member.name>))$<delim>, $<endjoin>
         { }
 $+
             $<endif>

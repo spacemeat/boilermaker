@@ -45,7 +45,8 @@ namespace $namespace
     $<endif>$''$+
     $<if $copy == 'source'>
     $<$rescope($t)>::$<$t.name>($<$const($rescope($t))> & rhs)
-    $'' : $<join for member in $t.members>$<$member.name>(rhs.$<$member.name>)$<delim>, $<endjoin>
+    $'' : $<if len($t.baseTypeDecl) $> 0>$<$t.baseTypeDecl>(rhs), $<endif> $+
+       $<join for member in $t.members>$<$member.name>(rhs.$<$member.name>)$<delim>, $<endjoin>
     {
     }
 
@@ -54,12 +55,14 @@ namespace $namespace
     $+$<if $move == 'source'>
     $<$rescope($t)>::$<$t.name>($<$rescope($t)> && rhs) noexcept
     $+  $<if $useCopySwap == False>
-    $'' : $<join for member in $t.members>$<$member.name>(std::move(rhs.$<$member.name>))$<delim>, $<endjoin>
+    $'' : $<if len($t.baseTypeDecl) $> 0>$<$t.baseTypeDecl>(rhs), $<endif> $+
+       $<join for member in $t.members>$<$member.name>(std::move(rhs.$<$member.name>))$<delim>, $<endjoin>
     {
     }
 
     $+  $<else>
-    $'' : $<$t.name>()
+    $'' : $<if len($t.baseTypeDecl) $> 0>$<$t.baseTypeDecl>(rhs), $<endif> $+
+       $<$t.name>()
     {
         swap(*this, rhs);
     }
