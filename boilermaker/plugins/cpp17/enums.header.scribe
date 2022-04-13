@@ -108,7 +108,7 @@ $<endif>
     $+
 $<if 'humon' in $serializeTo>$+
 $+  $<join for enum in $enums>$+
-    std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<' + $rescope($enum) + '$>')> & obj);$<delim>
+    std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<' + $rescope($enum) + '$>')> & obj);
     $<endjoin>
 }
 $<endif $<# humon>>$+

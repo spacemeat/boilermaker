@@ -18,23 +18,6 @@ namespace $namespace
     $+  $<join for t in $commonHeaderFwdDecls>
     class $<$t>;$<endjoin>
 
-    $+
-$<join for t in $types>$+
-$<join for subtype in $t.subtypesWithIsLess()>
-    struct IsLess_$<$subtype.name>;
-    $+
-$<endjoin>$<endjoin>$''
-    $+
-
-$<join for t in $types>$+
-$<join for subtype in $t.subtypesWithIsLess()>
-    // IsLess template argument for $<$subtype.codeDecl>
-    struct IsLess_$<$subtype.name>
-    {
-        bool operator()($<$const($subtype.subtypes[0].codeDecl)> & lhs, $<$const($subtype.subtypes[0].codeDecl)> & rhs) const;
-    };
-    $+
-$<endjoin>$<endjoin>$''
     // ----------------------------------------
     // Deserializing types from humon or binary
 
@@ -47,20 +30,6 @@ $<endjoin>$<endjoin>$''
         static constexpr std::size_t size = 0;
     };
 $<endif>
-    $+
-$<join for t in $bomaTypes>
-$<join for subtype in $t.allVariantSubtypes()>
-    template <$>
-    struct VariantTypeNames<$<$subtype.codeDecl>$>
-    {
-        static constexpr $<$const('char')> * names[] = { $+
-            $<join for subsubtype in $subtype.subtypes>$+
-                $<if $subsubtype.aliases>"$<$subsubtype.aliases>"$+
-                $<else>"$<$subsubtype.type>"$<endif>$<delim>, $<endjoin> };
-        static constexpr std::size_t size = $<len($subtype.subtypes)>;
-    };
-    $+
-$<endjoin>$<endjoin>$''
     $+
 
 $<if 'binary' in $deserializeFrom>
@@ -550,7 +519,7 @@ namespace hu
         {
             // This holds the type names / aliases for each of the variant types.
             using IndexedType = typename std::tuple_element<I, std::tuple<Ts...>>::type;
-            auto names = txtToBin::VariantTypeNames<std::variant<Ts...>>::names;
+            auto names = $namespace::VariantTypeNames<std::variant<Ts...>>::names;
             if (obj.has_value() == false && tokStr == names[I])
             {
                 // now we can make the correct variant and give it the node as a ctr arg

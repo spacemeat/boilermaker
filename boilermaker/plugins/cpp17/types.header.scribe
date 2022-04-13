@@ -18,6 +18,30 @@ $+
 $<set scope as $scope + '::' + $namespace>
 namespace $namespace
 {
+    $+  $<join for subtype in $t.subtypesWithIsLess()>
+    struct IsLess_$<$subtype.name>;
+    $+  $<endjoin>
+
+    $<join for subtype in $t.subtypesWithIsLess()>
+    // IsLess template argument for $<$subtype.codeDecl>
+    struct IsLess_$<$subtype.name>
+    {
+        bool operator()($<$const($subtype.subtypes[0].codeDecl)> & lhs, $<$const($subtype.subtypes[0].codeDecl)> & rhs) const;
+    };
+    $+  $<endjoin>
+
+    $+  $<join for subtype in $t.allVariantSubtypes()>
+    template <$>
+    struct VariantTypeNames<$<$subtype.codeDecl>$>
+    {
+        static constexpr $<$const('char')> * names[] = { $+
+            $<join for subsubtype in $subtype.subtypes>$+
+                $<if $subsubtype.aliases>"$<$subsubtype.aliases>"$+
+                $<else>"$<$subsubtype.type>"$<endif>$<delim>, $<endjoin> };
+        static constexpr std::size_t size = $<len($subtype.subtypes)>;
+    };
+    $+  $<endjoin>
+
     $classOrStruct $<$rescope($t)>;
     $+  $<if $swap>
     void swap($<$rescope($t)> & lhs, $<$rescope($t)> & rhs) noexcept;
@@ -230,7 +254,7 @@ $+            $<else>$' 'noexcept;$+
     $<if 'humon' in $serializeTo>    $+
         friend std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<' + $rescope($t) + '$>')> & obj);$+
     $<endif>$''$+
-    $<if 'binary' in $serializeTo>$+
+    $<if 'binary' in $serializeTo>    $+
         friend std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<' + $rescope($t) + '$>')> & obj);$+
     $<endif>$''$+
     $<if $comparable>    $+

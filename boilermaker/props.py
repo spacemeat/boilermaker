@@ -716,7 +716,7 @@ class Scribe:
                 accum(fullexpr)
             else:
                 res = self._eval(expr)
-                if res:
+                if res is not None:
                     if type(res) is str:
                         res = self._parseText(res)
                     accum(str(res))

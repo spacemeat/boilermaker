@@ -6,7 +6,6 @@
     deserializeFrom: [humon, binary]
     defaultConstructible: true      // done
     memberwiseConstructible: true   // done
-    virtualDestructor: true         // done
     serializeTo: [humon, binary]
     comparable: true                // done
     diffable: true                  // done

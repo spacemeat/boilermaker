@@ -149,26 +149,31 @@ class cpp17Provider(Provider):
             stdObj.variant.usedInBomaType):
             stdObj.optional.usedInBomaType = True
 
-        headers = set()
+        headers = list()
 
         if len(s.X('$cave') or []) > 0:
-            headers.add('<iostream>')
+            headers.append('<iostream>')
 
         if ('humon' in s.X('$deserializeFrom') or
             'humon' in s.X('$serializeTo')):
-            headers.add('<humon/humon.hpp>')
+            headers.append('<humon/humon.hpp>')
 
-        allEnumHeaders = set()
+        allEnumHeaders = list()
         for bomaEnum in bomaEnums.values():
-            enumHeaders = set()
+            enumHeaders = list()
             if bomaEnum.alreadyDefined:
                 for inc in bomaEnum.include:
-                   enumHeaders.add(inc)
+                   enumHeaders.append(inc)
             else:
                 bomaEnum.include = ['"' + s.X('$enumsHeaderFile') + '"']
             bomaEnum.dependencyIncludes = list(enumHeaders)
-            allEnumHeaders.update(enumHeaders)
-        self.props.setProp('enumHeaderIncludes', list(allEnumHeaders))
+            allEnumHeaders.extend(enumHeaders)
+        if len(allEnumHeaders) > 0:
+            if 'humon' in s.X('$deserializeFrom'):
+                allEnumHeaders.append('<cstring>')
+            #headers.append(f'"{s.getXProp("enumsHeaderFile")}"')
+
+        self.props.setProp('enumHeaderIncludes', list(dict.fromkeys(allEnumHeaders)))
 
         for bomaType in bomaTypes.values():
             if bomaType.alreadyDefined == False:
@@ -177,19 +182,19 @@ class cpp17Provider(Provider):
                 self.props.pop()
 
         for bomaType in bomaTypes.values():
-            typeHeaders = set()
+            typeHeaders = list()
             subtypes = bomaType.allSubtypes()
             for st in subtypes:
                 if st.type in allTypes: # TODO: This isn't finding all the types it should
                     allTypes[st.type].usedInBomaType = True
                     for inc in allTypes[st.type].include:
-                        typeHeaders.add(inc)
-            bomaType.dependencyIncludes = list(typeHeaders)
+                        typeHeaders.append(inc)
+            bomaType.dependencyIncludes = list(dict.fromkeys(typeHeaders))
 
         for stdType in standardTypes.values():
             for inc in stdType.include:
                 if stdType.usedInBomaType:
-                    headers.add(inc)
+                    headers.append(inc)
 
         incses = s.getXPropAll('include')
         projectDir = Path(s.X('$projectDir'))
@@ -198,23 +203,27 @@ class cpp17Provider(Provider):
             if type(incs) is not list:
                 incs = [incs]
             for inc in incs:
-                quoted = False
+                angled = False
                 if inc[0] == '"':
-                    quoted = True
+                    inc = inc[1:-1]
+                elif inc[0] == '<':
+                    angled = True
                     inc = inc[1:-1]
                 inc = getRelativePath(headerDir, projectDir / inc)
-                if quoted:
+                if not angled:
                     inc = f'"{inc}"'
-                headers.add(inc)
+                elif angled:
+                    inc = f'<{inc}>'
+                headers.append(inc)
 
-        self.props.setProp('commonHeaderIncludes', list(headers))
+        self.props.setProp('commonHeaderIncludes', list(dict.fromkeys(headers)))
 
-        fwds = set()
+        fwds = list()
         for typeName, bomaType in bomaTypes.items():
             subtypes = bomaType.allSubtypesOfIsLessTypes()
             subtypes = [st.type for st in subtypes if st.type in bomaTypes]
-            fwds.update(subtypes)
-        self.props.setProp('commonHeaderFwdDecls', fwds)
+            fwds.extend(subtypes)
+        self.props.setProp('commonHeaderFwdDecls', list(dict.fromkeys(fwds)))
 
         def computeCodeDecls_rec(subtype):
             subtype.codeDecl = subtype.type.replace('.', '::')
@@ -235,8 +244,8 @@ class cpp17Provider(Provider):
             for st in subtype.subtypes:
                 computeFullCodeDecls_rec(st, fcd)
 
-        for tn, t in bomaTypes.items():
-            for mn, m in t.members.items():
+        for t in bomaTypes.values():
+            for m in t.members.values():
                 computeCodeDecls_rec(m.type)
                 computeFullCodeDecls_rec(m.type, '')
 
@@ -245,7 +254,7 @@ class cpp17Provider(Provider):
                 member.makeDefaulValue(bomaEnums)
 
         needVariantTypeNamesBase = False
-        for tn, t in bomaTypes.items():
+        for t in bomaTypes.values():
             if len(t.allVariantSubtypes()) > 0:
                 needVariantTypeNamesBase = True
         self.props.setProp('needVariantTypeNamesBase', needVariantTypeNamesBase)

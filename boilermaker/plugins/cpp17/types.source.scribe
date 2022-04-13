@@ -10,6 +10,14 @@ $sourceTopComment
 $<set scope as $scope + '::' + $namespace>
 namespace $namespace
 {
+    $+  $<join for subtype in $t.subtypesWithIsLess()>
+    // IsLess impl for $<$subtype.codeDecl>
+    bool IsLess_$<$subtype.name>::operator()($<$const($subtype.subtypes[0].codeDecl)> & lhs, $<$const($subtype.subtypes[0].codeDecl)> & rhs) const
+    {
+        $<$subtype.isLess>$<# I haaaaaate that I'm asking user to specify language-specific key resolution.>
+    }
+    $+  $<endjoin>
+
     $+  $<if $defaultConstructible>
     $<$rescope($t)>::$<$t.name>()
     {
