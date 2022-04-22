@@ -1,4 +1,4 @@
-#include "gen-cpp/txtToBin/inc/txtToBin.hpp"
+#include "gen/txtToBin/inc/txtToBin.hpp"
 #include <iostream>
 #include <fstream>
 #include <unistd.h>

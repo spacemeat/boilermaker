@@ -1,4 +1,4 @@
-#include "gen-cpp/shortTest/inc/shortTest.hpp"
+#include "gen/shortTest/inc/shortTest.hpp"
 #include <iostream>
 
 int main(int argc, char ** argv)

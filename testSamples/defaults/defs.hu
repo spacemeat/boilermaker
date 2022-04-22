@@ -1,6 +1,7 @@
 @{ app: boma, boma-version: 0.0.4 }
 {
     inherit: cpp17
+    genDir:  gen-cpp/$namespaceForFs
     types: {
         couple: {
             a: string

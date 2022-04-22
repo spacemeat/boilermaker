@@ -13,7 +13,7 @@
                           generateCode: 9 }
     }
 
-    genDir:                 gen-cpp/$namespaceForFs
+    genDir:                 gen/$namespaceForFs
     headerDir:              $baseDir/$genDir/inc
     inlineDir:              $baseDir/$genDir/inc/inl
     sourceDir:              $baseDir/$genDir/src

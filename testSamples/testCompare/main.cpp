@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include "gen-cpp/inc/testCompare.hpp"
+#include "gen/inc/testCompare.hpp"
 #include <unistd.h>
 
 
@@ -25,7 +25,7 @@ int test()
     auto & trove0 = std::get<hu::Trove>(desRes);
     std::cout << "testCompare0:\n" << std::get<std::string>(trove0.toPrettyString(4, false, hu::getAnsiColorTable()));
     auto node = trove0 / "testRoot";
-    auto t0 = node % hu::val<testCompare::testRoot>{};    
+    auto t0 = node % hu::val<testCompare::testRoot>{};
 
     path = std::string(get_current_dir()) + std::string("/testSamples/testCompare/testCompare1.hu");
     desRes = hu::Trove::fromFile(path);
@@ -87,7 +87,7 @@ int test()
         { std::cout << "Stuff<1> diff: true\n"; }
     if (std::get<2>(tup).memberDiffs.any())
         { std::cout << "Stuff<2> diff: true\n"; }
-    
+
     std::cout << "two.diffs: " << diff.two_diffs.memberDiffs << "\n";
 
     return 0;

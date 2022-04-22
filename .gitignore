@@ -135,5 +135,6 @@ dmypy.json
 # VSCode excludes
 /.vscode
 gen-cpp/
+gen/
 humon/
 *.bin

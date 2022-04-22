@@ -1,9 +1,9 @@
 @{ app: boma, boma-version: 1.0.0 }
 {
     inherit: cpp17
-    headerDir: $baseDir/gen-cpp/inc
-    inlineDir: $baseDir/gen-cpp/inc/inl
-    sourceDir: $baseDir/gen-cpp/src
+    headerDir: $baseDir/gen/inc
+    inlineDir: $baseDir/gen/inc/inl
+    sourceDir: $baseDir/gen/src
     namespace: testCompare
     constStyle: east
     defaultConstructible: true
