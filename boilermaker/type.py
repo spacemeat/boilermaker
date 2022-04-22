@@ -1,13 +1,15 @@
 from .ansi import Ansi as ansi
 import re
+from .props import Scribe
 
 re_cppName = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 
 
 class Type:
-    def __init__(self, name, namespace = ''):
+    def __init__(self, name, props):
         self.name = name
-        self.namespace = namespace
+        self.props = props
+        self.namespace = ''
         self.include = []
         self.usedInBomaType = False
         self.aliases = []
@@ -18,24 +20,25 @@ class Type:
 
 
 class BomaSubtype:
-    def __init__(self, properties, name):
-        if type(properties) is str:
-            properties = { 'type': properties }
+    def __init__(self, typeData, name, props):
+        if type(typeData) is str:
+            typeData = { 'type': typeData }
 
         self.name = name
-        self.type = properties.get('type')
-        self.aliases = properties.get('alias')
-        self.isLess = properties.get('isLess')
+        self.props = props
+        self.type = typeData.get('type')
+        self.aliases = typeData.get('alias')
+        self.isLess = typeData.get('isLess')
         self.codeDecl = ''
         self.fullCodeDecl = ''
 
-        ofo = properties.get('of')
+        ofo = typeData.get('of')
         if ofo and type(ofo) is not list:
-            properties['of'] = [ofo]
+            typeData['of'] = [ofo]
 
-        ofo = properties.get('of')
+        ofo = typeData.get('of')
         if ofo:
-            self.subtypes = [BomaSubtype(subsubtype, f'{name}_{idx}') for idx, subsubtype in enumerate(ofo)]
+            self.subtypes = [BomaSubtype(subsubtype, f'{name}_{idx}', props) for idx, subsubtype in enumerate(ofo)]
         else:
             self.subtypes = []
 
@@ -77,11 +80,12 @@ class BomaSubtype:
 
 
 class BomaTypeMember:
-    def __init__(self, name, fullName, properties):
+    def __init__(self, name, fullName, properties, props):
         '''properties might be a string (spec the type), or a
            dict (probably with a type member).'''
         self.name = name
         self.fullName = fullName
+        self.props = props
 
         def normalize(properties, name, idx):
             if type(properties) is str:
@@ -105,7 +109,7 @@ class BomaTypeMember:
             return properties
 
         self.properties = normalize(properties, fullName, 0)
-        self.type = BomaSubtype(self.properties, self.fullName)
+        self.type = BomaSubtype(self.properties, self.fullName, props)
 
 
     def __repr__(self):
@@ -208,14 +212,21 @@ class BomaTypeMember:
 
 
 class BomaType(Type):
-    def __init__(self, name, namespace, members):
-        super().__init__(name, namespace)
-        '''members is always a dict of memberName: memberProperties.'''
+    def __init__(self, typeBlock, props):
+        name = typeBlock.get('name', '')
+        super().__init__(name, props)
+
+        s = Scribe(props)
+        self.namespace = s.X('namespace')
+
         self.members = dict()
-        for memberName, memProperties in members.items():
+        for memberName, memProperties in typeBlock['members'].items():
             if re_cppName.match(memberName):
                 self.members[memberName] = BomaTypeMember(
-                    memberName, f'{name}_{memberName}', memProperties)
+                    memberName,
+                    f'{name}_{memberName}',
+                    memProperties,
+                    props)
             else:
                 if memberName == '-deriveFrom':
                     # TODO: YUCK. We're doing a literal transliteration here.
@@ -226,32 +237,32 @@ class BomaType(Type):
     def __repr__(self):
         endl = '\n'
         src = f'name: {ansi.lt_magenta_fg}{self.name}{ansi.all_off}:{endl}'
-        for mn, mo in self.members.items():
+        for mo in self.members.values():
             src += str(mo)
 
         return src
 
     def subtypesWithIsLess(self):
         mts = []
-        for _, m in self.members.items():
+        for m in self.members.values():
             if msts := m.subtypesWithIsLess():
                 mts.extend(msts)
         return mts
 
     def allSubtypes(self):
         mts = []
-        for _, m in self.members.items():
+        for m in self.members.values():
             mts.extend(m.allSubtypes() or [])
         return mts
 
     def allSubtypesOfIsLessTypes(self):
         mts = []
-        for _, m in self.members.items():
+        for m in self.members.values():
             mts.extend(m.allSubtypesOfIsLessTypes() or [])
         return mts
 
     def allVariantSubtypes(self):
         mts = []
-        for _, m in self.members.items():
+        for m in self.members.values():
             mts.extend(m.allVariantSubtypes() or [])
         return mts

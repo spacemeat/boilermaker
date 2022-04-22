@@ -21,23 +21,60 @@
     diffable: true                  // done
     cave: [ctr]
 
+    anchor: propject
+
+    --vulkan: {
+        anchor: vulkanEnums
+    }
+
+    --animals: {
+        enumCodeCase: upper
+        enumFlags: true
+        enumCodePrefix: cats_
+        enumCodeSuffix: _rowr
+
+        enums: { cats: [ Leo, Lilly, Butters, Weeby ] }
+
+        --animalsWhatWag: {
+            enumCodePrefix: dogs_
+            enumCodeSuffix: _woof
+
+            enums: { dogs: [ Hays, Winnie, [Copper, 3], Ernest ] }
+        }
+    }
+
+    /*
     enums: {
         cats: [ Leo, Lilly, Butters, Weeby ]
         dogs: {
             values: [ Hays, Winnie, [Copper, 3], Ernest ]
-            props: {
+            flags: true
+            toCode: {
                 prefix: dogs_
                 suffix: _woof
             }
         }
-        -props: { case: upper }
+        toCode: { case: upper }
+    }*/
+
+    --immovable: {
+        movable: false
+        types: {
+            imm_couple: {
+                a: string
+                b: VkResult
+            }
+
+            imm_v_of_couples: {
+                couples: { type: vector of: couple }
+            }
+        }
     }
 
     types: {
         couple: {
             a: string
             b: VkResult
-            -props: { movable: false }
         }
 
         v_of_couples: {
@@ -101,5 +138,4 @@
             }
         }
     }
-
 }

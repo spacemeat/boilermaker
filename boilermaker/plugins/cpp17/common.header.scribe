@@ -88,7 +88,7 @@ $<if 'binary' in $deserializeFrom>
     {
         static inline T extract($<$const('char')> *& buffer, std::size_t & size)
         {
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading integer\n";$<endif>
             $+  $<if $checkBinaryOverruns>
             if (size < sizeof(T))
@@ -106,7 +106,7 @@ $<if 'binary' in $deserializeFrom>
     {
         static inline T extract($<$const('char')> *& buffer, std::size_t & size)
         {
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading float\n";$<endif>
             $+  $<if $checkBinaryOverruns>
             if (size < sizeof(T))
@@ -126,7 +126,7 @@ $<if $std.string.usedInBomaType>
         {
             std::string t;
             auto strSize = BinaryReader<std::size_t>::extract(buffer, size);
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading string\n";$<endif>
             $+  $<if $checkBinaryOverruns>
             if (size < strSize)
@@ -148,7 +148,7 @@ $<if $std.string.usedInBomaType>
         {
             auto strSize = BinaryReader<std::size_t>::extract(buffer, size);
             std::string_view t(buffer, strSize);
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading string_view\n";$<endif>
             $+  $<if $checkBinaryOverruns>
             if (size < strSize)
@@ -166,7 +166,7 @@ $<if $std.string.usedInBomaType>
     {
         static inline std::array<T, N> extract($<$const('char')> *& buffer, std::size_t & size)
         {
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading array\n";$<endif>
             auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
             {
@@ -183,7 +183,7 @@ $<if $std.string.usedInBomaType>
     {
         static inline std::pair<T0, T1> extract($<$const('char')> *& buffer, std::size_t & size)
         {
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading pair\n";$<endif>
             return {
                 BinaryReader<T0>::extract(buffer, size),
@@ -198,7 +198,7 @@ $<if $std.string.usedInBomaType>
     {
         static inline std::tuple<Ts...> extract($<$const('char')> *& buffer, std::size_t & size)
         {
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading tuple\n";$<endif>
             auto maker = [&]<std::size_t... Seq>(std::index_sequence<Seq...>)
             {
@@ -215,7 +215,7 @@ $<if $std.string.usedInBomaType>
     {
         static inline std::vector<T, A> extract($<$const('char')> *& buffer, std::size_t & size)
         {
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading vector\n";$<endif>
             std::vector<T, A> rv;
             auto count = BinaryReader<std::size_t>::extract(buffer, size);
@@ -233,7 +233,7 @@ $<if $std.string.usedInBomaType>
     {
         static inline std::set<K, C, A> extract($<$const('char')> *& buffer, std::size_t & size)
         {
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading set\n";$<endif>
             std::set<K, C, A> rv;
             auto count = BinaryReader<std::size_t>::extract(buffer, size);
@@ -251,7 +251,7 @@ $<if $std.string.usedInBomaType>
     {
         static inline std::unordered_set<K, H, E, A> extract($<$const('char')> *& buffer, std::size_t & size)
         {
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading unordered_set\n";$<endif>
             std::unordered_set<K, H, E, A> rv;
             auto count = BinaryReader<std::size_t>::extract(buffer, size);
@@ -269,7 +269,7 @@ $<if $std.string.usedInBomaType>
     {
         static inline std::map<K, T, C, A> extract($<$const('char')> *& buffer, std::size_t & size)
         {
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading map\n";$<endif>
             std::map<K, T, C, A> rv;
             auto count = BinaryReader<std::size_t>::extract(buffer, size);
@@ -289,7 +289,7 @@ $<if $std.string.usedInBomaType>
     {
         static inline std::unordered_map<K, T, H, E, A> extract($<$const('char')> *& buffer, std::size_t & size)
         {
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading unoredered_map\n";$<endif>
             std::unordered_map<K, T, H, E, A> rv;
             auto count = BinaryReader<std::size_t>::extract(buffer, size);
@@ -309,7 +309,7 @@ $<if $std.string.usedInBomaType>
     {
         static inline std::optional<T> extract($<$const('char')> *& buffer, std::size_t & size)
         {
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading optional\n";$<endif>
             auto hasValue = BinaryReader<char>::extract(buffer, size);
             if (static_cast<bool>(hasValue))
@@ -338,7 +338,7 @@ $<if $std.string.usedInBomaType>
 
         static inline std::variant<Ts...> extract($<$const('char')> *& buffer, std::size_t & size)
         {
-            $+  $<if 'deserializeBinary' in $cave>
+            $+  $<if 'deserializeBinary' in $caveperson>
             $caveStream << "Reading variant\n";$<endif>
             auto idx = BinaryReader<std::size_t>::extract(buffer, size);
 

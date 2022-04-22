@@ -11,9 +11,10 @@
     diffable: true                  // done
 
     run: {
+        name:           animalsBugsAndFood
         plugin:         grokCpp
         provider:       provider
-        ops:            { parseSource: $vulkanCreatePropsSequence }
+        ops:            { makeEnums: 1.1 }
         sources:        '"enums.h"'
         tools:          gnu
         language:       c

@@ -133,7 +133,10 @@ class PropertyBag:
         def toStr(self, depth):
             s = ''
             for [k, v] in self.props.items():
-                s += ' ' * depth + f'{ansi.dk_blue_fg}{k}{ansi.all_off}: {ansi.lt_blue_fg}{v}{ansi.all_off}\n'
+                if k == 'types' or k == 'enums' or k == 'bomaTypes' or k == 'bomaEnums' or k == 'anchors' or k == 'props':
+                    s += ' ' * depth + f'{ansi.dk_blue_fg}{k}{ansi.all_off}: {ansi.lt_blue_fg}...{ansi.all_off}\n'
+                else:
+                    s += ' ' * depth + f'{ansi.dk_blue_fg}{k}{ansi.all_off}: {ansi.lt_blue_fg}{v}{ansi.all_off}\n'
             for inh in reversed(self.parents):
                 s += toStr(inh, depth + 1)
             return s
@@ -144,7 +147,10 @@ class PropertyBag:
         def toRepr(self, depth):
             s = ''
             for [k, v] in self.props.items():
-                s += ' ' * depth + f'{k}: {v}\n'
+                if k == 'types' or k == 'enums' or k == 'bomaTypes' or k == 'bomaEnums' or k == 'anchors' or k == 'props':
+                    s += ' ' * depth + f'{k}: ...\n'
+                else:
+                    s += ' ' * depth + f'{k}: {v}\n'
             for inh in reversed(self.parents):
                 s += toRepr(inh, depth + 1)
             return s
@@ -193,6 +199,20 @@ class PropertyBag:
         self.parents.append(ancestorBag)
 
 
+    def push(self, newProps):
+        pb = PropertyBag(self.props)
+        pb.parents = self.parents
+        self.props = newProps
+        self.parents = [pb]
+
+
+    def pop(self):
+        if len(self.parents) != 1:
+            raise RuntimeError(f'trying to pop with {len(self.parents)} parents')
+        self.props = self.parents[0].props
+        self.parents = self.parents[0].parents
+
+
     def ensureList(self, key):
         if key in self.props:
             if type(self.props[key]) is not list:
@@ -229,13 +249,10 @@ class Props:
         return self.props.getAll(key)
 
     def push(self, newProps = {}):
-        np = PropertyBag(newProps)
-        np.inherit(self.props)
-        self.props = np
+        self.props.push(newProps)
 
     def pop(self):
-        # if you use this right, there should be only one parent via push()
-        self.props = self.props.parents[0]
+        self.props.pop()
 
     def inherit(self, ancestorBag):
         self.props.inherit(ancestorBag)
@@ -251,6 +268,7 @@ class Scribe:
         self.previousPaths = set()
         self.pathStack = []
         self.debug = False
+
 
     def parseText(self, val):
         try:
@@ -276,7 +294,22 @@ class Scribe:
             print(f'{self.props.getProp("inFile")}: {e}')
             raise e
 
+
     X = parseText
+
+
+    def parseStructure(self, structure):
+        def rec(elem):
+            if type(elem) is list:
+                return [rec(elemelem) for elemelem in elem]
+            elif type(elem) is dict:
+                return {k: rec(v) for k, v in elem.items()}
+            elif type(elem) is str:
+                return self.parseText(elem)
+            else:
+                return elem
+        return rec(structure)
+
 
     def _parseText(self, val):
         try:
@@ -812,7 +845,7 @@ class Scribe:
             # for must be 'for'
             # x must be a symbol-legal string
             # in must be 'in'
-            # y is the rest is an expression for 'for foo in (y)'
+            # y is the rest is an expression for 'for foo in y'
 
             forString = clause.terms[compIdx].terms[0]
             if m := re.match(re_joinexpr, forString):
@@ -834,12 +867,21 @@ class Scribe:
 
                 for vidx, val in enumerate(vals):
                     self.props.push({varname: val})
+                    oldProps = self.props
                     try:
+                        # if our value has a 'props' member, set the scribing props
+                        # to this value. Enables $<join for x in y> to set props for
+                        # objects of type y.
+                        props = self.props
+                        if type(val) is dict and 'props' in val and type(val['props']) is Props:
+                            props = val['props']
+                        self.props = props
                         th = self._parseClause(clause.terms[compIdx + 1], depth + 1)
                         d = ''
                         if delimIdx >= 0:
                             d = self._parseClause(clause.terms[delimIdx + 1], depth + 1)
                     finally:
+                        self.props = oldProps
                         self.props.pop()
 
                     accum(th)

@@ -1,33 +1,7 @@
 @{ app: boma, boma-version: 0.0.4 }
 {
-    run: {
-        plugin:         $bomaPlugin
-        provider:       $bomaProvider
-        output:         $bomaScribe
-        ops:            { createEnums:      $bomaCreateEnumsSequence,
-                          createTypes:      $bomaCreateTypesSequence,
-                          createReports:    $bomaOutputSequence }
-        reports:        $bomaReports
-    }
-
-    bomaPlugin:                 boilermaker
-    bomaProvider:               provider
-    bomaScribe:                 output
-    bomaCreateEnumsSequence:    1
-    bomaCreateTypesSequence:    1.1
-    bomaOutputSequence:         6.9         // nice
-    bomaReports:                [props, enums, types, writes]
-
-    outputEnums:    true
-    outputTypes:    true
-
     namespace:      boma
-
     indent:         { char: space, num: 4 }
     tab:            "$<if $indent.get('char', 'space') == 'space'>$<join for _ in range(0, int($indent.get('num', 4)))> $<endjoin>$<else>\t$<endif>"
     baseDir:        $projectDir
-    generateOutput: true
-
-    computeTypes:   true
-    computeEnums:   true
 }

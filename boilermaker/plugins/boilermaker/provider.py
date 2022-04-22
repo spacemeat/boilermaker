@@ -4,6 +4,8 @@ from ...type import BomaType
 from ...enums import EnumType
 
 
+## TODO: NOT USED and slated for deletion
+
 class BomaProvider(Provider):
     def start(self, runDefs, props):
         print (f'starting BomaProvider')
@@ -13,14 +15,8 @@ class BomaProvider(Provider):
 
     def do(self, op, seq):
         print (f'BomaProvider doing op {op} at sequence {seq}')
-        if op == 'createEnums':
-            self.makeEnums()
-
-        elif op == 'createTypes':
-            self.makeTypes()
-
-        elif op == 'createReports':
-            self.generateOutput()
+        #if op == 'createTypes':
+        #    self.makeTypes()
 
 
     def stop(self):
@@ -46,35 +42,5 @@ class BomaProvider(Provider):
             for (typeName, typeData) in typeValues.items():
                 self.types[typeName] = BomaType(typeName, s.X('namespace'), typeData)
         self.props.push({'bomaTypes': self.types})
-
-
-    def reportProps(self):
-        print (str(self.props))
-
-
-    def reportEnums(self):
-        s = Scribe(self.props)
-        for ts in s.getXPropAll('bomaEnums'):
-            for t in ts:
-                print (t)
-
-
-    def reportTypes(self):
-        s = Scribe(self.props)
-        for ts in s.getXPropAll('bomaTypes'):
-            for t in ts:
-                print (t)
-
-
-    def generateOutput(self):
-        s = Scribe(self.props)
-        reports = s.getXProp('bomaReports')
-        if 'props' in reports:
-            self.reportProps()
-        if 'enums' in reports:
-            self.reportEnums()
-        if 'types' in reports:
-            self.reportTypes()
-
 
 

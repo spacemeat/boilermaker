@@ -52,6 +52,7 @@ class cpp17Provider(Provider):
         raf(self, s.X('$headerDir'))
         raf(self, s.X('$inlineDir'))
         raf(self, s.X('$sourceDir'))
+        # TODO: Go through each type's props to get additional directories
 
 
     def generateProps(self):
@@ -66,7 +67,7 @@ class cpp17Provider(Provider):
         # convenience function for namespace/scoping
         def rescope(type):
             # TODO: This is probably lousy perf
-            s = Scribe(self.props)
+            s = Scribe(type.props)
             currentScope = s.getXProp('scope').split('::')
             fullName = type.fullCodeDecl.split('::')
             # find first n common names; the rest is the qualified name
@@ -74,17 +75,15 @@ class cpp17Provider(Provider):
             for i in range(min(len(currentScope), len(fullName))):
                 if currentScope[i] == fullName[i]:
                     skip += 1
+                else:
+                    break
             return '::'.join(fullName[skip:])
         self.props.setProp('rescope', rescope)
 
-        bomaEnums = {}
-        for enumsCluster in s.getXPropAll('bomaEnums'):
-            bomaEnums.update(enumsCluster)
+        bomaEnums = self.props.getProp('bomaEnums')
         self.props.setProp('enums', bomaEnums)
 
-        bomaTypes = {}
-        for typesCluster in s.getXPropAll('bomaTypes'):
-            bomaTypes.update(typesCluster)
+        bomaTypes = self.props.getProp('bomaTypes')
         self.props.setProp('types', bomaTypes)
 
         standardTypes = {
@@ -124,6 +123,7 @@ class cpp17Provider(Provider):
         self.props.setProp('std', stdObj)
 
         # relative paths for local #includes
+        # TODO: Retire these for more precise relpath using utility fn
         self.props.setProp('headerToInl',    os.path.relpath(s.X('$inlineDir'), s.X('$headerDir')))
         self.props.setProp('srcToHeader',    os.path.relpath(s.X('$headerDir'), s.X('$sourceDir')))
         self.props.setProp('srcToInl',       os.path.relpath(s.X('$inlineDir'), s.X('$sourceDir')))
@@ -151,7 +151,7 @@ class cpp17Provider(Provider):
 
         headers = list()
 
-        if len(s.X('$cave') or []) > 0:
+        if len(s.X('$caveperson') or []) > 0:
             headers.append('<iostream>')
 
         if ('humon' in s.X('$deserializeFrom') or

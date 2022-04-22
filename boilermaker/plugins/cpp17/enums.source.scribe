@@ -14,12 +14,12 @@ namespace $namespace
     std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$rescope($enum)>> & obj)
     {
         using enumIntType = std::underlying_type<$<$rescope($enum)>>::type;
-        $+  $<if not $enum.flags>
+        $+  $<if not $enum.flags()>
         switch(* obj)
         {
         $+  $<join for val in $enum.vals>$+
         $+  $<if not $val.isDuplicate>$+
-                $<if $enum.isScoped>$+
+                $<if $enum.isScoped()>$+
                     case $<$rescope($enum)>::$<$val.codeDecl>$+
                 $<else>$+
                     case $<$rescope($val)>$+    $<#$val.fullCodeDecl>$+

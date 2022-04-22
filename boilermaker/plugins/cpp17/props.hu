@@ -5,68 +5,13 @@
     language:       c++
     languageVersion: 17
     run: {
-        plugin:         $cpp17Plugin
-        provider:       $cpp17Provider
-        output:         $cpp17Scribe
-        ops:            { createCppProps: $cpp17CreatePropsSequence,
-                          generateCode: $cpp17GenerateCodeSequence }
-        generateCode:   $cpp17GenerateCode
+        name:           cpp17
+        plugin:         cpp17
+        provider:       provider
+        output:         output
+        ops:            { createCppProps: 7,
+                          generateCode: 9 }
     }
-
-    cpp17Plugin:    cpp17
-    cpp17Provider:  provider
-    cpp17Scribe:    output
-    cpp17CreatePropsSequence: 7
-    cpp17GenerateCodeSequence: 9
-    cpp17GenerateCode: $generateOutput
-
-    cave:           ['deserializeBinary']
-
-    constStyle:     west
-    outputForm:     compiled  // or headerOnly, or anything else in outupt
-    caveperson:     []// [ctr, dtr, ass, serializeBinary, deserializeBinary]
-    checkBinaryOverruns: true
-    caveStream:     `std::cerr`
-
-    classOrStruct:  'class'
-
-    generatedFileComment: `/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
-    Do not bother modifying this file, as your build process will overwrite
-    your changes.`
-
-    mainHeaderTopComment: `$generatedFileComment
-
-    #include this header in your project to use boilermaker-generated code.*/`
-
-    headerTopComment: `$generatedFileComment */`
-    inlineTopComment: `$generatedFileComment */`
-    sourceTopComment: `$generatedFileComment */`
-
-    deserializeFrom: [humon] // also accepts binary
-    defaultConstructible: false
-    memberwiseConstructible: false
-    destructor: source
-    virtualDestructor: false
-    privateMembers: true
-    swap: $useCopySwap
-    useCopySwap: false  // requires copy, defaultMoveConstructible, destructor!='omit'
-    copyable: true
-    copy: source        // one of: omit, default, delete, inline, source
-    movable: true       // i think requires virtualDestructor to be false
-    move: source        // one of: omit, default, delete, inline, source
-    getters: '$<$len($getterVariants) > 0>'
-    getterVariants: [ returnByValue | returnByConstRef | returnByNonconstRef ]
-    getterRefVariants: [ ref, rvaleRef ]    // &, && variants
-    inlineGetters: true     // requires getters
-    constGetters: true      // requires getters
-    nonConstGetters: true   // requires getters, privateMembers
-    setters: true
-    inlineSetters: true // requires setters
-    setByCopy: true // requires copyable
-    setByMove: true   // requires movable
-    serializeTo: []
-    comparable: true
-    diffable: false  // requires comparable
 
     genDir:                 gen-cpp/$namespaceForFs
     headerDir:              $baseDir/$genDir/inc
@@ -95,4 +40,51 @@
     typeHeaderPath:         $headerDir/$typeHeaderFile
     typeInlinePath:         $inlineDir/$typeInlineFile
     typeSourcePath:         $sourceDir/$typeSourceFile
+
+    constStyle:     west
+    checkBinaryOverruns: true
+
+    generatedFileComment: `/*  THIS IS A GENERATED FILE. It is a Boilermaker artifact.
+    Do not bother modifying this file, as your build process will overwrite
+    your changes.`
+
+    mainHeaderTopComment: `$generatedFileComment
+
+    #include this header in your project to use boilermaker-generated code.*/`
+
+    headerTopComment: `$generatedFileComment */`
+    inlineTopComment: `$generatedFileComment */`
+    sourceTopComment: `$generatedFileComment */`
+
+    // [ctr, dtr, ass, serializeBinary, deserializeBinary]
+    caveperson:    ['deserializeBinary']
+    caveStream:     `std::cerr`
+
+    classOrStruct:  'class'
+    outputForm:     compiled  // or headerOnly, or anything else in outupt
+    deserializeFrom: [humon] // also accepts binary
+    defaultConstructible: false
+    memberwiseConstructible: false
+    destructor: source
+    virtualDestructor: false
+    privateMembers: true
+    swap: $useCopySwap
+    useCopySwap: false  // requires copy, defaultMoveConstructible, destructor!='omit'
+    copyable: true
+    copy: source        // one of: omit, default, delete, inline, source
+    movable: true       // i think requires virtualDestructor to be false
+    move: source        // one of: omit, default, delete, inline, source
+    getters: '$<$len($getterVariants) > 0>'
+    getterVariants: [ returnByValue | returnByConstRef | returnByNonconstRef ]
+    getterRefVariants: [ ref, rvaleRef ]    // &, && variants
+    inlineGetters: true     // requires getters
+    constGetters: true      // requires getters
+    nonConstGetters: true   // requires getters, privateMembers
+    setters: true
+    inlineSetters: true // requires setters
+    setByCopy: true // requires copyable
+    setByMove: true   // requires movable
+    serializeTo: []
+    comparable: true
+    diffable: false  // requires comparable
 }

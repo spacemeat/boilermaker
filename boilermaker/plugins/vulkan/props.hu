@@ -1,18 +1,15 @@
 @{ app: boma, boma-version: 0.0.4 }
 {
-    vulkanLanguage: c
-    vulkanLanguageVersion: 17
-    vulkanCreatePropsSequence: 3
-    vulkanSources: $'<vulkan/vulkan.h>'
     run: {
+        name:           vulkan
         plugin:         grokCpp
         provider:       provider
-        ops:            { parseSource: $vulkanCreatePropsSequence }
-        sources:        $vulkanSources
+        ops:            { makeEnums: 1.1 }
+        sources:        ['<vulkan/vulkan.h>']
         macros:         { }
         tools:          gnu
-        language:       $vulkanLanguage
-        languageVersion: $vulkanLanguageVersion
+        language:       c
+        languageVersion: 17
         languageStandard: gnu17
         enums: {
             flags: {

@@ -4,10 +4,17 @@ from .ansi import Ansi as ansi
 from .props import Props, PropertyBag, Scribe
 from pathlib import Path
 from .plugin import PluginCollection
+from .type import BomaType
+from .enums import EnumType
 
 # read ${captured}, when not preceded by a '\'
 defArgumentPattern = r'(?<!\\)\$\s*\<\s*([A-Za-z0-9_.]+?)\s*\>'
 defArgumentReg = re.compile(defArgumentPattern)
+
+class Run:
+    def __init__(self, runBlock, props):
+        self.runBlock = runBlock
+        self.props = props
 
 
 class Project:
@@ -16,37 +23,43 @@ class Project:
             propsPath = Path(propsPath)
         self.propsPath = propsPath
         self.bomaPath = Path(__file__).parent
-        self.enumsMade = False
         self.loadedProviders = {}
         self.propAdds = propAdds
 
     def run(self):
         try:
+            # Build the property tree from .hu files.
             self.loadProps()
 
-            s = Scribe(self.props)
-            runDefses = s.getXPropAll('run')
+            # Collect all the run operations.
             ops = []
-            for runDefs in runDefses:
+            for runObject in self.props.getProp('bomaRuns').values():
+                s = Scribe(self.props)      # NOTE: using self.props, not runObject.props which is well up the parentage
+                runDefs = s.parseStructure(runObject.runBlock)
                 for op, seq in runDefs['ops'].items():
-                    ops.append((f'{runDefs["plugin"]}.{runDefs["provider"]}', runDefs, op, seq))
-            ops.sort(key=lambda op: op[3])
+                    ops.append({
+                        'provider': f'{runDefs["plugin"]}.{runDefs["provider"]}',
+                        'runDefs': runDefs,
+                        'operation': op,
+                        'sequence': seq})
+
+            ops.sort(key=lambda op: op['sequence'])
 
             seenProvs = set()
             startOrder = []
             for op in ops:
-                providerName = op[0]
+                providerName = op['provider']
                 if providerName in seenProvs:
                     continue
                 seenProvs.add(providerName)
                 provider = self.loadProvider(providerName)
                 startOrder.append(provider)
-                provider.start(op[1], self.props)
+                provider.start(op['runDefs'], self.props) # NOTE: using self.props, not runObject.props which is well up the parentage
 
             for op in ops:
-                providerName = op[0]
+                providerName = op['provider']
                 provider = self.loadProvider(providerName)
-                provider.do(op[2], op[3])
+                provider.do(op['operation'], op['sequence'])
 
             for provider in reversed(startOrder):
                 provider.stop()
@@ -70,41 +83,109 @@ class Project:
 
 
     def loadProps(self):
-        def rec(bagPath):
+        enums = {}
+        types = {}
+        runs = {}
+        anchors = {}
+        def rec(bagPath, bag):
             print (f"{ansi.dk_white_fg}Loading props: {ansi.p(bagPath, 'cyan')}")
             trove, defsFileVersion = utilities.loadHumonFile(bagPath)
             propsDict = trove.root.objectify()
             if type(propsDict) is not dict:
                 raise RuntimeError(f'Malformed boma props file')
 
-            bag = PropertyBag({})
-            bag.setDict(propsDict)
-            bag.propsFilePath = bagPath
-            bag.propsFileDir = bagPath.parent
+            def recrec(propsDict, bagName, bag):
+                #bag = PropertyBag({})
+                print (f'bagName: {bagName}')
+                bag.setDict(propsDict)
+                bag.setProp('name', bagName)
+                bag.propsFilePath = bagPath
 
-            if 'inherit' in propsDict:
-                inhs = propsDict['inherit']
-                if type(inhs) is str:
-                    inhs = [inhs]
+                if 'types' in propsDict:
+                    for typeName, typeBlock in propsDict['types'].items():
+                        typeBlock = {'name': typeName, 'members': typeBlock}
+                        newBag = PropertyBag({'name': typeName})
+                        newBag.inherit(bag)
+                        props = Props(newBag)
+                        props.push(self.propAdds)
+                        types[typeName] = BomaType(typeBlock, props)
 
-                for inh in inhs:
-                    newBagPath = self.getPathFromInherit(inh, Path(bagPath))
-                    if newBagPath == None:
-                        raise RuntimeError(f'Boilermaker file {inh} cannot be opened.')
-                    newBag = rec(newBagPath)
-                    bag.inherit(newBag)
+                if 'enums' in propsDict:
+                    for typeName, typeBlock in propsDict['enums'].items():
+                        if type(typeBlock) is list:
+                            typeBlock = {'name': typeName, 'values': typeBlock}
+                        newBag = PropertyBag({'name': typeName})
+                        newBag.inherit(bag)
+                        props = Props(newBag)
+                        props.push(self.propAdds)
+                        enums[typeName] = EnumType(typeBlock, props)
 
-            return bag
+                if 'run' in propsDict:
+                    typeBlocks = propsDict['run']
+                    if type(typeBlocks) is not list:
+                        typeBlocks = [typeBlocks]
+                    for typeBlock in typeBlocks:
+                        name = typeBlock.get('name', bagPath.stem)
+                        typeBlock['name'] = name
+                        newBag = PropertyBag({'name': name})
+                        newBag.inherit(bag)
+                        props = Props(newBag)
+                        props.push(self.propAdds)
+                        runs[name] = Run(typeBlock, props)
 
-        topBag = rec(self.propsPath)
+                if 'anchor' in propsDict:
+                    anchs = propsDict['anchor']
+                    if type(anchs) is not list:
+                        anchs = [anchs]
+                    for anch in anchs:
+                        newBag = PropertyBag({'name': anch})
+                        newBag.inherit(bag)
+                        props = Props(newBag)
+                        props.push(self.propAdds)
+                        anchors[anch] = props
 
-        self.props = Props(topBag)
+                for k, v in propsDict.items():
+                    if k.startswith('--'):
+                        newBag = PropertyBag({'name': k})
+                        newBag.inherit(bag)
+                        recrec(v, k[2:], newBag)
+
+                if 'inherit' in propsDict:
+                    inhs = propsDict['inherit']
+                    if type(inhs) is str:
+                        inhs = [inhs]
+
+                    for inh in inhs:
+                        newBagPath = self.getPathFromInherit(inh, Path(bagPath))
+                        if newBagPath == None:
+                            raise RuntimeError(f'Boilermaker file {inh} cannot be opened.')
+                        newBag = PropertyBag({})
+                        rec(newBagPath, newBag)
+                        bag.inherit(newBag)
+
+                return bag
+
+            return recrec(propsDict, bagPath.stem, bag)
+
+        projectBag = PropertyBag({})
+        rec(self.propsPath, projectBag)
+
+        # Retarget the main project Props if there's an anchor for that.
+        if 'project' in anchors:
+            projectBag = anchors['project']
+        self.propsPath = projectBag.propsFilePath
+
+        self.props = Props(projectBag)
         self.props.push(self.propAdds)
-        self.props.setDict({'projectPath': self.propsPath,
-                            'projectDir': self.propsPath.parent,
-                            'bomaDir': Path(__file__).parent,
-                            'pluginsDir': Path(__file__).parent / 'plugins',
-                            'mainHeaderIncludes': []})
+        self.props.push({'projectPath': self.propsPath,
+                         'projectDir': self.propsPath.parent,
+                         'bomaDir': Path(__file__).parent,
+                         'pluginsDir': Path(__file__).parent / 'plugins',
+                         'mainHeaderIncludes': [],
+                         'bomaTypes': types,
+                         'bomaEnums': enums,
+                         'bomaRuns': runs,
+                         'anchors': anchors})
 
 
     def loadProvider(self, provider):

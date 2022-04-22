@@ -1,5 +1,5 @@
 from ...plugin import Provider
-from ...props import Scribe
+from ...props import Scribe, Props, PropertyBag
 from ...enums import EnumType
 from .getSearchPaths_gnu import getSearchPaths as getSearchPaths_gnu
 import pygccxml
@@ -15,7 +15,8 @@ class grokCppProvider(Provider):
 
     def do(self, op, seq):
         print (f'grokCppProvider doing op {op} at sequence {seq}')
-        self._parseSources()
+        if op == 'makeEnums':
+            self._parseSources()
 
 
     def stop(self):
@@ -38,7 +39,10 @@ class grokCppProvider(Provider):
         enums = {}
         for source in sources:
             enums.update(self._processSource(source))
-        self.props.push({'bomaEnums': enums})
+
+        # update the boma enums dict with the new enums
+        bomaEnums = self.props.getProp('bomaEnums')
+        bomaEnums.update(enums)
 
 
     def _processSource(self, sourceFilename):
@@ -149,10 +153,27 @@ class grokCppProvider(Provider):
             declVals.append([val[0], val[1]])
 
         bomaVals, flags = self._translateDeclValsToBomaVals(bomaEnumName, declVals)
-
         isScoped = (self.runDefs.get('isScoped', False) or
                     self.runDefs.get('language', 'c++') == 'c++')
-        e = EnumType(bomaEnumName, bomaNamespace, bomaVals, {'isScoped': isScoped, 'flags': flags})
+
+        props = self.props
+        anchors = self.props.getProp('anchors')
+        if anchors and 'anchors' in anchors:
+            anch = props['anchors']
+            if 'vulkanEnums' in anch:
+                props = anch['vulkanEnums']
+
+        propBag = props.props
+        newBag = PropertyBag({
+            'enumisScoped': isScoped,
+            'enumflags': flags,
+            'enumCodeCase': '',
+            'enumCodePrefix': '',
+            'enumCodeSuffix': ''
+        })
+        newBag.inherit(propBag)
+        e = EnumType({'name': bomaEnumName, 'values': bomaVals}, Props(newBag))
+        e.namespace = bomaNamespace
         e.include = self.runDefs.get('sources', [])
         e.codeDecl = bomaEnumName
         e.fullCodeDecl = f'{bomaNamespace}{e.codeDecl}'.replace('.', '::')
