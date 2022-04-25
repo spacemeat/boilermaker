@@ -1,12 +1,13 @@
 $<join for t in $types>
+------------------ Building $typeHeaderPath.
 $<out $typeHeaderPath>$+
 #pragma once
 
 $headerTopComment
 
-#include "$commonHeaderFile"
+#include "$<$getRelativePath($headerDir, $commonHeaderPath)>"
 $+  $<if $diffable>
-#include "diffs.hpp"
+#include "$<$getRelativePath($headerDir, $diffsHeaderPath)>"
 #include <bitset>
 $+  $<endif>$+
 
@@ -15,8 +16,8 @@ $+  $<join for inc in $t.dependencyIncludes>
 $+  $<endjoin>$''
 
 $+
-$<set scope as $scope + '::' + $namespace>
-namespace $namespace
+$<set scope as $scope + '::' + $sharedCodeNamespaceForCode>
+namespace $sharedCodeNamespaceForCode
 {
     $+  $<join for subtype in $t.subtypesWithIsLess()>
     struct IsLess_$<$subtype.name>;
@@ -26,13 +27,14 @@ namespace $namespace
     // IsLess template argument for $<$subtype.codeDecl>
     struct IsLess_$<$subtype.name>
     {
-        bool operator()($<$const($subtype.subtypes[0].codeDecl)> & lhs, $<$const($subtype.subtypes[0].codeDecl)> & rhs) const;
+        bool operator()($<$const($rescope($subtype.subtypes[0]))> & lhs, $<$const($rescope($subtype.subtypes[0]))> & rhs) const;
     };
     $+  $<endjoin>
 
     $+  $<join for subtype in $t.allVariantSubtypes()>
     template <$>
-    struct VariantTypeNames<$<$subtype.codeDecl>$>
+    //struct VariantTypeNames<$<$rescope($subtype)>>
+    struct VariantTypeNames<$<$rescope($subtype)>>
     {
         static constexpr $<$const('char')> * names[] = { $+
             $<join for subsubtype in $subtype.subtypes>$+
@@ -41,23 +43,32 @@ namespace $namespace
         static constexpr std::size_t size = $<len($subtype.subtypes)>;
     };
     $+  $<endjoin>
-
+}$<endset>
+$<set scope as $scope + '::' + $namespaceForCode>
+namespace $namespaceForCode
+{
     $classOrStruct $<$rescope($t)>;
     $+  $<if $swap>
     void swap($<$rescope($t)> & lhs, $<$rescope($t)> & rhs) noexcept;
     $<endif>$''$+
     $<if 'humon' in $serializeTo>$+
-    std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<$<$rescope($t)>$>')> & obj);
+    std::ostream & operator <<(std::ostream & out, $<$const($rescope($sharedCodeNamespaceForCode + '::HumonFormat<' + $rescope($t) + '$>', $scope))> & obj);
     $<endif>$''$+
     $<if 'binary' in $serializeTo>$+
-    std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<$<$rescope($t)>$>')> & obj);
+    std::ostream & operator <<(std::ostream & out, $<$const($rescope($sharedCodeNamespaceForCode + '::BinaryFormat<' + $rescope($t) + '$>', $scope))> & obj);
     $<endif>$''$+
     $<if $comparable>
     bool operator ==($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);
     bool operator !=($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);
     $<endif>
     $+
-    $<if $diffable>
+$<endset>
+$<if $diffable>
+}
+
+$+  $<set scope as $scope + '::' + $sharedCodeNamespaceForCode>
+namespace $sharedCodeNamespaceForCode
+{
     template<>
     struct Diff<$<$rescope($t)>>
     {
@@ -78,8 +89,12 @@ namespace $namespace
         $<join for member in $t.members>
         Diff<$<$rescope($member.type)>> $<$member.name>_diffs;$<endjoin>
     };
-
+}
+$<endset>
+namespace $namespaceForCode
+{
     $+  $<endif>
+$<set scope as $scope + '::' + $namespaceForCode>
 
     $<$classOrStruct> $<$t.codeDecl>$<if len($t.baseTypeDecl) $> 0> : public $<$t.baseTypeDecl>$<endif>
     {
@@ -230,7 +245,7 @@ $+            $<else>$' 'noexcept;$+
             $<else>;$+
             $<endif>$+
         $<elif $setByCopy and not $movable>
-        void set_$<$member.name>($<$const($rescope($member.type)>> & old_$<$member.name>)$+
+        void set_$<$member.name>($<if not $useCopySwap>$<$const($rescope($member.type))>$<else>$<$rescope($member.type)>$<endif> & new_$<$member.name>)$+
             $<if $inlineSetters>$''$<fmt left $maxLen - len($member.type.codeDecl) + 3>$<endfmt> { $+
                 $<if $useCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
                 $<else>$<$member.name> = old_$<$member.name>;$+
@@ -252,18 +267,19 @@ $+            $<else>$' 'noexcept;$+
     $<endjoin>$''
     $<endset>    $+
     $<if 'humon' in $serializeTo>    $+
-        friend std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<' + $rescope($t) + '$>')> & obj);$+
+        friend std::ostream & operator <<(std::ostream & out, $<$const($rescope($sharedCodeNamespaceForCode + '::HumonFormat<' + $rescope($t) + '$>', $scope))> & obj);$+
     $<endif>$''$+
     $<if 'binary' in $serializeTo>    $+
-        friend std::ostream & operator <<(std::ostream & out, $<$const('BinaryFormat<' + $rescope($t) + '$>')> & obj);$+
+        friend std::ostream & operator <<(std::ostream & out, $<$const($rescope($sharedCodeNamespaceForCode + '::BinaryFormat<' + $rescope($t) + '$>', $scope))> & obj);$+
     $<endif>$''$+
     $<if $comparable>    $+
         friend bool operator ==($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);
         friend bool operator !=($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);$+
-    $<endif>$''    $+
-    $<if $diffable>    $+
-        friend Diff<$<$rescope($t)>>::Diff();
-        friend Diff<$<$rescope($t)>>::Diff($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);$+
+    $<endif>$''
+        $+
+    $<if $diffable>
+        friend $<$rescope($sharedCodeNamespaceForCode + '::Diff<' + $rescope($t) + '$>', $scope)>::Diff();
+        friend $<$rescope($sharedCodeNamespaceForCode + '::Diff<' + $rescope($t) + '$>', $scope)>::Diff($<$const($rescope($t))> & lhs, $<$const($rescope($t))> & rhs);$+
     $<endif>$''
     $+  $<if $privateMembers>
     private:$+
@@ -289,10 +305,10 @@ namespace hu
     };
 }
     $<endset>
-namespace $namespace
+namespace $namespaceForCode
 {
     $<endif>$+
-$<set scope as $scope + '::' + $namespace>
+$<set scope as $scope + '::' + $namespaceForCode>
     $+  $<if 'binary' in $deserializeFrom>
     template <$>
     struct BinaryReader<$<$rescope($t)>$>

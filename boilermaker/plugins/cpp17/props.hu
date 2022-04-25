@@ -13,10 +13,28 @@
                           generateCode: 9 }
     }
 
-    genDir:                 gen/$namespaceForFs
-    headerDir:              $baseDir/$genDir/inc
-    inlineDir:              $baseDir/$genDir/inc/inl
-    sourceDir:              $baseDir/$genDir/src
+    projectNamespace:           $namespace
+    projectNamespaceForFs:      $<$nsToFs($projectNamespace)>
+    projectNamespaceForCode:    $<$nsToCode($projectNamespace)>
+
+    sharedCodeNamespace:        $projectNamespace
+    sharedCodeNamespaceForFs:   $<$nsToFs($sharedCodeNamespace)>
+    sharedCodeNamespaceForCode: $<$nsToCode($sharedCodeNamespace)>
+    sharedCodeGenDir:           $baseDir/gen/$sharedCodeNamespaceForFs
+    sharedCodeHeaderDir:        $sharedCodeGenDir/inc
+    sharedCodeInlineDir:        $sharedCodeGenDir/inc/inl
+    sharedCodeSourceDir:        $sharedCodeGenDir/src
+
+    namespace:                  boma
+    namespaceForFs:             $<$nsToFs($namespace)>
+    namespaceForCode:           $<$nsToCode($namespace)>
+
+    genDir:                 $baseDir/gen/$namespaceForFs
+
+    headerDir:              $genDir/inc
+    inlineDir:              $genDir/inc/inl
+    sourceDir:              $genDir/src
+
     mainHeaderFile:         $namespaceForFs.hpp
     commonHeaderFile:       common.hpp
     commonInlineFile:       common.inl.hpp
@@ -29,14 +47,14 @@
     typeInlineFile:         $<$t.name>.inl.hpp
     typeSourceFile:         $<$t.name>.cpp
 
-    mainHeaderPath:         $headerDir/$mainHeaderFile
-    commonHeaderPath:       $headerDir/$commonHeaderFile
-    commonInlinePath:       $inlineDir/$commonInlineFile
-    commonSourcePath:       $sourceDir/$commonSourceFile
-    diffsHeaderPath:        $headerDir/$diffsHeaderFile
-    enumsHeaderPath:        $headerDir/$enumsHeaderFile
-    enumsInlinePath:        $inlineDir/$enumsInlineFile
-    enumsSourcePath:        $sourceDir/$enumsSourceFile
+    mainHeaderPath:         $sharedCodeHeaderDir/$mainHeaderFile
+    commonHeaderPath:       $sharedCodeHeaderDir/$commonHeaderFile
+    commonInlinePath:       $sharedCodeInlineDir/$commonInlineFile
+    commonSourcePath:       $sharedCodeSourceDir/$commonSourceFile
+    diffsHeaderPath:        $sharedCodeHeaderDir/$diffsHeaderFile
+    enumsHeaderPath:        $sharedCodeHeaderDir/$enumsHeaderFile
+    enumsInlinePath:        $sharedCodeInlineDir/$enumsInlineFile
+    enumsSourcePath:        $sharedCodeSourceDir/$enumsSourceFile
     typeHeaderPath:         $headerDir/$typeHeaderFile
     typeInlinePath:         $inlineDir/$typeInlineFile
     typeSourcePath:         $sourceDir/$typeSourceFile
@@ -74,8 +92,8 @@
     copy: source        // one of: omit, default, delete, inline, source
     movable: true       // i think requires virtualDestructor to be false
     move: source        // one of: omit, default, delete, inline, source
-    getters: '$<$len($getterVariants) > 0>'
-    getterVariants: [ returnByValue | returnByConstRef | returnByNonconstRef ]
+    getters: '$<len($getterVariants) > 0>'
+    getterVariants: [ returnByValue returnByConstRef returnByNonconstRef ]
     getterRefVariants: [ ref, rvaleRef ]    // &, && variants
     inlineGetters: true     // requires getters
     constGetters: true      // requires getters

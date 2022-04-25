@@ -1,4 +1,4 @@
-$<if $diffable>
+$<if $anyDiffable>
 $<out $diffsHeaderPath>$+
 #pragma once
 
@@ -16,7 +16,7 @@ $<if $std.tuple.usedInBomaType>
 #include <functional>
 $<endif>
 $''
-namespace $namespace
+namespace $sharedCodeNamespaceForCode
 {
     template <class StructType>
     struct Diff

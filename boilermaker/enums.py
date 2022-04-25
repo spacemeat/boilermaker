@@ -59,12 +59,12 @@ class EnumType(Type):
 
     def isScoped(self):
         s = Scribe(self.props)
-        return s.getXProp('enumisScoped') == True
+        return s.getXProp('enumIsScoped') == True
 
 
     def flags(self):
         s = Scribe(self.props)
-        return s.getXProp('enumflags') == True
+        return s.getXProp('enumFlags') == True
 
 
     def toDecl_prefix(self):
@@ -87,7 +87,7 @@ class EnumType(Type):
             return
 
         def translateEnumVal(enumVal):
-            val = f'{self.toDecl_prefix()}{enumVal}{self.toDecl_suffix()}'
+            val = f'{self.toDecl_prefix() or ""}{enumVal}{self.toDecl_suffix() or ""}'
             if self.toDecl_case() == 'upper':
                 val = val.upper()
             elif self.toDecl_case() == 'lower':

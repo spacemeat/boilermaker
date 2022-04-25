@@ -87,7 +87,7 @@ class Project:
         types = {}
         runs = {}
         anchors = {}
-        def rec(bagPath, bag):
+        def rec(bagPath, bagg):
             print (f"{ansi.dk_white_fg}Loading props: {ansi.p(bagPath, 'cyan')}")
             trove, defsFileVersion = utilities.loadHumonFile(bagPath)
             propsDict = trove.root.objectify()
@@ -99,7 +99,7 @@ class Project:
                 print (f'bagName: {bagName}')
                 bag.setDict(propsDict)
                 bag.setProp('name', bagName)
-                bag.propsFilePath = bagPath
+                bag.setProp('propsFilePath', bagPath)
 
                 if 'types' in propsDict:
                     for typeName, typeBlock in propsDict['types'].items():
@@ -107,7 +107,7 @@ class Project:
                         newBag = PropertyBag({'name': typeName})
                         newBag.inherit(bag)
                         props = Props(newBag)
-                        props.push(self.propAdds)
+                        props.push({**{'name': 'commandLine'}, **self.propAdds})
                         types[typeName] = BomaType(typeBlock, props)
 
                 if 'enums' in propsDict:
@@ -117,7 +117,7 @@ class Project:
                         newBag = PropertyBag({'name': typeName})
                         newBag.inherit(bag)
                         props = Props(newBag)
-                        props.push(self.propAdds)
+                        props.push({**{'name': 'commandLine'}, **self.propAdds})
                         enums[typeName] = EnumType(typeBlock, props)
 
                 if 'run' in propsDict:
@@ -130,7 +130,7 @@ class Project:
                         newBag = PropertyBag({'name': name})
                         newBag.inherit(bag)
                         props = Props(newBag)
-                        props.push(self.propAdds)
+                        props.push({**{'name': 'commandLine'}, **self.propAdds})
                         runs[name] = Run(typeBlock, props)
 
                 if 'anchor' in propsDict:
@@ -138,10 +138,11 @@ class Project:
                     if type(anchs) is not list:
                         anchs = [anchs]
                     for anch in anchs:
-                        newBag = PropertyBag({'name': anch})
-                        newBag.inherit(bag)
-                        props = Props(newBag)
-                        props.push(self.propAdds)
+                        #newBag = PropertyBag({'name': anch})
+                        #newBag.inherit(bag)
+                        #props = Props(newBag)
+                        props = Props(bag)
+                        #props.push({**{'name': 'commandLine'}, **self.propAdds})
                         anchors[anch] = props
 
                 for k, v in propsDict.items():
@@ -163,20 +164,18 @@ class Project:
                         rec(newBagPath, newBag)
                         bag.inherit(newBag)
 
-                return bag
-
-            return recrec(propsDict, bagPath.stem, bag)
+            recrec(propsDict, bagPath.stem, bagg)
 
         projectBag = PropertyBag({})
         rec(self.propsPath, projectBag)
 
         # Retarget the main project Props if there's an anchor for that.
         if 'project' in anchors:
-            projectBag = anchors['project']
-        self.propsPath = projectBag.propsFilePath
+            projectBag = anchors['project'].props
+            self.propsPath = projectBag.getProp('propsFilePath')
 
         self.props = Props(projectBag)
-        self.props.push(self.propAdds)
+        self.props.push({**{'name': 'commandLine'}, **self.propAdds})
         self.props.push({'projectPath': self.propsPath,
                          'projectDir': self.propsPath.parent,
                          'bomaDir': Path(__file__).parent,
@@ -186,6 +185,7 @@ class Project:
                          'bomaEnums': enums,
                          'bomaRuns': runs,
                          'anchors': anchors})
+        #breakpoint()
 
 
     def loadProvider(self, provider):

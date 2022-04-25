@@ -5,21 +5,21 @@ $sourceTopComment
 #include "$srcToHeader/$enumsHeaderFile"
 #include <iostream>
 
-$<if 'humon' in $serializeTo>
-$<set scope as $scope + '::' + $namespace>
-namespace $namespace
+$<if 'humon' in $enumSerializeTo>
+$<set scope as $scope + '::' + $sharedCodeNamespaceForCode>
+namespace $sharedCodeNamespaceForCode
 {
     $+
     $<join for enum in $enums>
     std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$rescope($enum)>> & obj)
     {
         using enumIntType = std::underlying_type<$<$rescope($enum)>>::type;
-        $+  $<if not $enum.flags()>
+        $+  $<if not $enumFlags>
         switch(* obj)
         {
         $+  $<join for val in $enum.vals>$+
         $+  $<if not $val.isDuplicate>$+
-                $<if $enum.isScoped()>$+
+                $<if $enumIsScoped>$+
                     case $<$rescope($enum)>::$<$val.codeDecl>$+
                 $<else>$+
                     case $<$rescope($val)>$+    $<#$val.fullCodeDecl>$+

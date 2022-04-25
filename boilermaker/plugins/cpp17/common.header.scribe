@@ -12,8 +12,8 @@ $+  $<join for inc in $commonHeaderIncludes>
 // -------------------
 // Common declarations
 
-$<set scope as $scope + '::' + $namespace>
-namespace $namespace
+$<set scope as $scope + '::' + $sharedCodeNamespaceForCode>
+namespace $sharedCodeNamespaceForCode
 {
     $+  $<join for t in $commonHeaderFwdDecls>
     class $<$t>;$<endjoin>
@@ -32,7 +32,7 @@ namespace $namespace
 $<endif>
     $+
 
-$<if 'binary' in $deserializeFrom>
+$<if 'binary' in $anyDeserializeFrom>
     // -----------------------------
     // Read types from binary format
 
@@ -363,7 +363,7 @@ $<if $std.string.usedInBomaType>
 $+  $<endif>$+
 $+  $<endif $<# deserialize binary>>$+
 $<endset>
-    $+  $<if 'humon' in $deserializeFrom>
+    $+  $<if 'humon' in $anyDeserializeFrom>
 }
 
     // ----------------------------
@@ -519,7 +519,7 @@ namespace hu
         {
             // This holds the type names / aliases for each of the variant types.
             using IndexedType = typename std::tuple_element<I, std::tuple<Ts...>>::type;
-            auto names = $namespace::VariantTypeNames<std::variant<Ts...>>::names;
+            auto names = $sharedCodeNamespaceForCode::VariantTypeNames<std::variant<Ts...>>::names;
             if (obj.has_value() == false && tokStr == names[I])
             {
                 // now we can make the correct variant and give it the node as a ctr arg
@@ -557,11 +557,11 @@ $<endif>$+
 }
 $<endset>
 $<endif $<# deserialize humon>>
-$+  $<if 'humon' in $serializeTo or 'binary' in $serializeTo>
+$+  $<if 'humon' in $anySerializeTo or 'binary' in $anySerializeTo>
 // ------------------------------------
 // Serializing types to humon or binary
-$<set scope as $scope + '::' + $namespace>
-namespace $namespace
+$<set scope as $scope + '::' + $sharedCodeNamespaceForCode>
+namespace $sharedCodeNamespaceForCode
 {
     // Base class for *Format<T> templates
     template <class T>
@@ -579,7 +579,7 @@ namespace $namespace
 
         const T & obj;
     };
-$<if 'binary' in $serializeTo>
+$<if 'binary' in $anySerializeTo>
     // ----------------------------
     // Write types to binary format
 
@@ -738,7 +738,7 @@ $<if 'binary' in $serializeTo>
     $<endif>$+
 $<endif $<# binary>>
 
-    $+  $<if 'humon' in $serializeTo>
+    $+  $<if 'humon' in $anySerializeTo>
     // ---------------------------
     // Write types to humon format
 

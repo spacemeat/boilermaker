@@ -165,8 +165,8 @@ class grokCppProvider(Provider):
 
         propBag = props.props
         newBag = PropertyBag({
-            'enumisScoped': isScoped,
-            'enumflags': flags,
+            'enumIsScoped': isScoped,
+            'enumFlags': flags,
             'enumCodeCase': '',
             'enumCodePrefix': '',
             'enumCodeSuffix': ''

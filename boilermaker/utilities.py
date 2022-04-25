@@ -11,6 +11,8 @@ def doShellCommand(cmd):
 
 
 def getRelativePath(fromDir, toPath):
+    fromDir = Path(fromDir)
+    toPath = Path(toPath)
     fromDirParts = fromDir.parts
     toPathParts = toPath.parts
     div = 0

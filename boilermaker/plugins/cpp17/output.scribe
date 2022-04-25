@@ -1,23 +1,21 @@
------------------- Building $headerDir/$mainHeaderFile.
+------------------ Building $mainHeaderPath.
 $<in $inDir + '/main.header.scribe'>
 
------------------- Building $headerDir/$commonHeaderFile.
+------------------ Building $commonHeaderPath.
 $<in $inDir + '/common.header.scribe'>
 
------------------- Building $sourceDir/$commonSourceFile.
+------------------ Building $commonSourcePath.
 $<in $inDir + '/common.source.scribe'>
 
------------------- Building $headerDir/$diffsHeaderFile.
+------------------ Building $diffsHeaderPath.
 $<in $inDir + '/diffs.header.scribe'>
 
------------------- Building $headerDir/$enumsHeaderFile.
+------------------ Building $enumsHeaderPath.
 $<in $inDir + '/enums.header.scribe'>
 
------------------- Building $sourceDir/$enumsSourceFile.
+------------------ Building $enumsSourcePath.
 $<in $inDir + '/enums.source.scribe'>
 
------------------- Building $headerDir/[type headers].
 $<in $inDir + '/types.header.scribe'>
 
------------------- Building $sourceDir/[type sources].
 $<in $inDir + '/types.source.scribe'>

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include "gen/inc/testCompare.hpp"
+#include "gen/testCompare/inc/testCompare.hpp"
 #include <unistd.h>
 
 

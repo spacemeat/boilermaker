@@ -15,7 +15,7 @@ $headerTopComment
 $<join for header in $<$includes.common.header>>
 #include $header$<endjoin>
 
-namespace $namespace
+namespace $namespaceForCode
 {$<join for type in $<$forwardDecls.common.header>>
     $<$type.typetype> $<$type.name>;$<endjoin>
 $<join for isLessType in $typesWithIsLess>
@@ -549,7 +549,7 @@ $<endif>
 }
 $<endif $<# deserialize humon>>
 $<if 'humon' in $serializeTo or 'binary' in $serializeTo>
-namespace $namespace
+namespace $namespaceForCode
 {
     template <class T>
     struct SerializedFormat
@@ -763,7 +763,7 @@ $<join for header in $<$includes.common.source>>
 #include $header$<endjoin>
 
 $<if len($typesWithIsLess) $> 0 or 'binary' in $serializeTo>
-namespace $namespace
+namespace $namespaceForCode
 {
 $<join for isLessType in $typesWithIsLess>
     bool IsLess_$<$isLessType.name>::operator()($<$const($<$isLessType.ofType.name>)> & lhs, $<$const($<$isLessType.ofType.name>)> & rhs) const
@@ -803,7 +803,7 @@ $headerTopComment
 $<join for header in $<$includes.diffs.header>>
 #include $header$<endjoin>
 
-namespace $namespace
+namespace $namespaceForCode
 {
     template <class StructType>
     struct Diff
@@ -1115,7 +1115,7 @@ $<endjoin $<# enum >>
 }
 $<endif $<# humon >>
 $<if 'binary' in $deserializeFrom and $'len($enums) > 0'>
-namespace $namespace
+namespace $namespaceForCode
 {
     template <class T>
     struct BinaryReader<T, typename std::enable_if_t<std::is_enum_v<T>>>
@@ -1148,7 +1148,7 @@ $<join for header in $<$includes.enums.source>>
 #include $header$<endjoin>
 
 $<if 'humon' in $serializeTo>
-namespace $namespace
+namespace $namespaceForCode
 {$<join for enum in $enums>
     std::ostream & operator <<(std::ostream & out, const HumonFormat<$<$enum.type>>$> & obj)
     {
@@ -1187,7 +1187,7 @@ $headerTopComment
 $<join for header in $<$includes.type.header>>
 #include $header$<endjoin>
 
-namespace $namespace
+namespace $namespaceForCode
 {
     $<$type.typetype> $<$type.name>;$<if $swap>
     void swap($<$type.name> & lhs, $<$type.name> & rhs) noexcept;$<endif>$<if 'humon' in $serializeTo>
@@ -1245,16 +1245,16 @@ $<if 'humon' in $deserializeFrom>
 namespace hu
 {
     template<>
-    struct val<$namespace::$<$type.name>>
+    struct val<$namespaceForCode::$<$type.name>>
     {
-        static inline val<$namespace::$<$type.name> extract($<$const('Node')> & node)
+        static inline val<$namespaceForCode::$<$type.name> extract($<$const('Node')> & node)
         {
-            return val<$namespace::$<$type.name>(node);
+            return val<$namespaceForCode::$<$type.name>(node);
         }
     };
 }
 $<endif>$<if 'binary' in $deserializeFrom>
-namespace $namespace
+namespace $namespaceForCode
 {
     template <$>
     struct BinaryReader<$<$type.name>$>
@@ -1272,7 +1272,7 @@ $<out $sourceDir + '/' + $typeSourceFile>$sourceTopComment
 $<join for header in $<$includes.type.source>>
 #include $header$<endjoin>
 
-namespace $namespace
+namespace $namespaceForCode
 {
 $<if $defaultConstructible>
     $<$type.name>::$<$type.name>()

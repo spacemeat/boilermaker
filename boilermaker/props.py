@@ -131,10 +131,12 @@ class PropertyBag:
 
     def __str__(self):
         def toStr(self, depth):
-            s = ''
+            s = ' ' * depth + f'{ansi.dk_blue_fg}name{ansi.all_off}: {ansi.lt_blue_fg}{self.props.get("name", "")}{ansi.all_off}\n'
             for [k, v] in self.props.items():
-                if k == 'types' or k == 'enums' or k == 'bomaTypes' or k == 'bomaEnums' or k == 'anchors' or k == 'props':
+                if k == 'types' or k == 'enums' or k == 'bomaTypes' or k == 'bomaEnums' or k == 'anchors' or k == 'props' or k.startswith('--'):
                     s += ' ' * depth + f'{ansi.dk_blue_fg}{k}{ansi.all_off}: {ansi.lt_blue_fg}...{ansi.all_off}\n'
+                elif k == 'name':
+                    continue
                 else:
                     s += ' ' * depth + f'{ansi.dk_blue_fg}{k}{ansi.all_off}: {ansi.lt_blue_fg}{v}{ansi.all_off}\n'
             for inh in reversed(self.parents):
@@ -145,10 +147,12 @@ class PropertyBag:
 
     def __repr__(self):
         def toRepr(self, depth):
-            s = ''
+            s = ' ' * depth + f'name: {self.props.get("name", "")}\n'
             for [k, v] in self.props.items():
-                if k == 'types' or k == 'enums' or k == 'bomaTypes' or k == 'bomaEnums' or k == 'anchors' or k == 'props':
+                if k == 'types' or k == 'enums' or k == 'bomaTypes' or k == 'bomaEnums' or k == 'anchors' or k == 'props' or k.startswith('--'):
                     s += ' ' * depth + f'{k}: ...\n'
+                elif k == 'name':
+                    continue
                 else:
                     s += ' ' * depth + f'{k}: {v}\n'
             for inh in reversed(self.parents):
@@ -372,7 +376,7 @@ class Scribe:
 
     def _eval(self, expr):
         expr = self.parseText(expr)
-        globlocs = {**self.execGlobals, 'props': self.props, 'true': True, 'false': False}
+        globlocs = {**self.execGlobals, 'props': self.props, 'scribe': self, 'true': True, 'false': False}
         if self.debug:
             print (f'{ansi.dk_red_fg}Eval expression: {ansi.lt_red_fg}{expr}{ansi.all_off}')
         res = eval(expr, globlocs)
@@ -383,7 +387,7 @@ class Scribe:
     def _exec(self, stmnts):
         stmnts = self.parseText(stmnts)
         res = ''
-        locs = {'props': self.props, 'res': '', 'true': True, 'false': False}
+        locs = {'props': self.props, 'res': '', 'scribe': self, 'true': True, 'false': False}
         globlocs = {**self.execGlobals, **locs}
         if self.debug:
             print (f'{ansi.dk_red_fg}Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
@@ -735,7 +739,7 @@ class Scribe:
             accum('\v' + clause.terms[0])
 
         elif clause.kind == ClauseKind.QUERY:
-            expr = f'props.getProp("{clause.terms[0]}")'
+            expr = f'scribe.getXProp("{clause.terms[0]}")'
             if (clause.parent.kind == ClauseKind.EXPRESSION or
                 clause.parent.kind == ClauseKind.IFCONDITIONAL or
                 clause.parent.kind == ClauseKind.ELIFCONDITIONAL or
@@ -875,6 +879,8 @@ class Scribe:
                         props = self.props
                         if type(val) is dict and 'props' in val and type(val['props']) is Props:
                             props = val['props']
+                        elif getattr(val, 'props', False) and type(val.props) is Props:
+                            props = val.props
                         self.props = props
                         th = self._parseClause(clause.terms[compIdx + 1], depth + 1)
                         d = ''

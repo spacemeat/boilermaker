@@ -5,9 +5,9 @@ $sourceTopComment
 $+$<join for type in $commonHeaderFwdDecls>
 #include "$srcToHeader/$type.hpp"$<endjoin>
 
-$<if 'binary' in $serializeTo>
+$<if 'binary' in $anySerializeTo>
 
-namespace $namespace
+namespace $sharedCodeNamespaceForCode
 {
     $+  $<if $std.string.usedInBomaType>
     std::ostream & operator << (std::ostream & out, $<$const('BinaryFormat<std::string$>')> & obj)

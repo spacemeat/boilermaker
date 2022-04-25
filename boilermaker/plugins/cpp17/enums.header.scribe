@@ -10,12 +10,13 @@ $<join for inc in $enumHeaderIncludes>$+
 $<endjoin>
 $''
 $+
-$<if len([e for _, e in $enums.items() if not e.alreadyDefined]) $> 0>
-$<set scope as $scope + '::' + $namespace>
-namespace $namespace
+
+
+$+$<join for enum in $enums>$+
+    $<if not $enum.alreadyDefined>
+        $<set scope as $scope + '::' + $namespaceForCode>
+namespace $namespaceForCode
 {
-    $+  $<join for enum in $enums>$+
-            $<if not $enum.alreadyDefined>
     enum $<if $enum.isScoped()>class $<endif>$<$enum.codeDecl>
     {
         $<join for val in $enum.vals>$+
@@ -25,12 +26,13 @@ namespace $namespace
         $<$val.codeDecl>$+
         $+  $<endif>$<delim>,
         $<endjoin>$''
-    };$<endif>$<delim>
+    };
+}$<endset>
+$<endif>
+$<endjoin>
+$+
 
-    $<endjoin>
-}$<endset>$<endif>
-
-$+  $<if 'humon' in $deserializeFrom>
+$+  $<if 'humon' in $enumDeserializeFrom>
 $<set scope as $scope + '::hu'>
 namespace hu
 {
@@ -40,11 +42,11 @@ namespace hu
     {
         static inline $<$rescope($enum)> extract($<$const('Node')> & node) noexcept
         {
-            $+  $<if not $enum.flags()>
+            $+  $<if not $enumFlags>
             auto nodeVal = node.value().str().data();
             $+  $<join for val in $enum.vals>$+
             if (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName)>) == 0) { return $+
-            $<if $enum.isScoped()>$+
+            $<if $enumIsScoped>$+
                 $<$rescope($enum)>::$<$val.codeDecl>$+
             $<else>$+
                 $<$rescope($val)>$+
@@ -64,7 +66,7 @@ namespace hu
                 auto nodeVal = chNode.value().str().data();
                 if      $<join for val in $enum.vals>$+
                 (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName)>) == 0) { e |= static_cast<enumIntType>($+
-                $<if $enum.isScoped()>$+
+                $<if $enumIsScoped>$+
                     $<$rescope($enum)>::$<$val.codeDecl>$+
                 $<else>$+
                     $<$rescope($val)>$+
@@ -82,11 +84,11 @@ namespace hu
 $<endjoin>$+  $<# enum>
 }
 $<endset>$<endif>$+  $<# humon>
-$<set scope as $scope + '::' + $namespace>
-$<if 'humon' in $serializeTo or ('binary' in $deserializeFrom and len($enums) $> 0)>$+
-namespace $namespace
+$<set scope as $scope + '::' + $sharedCodeNamespaceForCode>
+$<if 'humon' in $enumSerializeTo or ('binary' in $enumDeserializeFrom and len($enums) $> 0)>$+
+namespace $sharedCodeNamespaceForCode
 {
-    $+  $<if 'binary' in $deserializeFrom and len($enums) $> 0>
+    $+  $<if 'binary' in $enumDeserializeFrom and len($enums) $> 0>
     template <class T>
     struct BinaryReader<T, typename std::enable_if_t<std::is_enum_v<T>>>
     {
@@ -106,7 +108,7 @@ namespace $namespace
     };
 $<endif>
     $+
-$<if 'humon' in $serializeTo>$+
+$<if 'humon' in $enumSerializeTo>$+
 $+  $<join for enum in $enums>$+
     std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<' + $rescope($enum) + '$>')> & obj);
     $<endjoin>
