@@ -1,5 +1,7 @@
 @{ app: boma, boma-version: 0.0.4 }
 {
+    inherit: [boilermaker]
+
     run: {
         plugin:         $constructPlugin
         provider:       $constructProvider
@@ -13,16 +15,23 @@
     constructbuildPojectSequence:     9
 
     buildDir: $projectDir/build
-    tempOutputDir: $buildDir/int
+    tempOutputDir: $buildDir/$targetName/int
     outputDir: $buildDir/bin
+    libDir: $buildDir/lib
+    testDir: $buildDir/test
     runScriptDir: $projectDir
 
-    outputObjectPath:       `$tempOutputDir/$<$source.srcPath.stem>$<if $buildKind!="release">.$buildKind$<endif>.o`
-    exeName:                a.out
-    outputExeName:          `$exeName$<if $buildKind!="release">.$buildKind$<endif>`
-    outputExePath:          $outputDir/$outputExeName
+    targetName:             $groupName
 
-    buildKind:          debug   // or release
+    outputObjectPath:       `$tempOutputDir/$<$source.srcPath.stem>$<if $buildKind!="release">.$buildKind$<endif>.o`
+    outputProjectObjectPath:`$tempOutputDir/$<$targetName>$<if $buildKind!="release">.$buildKind$<endif>.o`
+    outputName:             $targetName
+    outputLibName:          lib$<$outputFullName>.a
+    outputFullName:         `$outputName$<if $buildKind!="release">.$buildKind$<endif>`
+    outputLibPath:          $outputDir/$outputLibName
+    outputPath:             $outputDir/$outputFullName
+
+    buildKind:          debug   // or release   // TODO: buildProfile
     tools:              gnu
     language:           c++
     languageVersion:    2a
@@ -45,4 +54,6 @@
     linkDirs: []
     libs: []
     pkgs: []
+
+    targets: ''
 }

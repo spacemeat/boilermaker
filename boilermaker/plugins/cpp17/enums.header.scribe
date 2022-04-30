@@ -14,7 +14,7 @@ $+
 
 $+$<join for enum in $enums>$+
     $<if not $enum.alreadyDefined>
-        $<set scope as $scope + '::' + $namespaceForCode>
+        $<set scope as $namespaceForCode>
 namespace $namespaceForCode
 {
     enum $<if $enum.isScoped()>class $<endif>$<$enum.codeDecl>
@@ -33,7 +33,7 @@ $<endjoin>
 $+
 
 $+  $<if 'humon' in $enumDeserializeFrom>
-$<set scope as $scope + '::hu'>
+$<set scope as 'hu'>
 namespace hu
 {
     $+  $<join for enum in $enums>
@@ -84,7 +84,7 @@ namespace hu
 $<endjoin>$+  $<# enum>
 }
 $<endset>$<endif>$+  $<# humon>
-$<set scope as $scope + '::' + $sharedCodeNamespaceForCode>
+$<set scope as $sharedCodeNamespaceForCode>
 $<if 'humon' in $enumSerializeTo or ('binary' in $enumDeserializeFrom and len($enums) $> 0)>$+
 namespace $sharedCodeNamespaceForCode
 {

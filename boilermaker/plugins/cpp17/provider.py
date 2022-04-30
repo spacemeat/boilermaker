@@ -263,25 +263,34 @@ class cpp17Provider(Provider):
                 if stdType.usedInBomaType:
                     headers.append(inc)
 
-        incses = s.getXPropAll('include')
-        projectDir = Path(s.X('$projectDir'))
-        headerDir = Path(s.X('$headerDir'))
-        for incs in incses:
+        incses = s.getXProp('include')
+        if type(incses) is not list:
+            incses = [incses]
+        for beType in [*bomaTypes.values(), *bomaEnums.values()]:
+            s = Scribe(beType.props)
+            incs = s.getXProp('include')
             if type(incs) is not list:
                 incs = [incs]
             for inc in incs:
-                angled = False
-                if inc[0] == '"':
-                    inc = inc[1:-1]
-                elif inc[0] == '<':
-                    angled = True
-                    inc = inc[1:-1]
-                inc = getRelativePath(headerDir, projectDir / inc)
-                if not angled:
-                    inc = f'"{inc}"'
-                elif angled:
-                    inc = f'<{inc}>'
-                headers.append(inc)
+                incses.append(inc)
+        incses = list(dict.fromkeys(incses))
+        projectDir = Path(s.X('$projectDir'))
+        headerDir = Path(s.X('$headerDir'))
+        for inc in incses:
+            if not inc:
+                continue
+            angled = False
+            if inc[0] == '"':
+                inc = inc[1:-1]
+            elif inc[0] == '<':
+                angled = True
+                inc = inc[1:-1]
+            inc = getRelativePath(headerDir, projectDir / inc)
+            if not angled:
+                inc = f'"{inc}"'
+            elif angled:
+                inc = f'<{inc}>'
+            headers.append(inc)
 
         self.props.setProp('commonHeaderIncludes', list(dict.fromkeys(headers)))
 
@@ -353,4 +362,4 @@ class cpp17Provider(Provider):
             return
         s = Scribe(t.props)
         t.codeDecl = t.name.replace('.', '::')
-        t.fullCodeDecl = '::' + s.X('$namespaceForCode') + '::' + t.name.replace('.', '::')
+        t.fullCodeDecl = s.X('$namespaceForCode') + '::' + t.name.replace('.', '::')

@@ -1,0 +1,10 @@
+------------------ Building $postPath.
+$<out $postPath>$+
+
+@ {app: boma}
+// This is a post file which is updated on each invocation of boilermaker.
+{
+    projectPath: $projectPath
+    buildDate: $buildDateTime
+}
+$<endout>

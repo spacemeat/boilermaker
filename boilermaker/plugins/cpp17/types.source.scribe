@@ -5,10 +5,10 @@ $<out $typeSourcePath>
 $sourceTopComment
 
 #include "$srcToHeader/$typeHeaderFile"
-#include "$srcToHeader/$enumsHeaderFile"
+#include "$<$getRelativePath($sourceDir, $enumsHeaderPath)>"
 #include <iostream>
 
-$<set scope as $scope + '::' + $sharedCodeNamespaceForCode>
+$<set scope as $sharedCodeNamespaceForCode>
 namespace $sharedCodeNamespaceForCode
 {
     $+  $<join for subtype in $t.subtypesWithIsLess()>
@@ -20,7 +20,7 @@ namespace $sharedCodeNamespaceForCode
     $+  $<endjoin>
 }
 $<endset>
-$<set scope as $scope + '::' + $namespaceForCode>
+$<set scope as $namespaceForCode>
 namespace $namespaceForCode
 {
     $+  $<if $defaultConstructible>
@@ -207,9 +207,7 @@ $''      $<$member.name>_diffs(lhs.$<$member.name>, rhs.$<$member.name>)$<delim>
 $<endjoin>$<endif>
     {
     }
-$''$+    $<endif>$''
-$''}
-
-
+}
+$<endif>$+
 $<endout>
 $<endjoin>

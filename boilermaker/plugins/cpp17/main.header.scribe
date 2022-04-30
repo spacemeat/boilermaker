@@ -4,6 +4,7 @@ $<out $mainHeaderPath>$+
 $mainHeaderTopComment
 
 $+  $<if len($enums) $> 0>#include "$enumsHeaderFile"$<endif>
-$+  $<join for t in $types>#include "$typeHeaderFile"$<delim>
+$+  $<join for t in $types>$+
+#include "$<$getRelativePath($sharedCodeHeaderDir, $typeHeaderPath)>"
 $<endjoin>
 $<endout>

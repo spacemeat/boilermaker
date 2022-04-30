@@ -78,6 +78,8 @@
     caveperson:    ['deserializeBinary']
     caveStream:     `std::cerr`
 
+    enumIsScoped: true
+
     classOrStruct:  'class'
     outputForm:     compiled  // or headerOnly, or anything else in outupt
     deserializeFrom: [humon] // also accepts binary

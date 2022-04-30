@@ -368,11 +368,13 @@ class Scribe:
         self.previousPaths.add(path)
         return f
 
+
     def _closeFileForWriting(self, path):
         if self.pathStack[-1][0] != path:
             raise RuntimeError(f'Open/close mismatch on outfile {path}')
         self.pathStack[-1][1].close()
         del self.pathStack[-1]
+
 
     def _eval(self, expr):
         expr = self.parseText(expr)
@@ -921,20 +923,29 @@ class Scribe:
                 path = self._parseText(path)
             f = None
             try:
+                oldContent = ''
+                newContent = ''
                 Path(path).parent.mkdir(exist_ok=True, parents=True)
-                f = self._openFileForWriting(path)
+                if Path(path).is_file():
+                    with open(path) as f:
+                        oldContent = f.read()
+
                 try:
                     self.props.push({'outfile': path})
-                    string = self._parseClause(clause.terms[1], depth + 1)
+                    newContent = self._parseClause(clause.terms[1], depth + 1)
+                    newContent = self.parseText(newContent)
                 finally:
                     self.props.pop()
-                try:
-                    f.write(self.parseText(string))
-                except EnvironmentError:
-                    accum(f'!<Could not write to file {path}>')
-                finally:
-                    f.close()
-                    self._closeFileForWriting(path)
+
+                if newContent != oldContent:
+                    f = self._openFileForWriting(path)
+                    try:
+                        f.write(newContent)
+                    except EnvironmentError:
+                        accum(f'!<Could not write to file {path}>')
+                    finally:
+                        f.close()
+                        self._closeFileForWriting(path)
             except EnvironmentError:
                 accum(f'!<Could not open file {path} for writing>')
 

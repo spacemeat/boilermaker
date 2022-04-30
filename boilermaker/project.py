@@ -17,6 +17,12 @@ class Run:
         self.props = props
 
 
+class Build:
+    def __init__(self, runBlock, props):
+        self.runBlock = runBlock
+        self.props = props
+
+
 class Project:
     def __init__(self, propsPath, propAdds):
         if type(propsPath) is not Path:
@@ -87,6 +93,7 @@ class Project:
         types = {}
         runs = {}
         anchors = {}
+        builds = {}
         def rec(bagPath, bagg):
             print (f"{ansi.dk_white_fg}Loading props: {ansi.p(bagPath, 'cyan')}")
             trove, defsFileVersion = utilities.loadHumonFile(bagPath)
@@ -95,8 +102,6 @@ class Project:
                 raise RuntimeError(f'Malformed boma props file')
 
             def recrec(propsDict, bagName, bag):
-                #bag = PropertyBag({})
-                print (f'bagName: {bagName}')
                 bag.setDict(propsDict)
                 bag.setProp('name', bagName)
                 bag.setProp('propsFilePath', bagPath)
@@ -133,6 +138,15 @@ class Project:
                         props.push({**{'name': 'commandLine'}, **self.propAdds})
                         runs[name] = Run(typeBlock, props)
 
+                if 'buildType' in propsDict:
+                    newBag = PropertyBag()
+                    newBag.inherit(bag)
+                    props = Props(newBag)
+                    name = Scribe(props).getXProp('groupName')
+                    newBag.setDict({'name': name})
+                    props.push({**{'name': 'commandLine'}, **self.propAdds})
+                    builds[name] = Build(propsDict, props)
+
                 if 'anchor' in propsDict:
                     anchs = propsDict['anchor']
                     if type(anchs) is not list:
@@ -147,7 +161,13 @@ class Project:
 
                 for k, v in propsDict.items():
                     if k.startswith('--'):
-                        newBag = PropertyBag({'name': k})
+                        groupName = k[2:]
+                        parent = bag.props.get("groupName", None)
+                        if parent:
+                            groupName = f'{parent}.{groupName}'
+
+                        newBag = PropertyBag({'name': k,
+                                              'groupName': f'{groupName}'})
                         newBag.inherit(bag)
                         recrec(v, k[2:], newBag)
 
@@ -184,7 +204,8 @@ class Project:
                          'bomaTypes': types,
                          'bomaEnums': enums,
                          'bomaRuns': runs,
-                         'anchors': anchors})
+                         'anchors': anchors,
+                         'builds': builds})
         #breakpoint()
 
 

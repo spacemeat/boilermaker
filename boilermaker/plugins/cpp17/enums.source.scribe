@@ -6,7 +6,7 @@ $sourceTopComment
 #include <iostream>
 
 $<if 'humon' in $enumSerializeTo>
-$<set scope as $scope + '::' + $sharedCodeNamespaceForCode>
+$<set scope as $sharedCodeNamespaceForCode>
 namespace $sharedCodeNamespaceForCode
 {
     $+
@@ -32,10 +32,22 @@ namespace $sharedCodeNamespaceForCode
         enumIntType bits = static_cast<enumIntType$>(* obj);
         out << "[";
         $+  $<join for val in $enum.vals>$+
-        if (bits & static_cast<enumIntType>($<$val.codeDecl>))
+        if (bits & static_cast<enumIntType>($+
+            $<if $enumIsScoped>$+
+                $<$rescope($enum)>::$<$val.codeDecl>$+
+            $<else>$+
+                $<$rescope($val)>$+
+            $<endif>$+
+        ))
         {
             out << " $<$val.bomaName>";
-            bits &= ~static_cast<enumIntType>($<$val.codeDecl>);
+            bits &= ~static_cast<enumIntType>($+
+            $<if $enumIsScoped>$+
+                $<$rescope($enum)>::$<$val.codeDecl>$+
+            $<else>$+
+                $<$rescope($val)>$+
+            $<endif>$+
+            );
             if (! bits)
                 { goto done; }
         }

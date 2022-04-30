@@ -1,6 +1,18 @@
 @{ app: boma, boma-version: 0.0.4 }
 {
+    run: {
+        name:           boilermaker
+        plugin:         boilermaker
+        provider:       provider
+        output:         output
+        ops:            { touchPostFile: 0.1 }
+    }
+
     indent:         { char: space, num: 4 }
     tab:            "$<if $indent.get('char', 'space') == 'space'>$<join for _ in range(0, int($indent.get('num', 4)))> $<endjoin>$<else>\t$<endif>"
     baseDir:        $projectDir
+    groupName:      ''
+    buildDateTime:  '$<$dateAndTime()>'
+    postFile:       .boma-post
+    postPath:       $projectDir/$postFile
 }

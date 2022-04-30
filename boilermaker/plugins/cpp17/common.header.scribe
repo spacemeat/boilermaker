@@ -12,7 +12,7 @@ $+  $<join for inc in $commonHeaderIncludes>
 // -------------------
 // Common declarations
 
-$<set scope as $scope + '::' + $sharedCodeNamespaceForCode>
+$<set scope as $sharedCodeNamespaceForCode>
 namespace $sharedCodeNamespaceForCode
 {
     $+  $<join for t in $commonHeaderFwdDecls>
@@ -369,7 +369,7 @@ $<endset>
     // ----------------------------
     // Read types from humon format
 
-$<set scope as $scope + '::hu'>
+$<set scope as 'hu'>
 namespace hu
 {
     $+  $<if $std.array.usedInBomaType>
@@ -560,7 +560,7 @@ $<endif $<# deserialize humon>>
 $+  $<if 'humon' in $anySerializeTo or 'binary' in $anySerializeTo>
 // ------------------------------------
 // Serializing types to humon or binary
-$<set scope as $scope + '::' + $sharedCodeNamespaceForCode>
+$<set scope as $sharedCodeNamespaceForCode>
 namespace $sharedCodeNamespaceForCode
 {
     // Base class for *Format<T> templates
