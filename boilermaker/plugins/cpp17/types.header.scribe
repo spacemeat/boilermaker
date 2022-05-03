@@ -118,8 +118,8 @@ $<set scope as $namespaceForCode>
     $<endif>    $+
     $<if $copy != 'omit'>$+
         $<$t.codeDecl>($<$const($rescope($t))> & rhs)$+
-        $<if $copy == 'default'> = default
-        $<elif $copy == 'delete'> = delete
+        $<if $copy == 'default'> = default;
+        $<elif $copy == 'delete'> = delete;
         $<elif $copy == 'inline'>$''
          : $<if len($t.baseTypeDecl) $> 0>$<$t.baseTypeDecl>(rhs), $<endif> $+
            $<join for member in $t.members>$<$member.name>(rhs.$<$member.name>)$<delim>, $<endjoin>
@@ -131,8 +131,8 @@ $<set scope as $namespaceForCode>
     $<endif>    $+
     $<if $move != 'omit'>$+
         $<$t.codeDecl>($<$rescope($t)> && rhs)$+
-        $<if $move == 'default'>$'' noexcept = default$+
-        $<elif $move == 'delete'>$''  = delete$+
+        $<if $move == 'default'>$'' noexcept = default;$+
+        $<elif $move == 'delete'>$''  = delete;$+
         $<elif $move == 'inline'>$'' noexcept$+
             $<if $useCopySwap>$''
          : $<if len($t.baseTypeDecl) $> 0>$<$t.baseTypeDecl>(rhs), $<endif> $+
@@ -182,8 +182,8 @@ $+          $<endif>$+
 
     $<if $move != 'omit' and $useCopySwap == False>$+
 $''        $<$rescope($t)> & operator =($<$rescope($t)> && rhs)$+
-        $<if $move == 'default'>$' 'noexcept = default$+
-        $<elif $move == 'delete'>$' ' = delete$+
+        $<if $move == 'default'>$' 'noexcept = default;$+
+        $<elif $move == 'delete'>$' ' = delete;$+
         $<elif $move == 'inline'>$'' noexcept
         {
 $+          $<join for member in $t.members>$+
@@ -211,21 +211,21 @@ $+            $<else>$' 'noexcept;$+
     $<endif>$''    $+
     $<set maxLen as max([len($rescope(m.type)) for m in $t.members.values()] or [0])>
     $<join for member in $t.members>$''
-        $+  $<if $getters>
+        $+  $<if 'returnByValue' in $getterVariants>
         $<fmt left $maxLen + 6>$<$rescope($member.type)>$<endfmt>   get_$<$member.name>() && $+
             $<if $inlineGetters>$''     { return $<$member.name>; }$+
             $<else>$+
         ;$+
             $<endif>$+
         $<endif>$''
-        $+  $<if $constGetters>
+        $+  $<if 'returnByConstRef' in $getterVariants>
         $<fmt left $maxLen + 6>$<$const($rescope($member.type))>$<endfmt> & get_$<$member.name>() const & $+
             $<if $inlineGetters>$''{ return $<$member.name>; }$+
             $<else>$+
         ;$+
             $<endif>$+
         $<endif>$''
-        $+  $<if $nonConstGetters>
+        $+  $<if 'returnByNonconstRef' in $getterVariants>
         $<fmt left $maxLen + 6>$<$rescope($member.type)>$<endfmt> & get_$<$member.name>() & $+
             $<if $inlineGetters>$''      { return $<$member.name>; }$+
             $<else>$+
@@ -247,7 +247,7 @@ $+            $<else>$' 'noexcept;$+
         void set_$<$member.name>($<if not $useCopySwap>$<$const($rescope($member.type))>$<else>$<$rescope($member.type)>$<endif> & new_$<$member.name>)$+
             $<if $inlineSetters>$''$<fmt left $maxLen - len($member.type.codeDecl) + 3>$<endfmt> { $+
                 $<if $useCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
-                $<else>$<$member.name> = old_$<$member.name>;$+
+                $<else>$<$member.name> = new_$<$member.name>;$+
                 $<endif> $+
                     $' '}$+
             $<else>;$+

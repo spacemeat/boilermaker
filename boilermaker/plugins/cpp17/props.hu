@@ -95,7 +95,7 @@
     movable: true       // i think requires virtualDestructor to be false
     move: source        // one of: omit, default, delete, inline, source
     getters: '$<len($getterVariants) > 0>'
-    getterVariants: [ returnByValue returnByConstRef returnByNonconstRef ]
+    getterVariants: [returnByConstRef returnByNonconstRef]  //[ returnByValue returnByConstRef returnByNonconstRef ]
     getterRefVariants: [ ref, rvaleRef ]    // &, && variants
     inlineGetters: true     // requires getters
     constGetters: true      // requires getters

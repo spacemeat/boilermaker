@@ -12,6 +12,7 @@ class Type:
         self.namespace = ''
         self.include = []
         self.usedInBomaType = False
+        self.knows = []
         self.aliases = []
         self.alreadyDefined = False
         self.codeDecl = ''
@@ -232,6 +233,10 @@ class BomaType(Type):
                     # TODO: YUCK. We're doing a literal transliteration here.
                     # I'd rather reason about the type and do scoping stuff.
                     self.baseTypeDecl = memProperties
+                elif memberName == '-knows':
+                    if type(memProperties) is not list:
+                        memProperties = [memProperties]
+                    self.knows = memProperties
 
 
     def __repr__(self):

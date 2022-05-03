@@ -226,7 +226,7 @@ class cpp17Provider(Provider):
                     for inc in bomaEnum.include:
                         enumHeaders.append(inc)
                 else:
-                    bomaEnum.include = ['"' + s.X('$enumsHeaderFile') + '"']
+                    bomaEnum.include = [s.X('$enumsHeaderFile')]
                 bomaEnum.dependencyIncludes = list(enumHeaders)
                 allEnumHeaders.extend(enumHeaders)
             if len(allEnumHeaders) > 0:
@@ -245,17 +245,53 @@ class cpp17Provider(Provider):
         for bomaType in bomaTypes.values():
             if bomaType.alreadyDefined == False:
                 self.props.push({'t': bomaType})
-                bomaType.include = ['"' + s.X('$typeHeaderFile') + '"']
+                bomaType.include = [s.X('$typeHeaderFile')]
                 self.props.pop()
 
         for bomaType in bomaTypes.values():
             typeHeaders = list()
+            for knownTypeName in bomaType.knows:
+                if knownTypeName in bomaEnums:
+                    knownType = bomaEnums[knownTypeName]
+                    for inc in knownType.include:
+                        if inc[0] == '<':
+                            typeHeaders.append(inc)
+                        else:
+                            typeHeaders.append('"' + getRelativePath(Path(Scribe(bomaType.props).getXProp('headerDir')), Path(Scribe(knownType.props).getXProp('sharedCodeHeaderDir')) / inc) + '"')
+                elif knownTypeName in bomaTypes:
+                    #breakpoint()
+                    knownType = bomaTypes[knownTypeName]
+                    for inc in knownType.include:
+                        if inc[0] == '<':
+                            typeHeaders.append(inc)
+                        else:
+                            typeHeaders.append('"' + getRelativePath(Path(Scribe(bomaType.props).getXProp('headerDir')), Path(Scribe(knownType.props).getXProp('headerDir')) / inc) + '"')
+
             subtypes = bomaType.allSubtypes()
             for st in subtypes:
-                if st.type in allTypes: # TODO: This isn't finding all the types it should
-                    allTypes[st.type].usedInBomaType = True
-                    for inc in allTypes[st.type].include:
-                        typeHeaders.append(inc)
+                eo = bomaEnums.get(st.type)
+                if eo:
+                    eo.usedInBomaType = True
+                    for inc in eo.include:
+                        if inc[0] == '<':
+                            typeHeaders.append(inc)
+                        else:
+                            typeHeaders.append('"' + getRelativePath(Path(Scribe(bomaType.props).getXProp('headerDir')), Path(s.getXProp('sharedCodeHeaderDir')) / inc) + '"')
+                else:
+                    to = bomaTypes.get(st.type)
+                    if to:
+                        to.usedInBomaType = True
+                        for inc in to.include:
+                            if inc[0] == '<':
+                                typeHeaders.append(inc)
+                            else:
+                                typeHeaders.append('"' + getRelativePath(Path(Scribe(bomaType.props).getXProp('headerDir')), Path(Scribe(to.props).getXProp('headerDir')) / inc) + '"')
+                    else:
+                        so = standardTypes.get(st.type)
+                        if so:
+                            so.usedInBomaType = True
+                            for inc in so.include:
+                                typeHeaders.append(inc)
             bomaType.dependencyIncludes = list(dict.fromkeys(typeHeaders))
 
         for stdType in standardTypes.values():

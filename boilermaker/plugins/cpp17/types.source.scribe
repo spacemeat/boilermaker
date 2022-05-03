@@ -68,13 +68,13 @@ namespace $namespaceForCode
     $+$<if $move == 'source'>
     $<$rescope($t)>::$<$t.name>($<$rescope($t)> && rhs) noexcept
     $+  $<if $useCopySwap == False>
-    $'' : $<if len($t.baseTypeDecl) $> 0>$<$t.baseTypeDecl>(rhs), $<endif> $+
+    $'' : $<if len($t.baseTypeDecl) $> 0>$<$t.baseTypeDecl>(std::move(rhs)), $<endif> $+
        $<join for member in $t.members>$<$member.name>(std::move(rhs.$<$member.name>))$<delim>, $<endjoin>
     {
     }
 
     $+  $<else>
-    $'' : $<if len($t.baseTypeDecl) $> 0>$<$t.baseTypeDecl>(rhs), $<endif> $+
+    $'' : $<if len($t.baseTypeDecl) $> 0>$<$t.baseTypeDecl>(std::move(rhs)), $<endif> $+
        $<$t.name>()
     {
         swap(*this, rhs);

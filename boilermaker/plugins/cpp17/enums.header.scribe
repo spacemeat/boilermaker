@@ -43,17 +43,7 @@ namespace hu
         static inline $<$rescope($enum)> extract($<$const('Node')> & node) noexcept
         {
             $+  $<if not $enumFlags>
-            auto nodeVal = node.value().str().data();
-            $+  $<join for val in $enum.vals>$+
-            if (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName)>) == 0) { return $+
-            $<if $enumIsScoped>$+
-                $<$rescope($enum)>::$<$val.codeDecl>$+
-            $<else>$+
-                $<$rescope($val)>$+
-            $<endif>$+
-                    ; }
-            $<endjoin>$+
-            return {};$+
+            return extract(node.value().str());
             $<else>
             using enumIntType = std::underlying_type<$<$rescope($enum)>>::type;
             enumIntType e = 0;
@@ -63,22 +53,28 @@ namespace hu
                 { chNode = chNode.firstChild(); }
             do
             {
-                auto nodeVal = chNode.value().str().data();
-                if      $<join for val in $enum.vals>$+
-                (std::strncmp(nodeVal, "$<$val.bomaName>", $<len($val.bomaName)>) == 0) { e |= static_cast<enumIntType>($+
-                $<if $enumIsScoped>$+
-                    $<$rescope($enum)>::$<$val.codeDecl>$+
-                $<else>$+
-                    $<$rescope($val)>$+
-                $<endif>$+
-                ); }$+
-                $<delim>$''
-                else if $<endjoin>$''
+                auto valStr = chNode.value().str();
+                e |= (1 << static_cast<enumIntType>(extract(valStr)));
                 chNode = chNode.nextSibling();
             }
             while(fromList && chNode);
             return static_cast<$<$rescope($enum)>>(e);$+
             $<endif $<# enum.flags>>$''
+        }
+
+        static inline $<$rescope($enum)> extract(std::string_view valStr) noexcept
+        {
+            auto enumVal = valStr.data();
+            $+  $<join for val in $enum.vals>$+
+            if (std::strncmp(enumVal, "$<$val.bomaName>", $<len($val.bomaName)>) == 0) { return $+
+            $<if $enumIsScoped>$+
+                $<$rescope($enum)>::$<$val.codeDecl>$+
+            $<else>$+
+                $<$rescope($val)>$+
+            $<endif>$+
+                    ; }
+            $<endjoin>$+
+            return {};
         }
     };
 $<endjoin>$+  $<# enum>
