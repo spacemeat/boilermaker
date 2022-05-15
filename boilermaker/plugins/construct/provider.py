@@ -520,6 +520,11 @@ class ConstructProvider(Provider):
                     if p.is_file():
                         self.libs.append(Lib(lib, p))
                         break
+                    else:
+                        p = Path(s.getXProp('projectDir')) / libDir / f'lib{lib}.so'
+                        if p.is_file():
+                            self.libs.append(Lib(lib, p))
+                            break
                 else:
                     p = Path(lib)
                     if p.is_file():
