@@ -322,7 +322,6 @@ class ConstructProvider(Provider):
 
         print(f'{self.substepColor_dk}Building {a.p(outputPath, self.substepFileColor)}{self.substepColor_dk} from {self.substepColor_lt}{len(self.sources)}{self.substepColor_dk} objects.{a.all_off}')
 
-        #breakpoint()
         if self.hasErrors() == False:
             forceRebuild = s.getXProp('forceRebuild')
             objs = []
@@ -331,6 +330,8 @@ class ConstructProvider(Provider):
             else:
                 objs = [source.objPath for source in self.sources]
             newestTime = max([o.stat().st_mtime for o in objs], default=0)
+            libs = [lib.path for lib in self.libs]
+            newestTime = max([newestTime, *[l.stat().st_mtime for l in libs]], default = 0)
             if newestTime > outputFileTime or forceRebuild:
                 cmd = self.computeCommand('linkCompiledObjectsToExe', build, sources=objs)
                 ret, _, err = self.runShellCommand(cmd, True, True)
