@@ -20,7 +20,7 @@ namespace $namespaceForCode
     enum $<if $enum.isScoped()>class $<endif>$<$enum.codeDecl>
     {
         $<join for val in $enum.vals>$+
-        $+  $<if $val.numberValueSpecified>$+
+        $+  $<if $val.isNumberValueSpecified>$+
         $<$val.codeDecl> = $<$val.numberValue>$+
         $+  $<else>$+
         $<$val.codeDecl>$+
@@ -54,7 +54,7 @@ namespace hu
             do
             {
                 auto valStr = chNode.value().str();
-                e |= (1 << static_cast<enumIntType>(extract(valStr)));
+                e |= static_cast<enumIntType>(extract(valStr));
                 chNode = chNode.nextSibling();
             }
             while(fromList && chNode);

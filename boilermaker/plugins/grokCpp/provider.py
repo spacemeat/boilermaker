@@ -204,7 +204,7 @@ class grokCppProvider(Provider):
                 bomaVals.append([translateEnumVal(val[0]), idx])
                 cidx = idx
             else:
-                bomaVals.append(translateEnumVal(val[0]))
+                bomaVals.append([translateEnumVal(val[0]), idx])
             cidx += 1
 
         return (bomaVals, eva.flags)

@@ -78,7 +78,11 @@
     caveperson:    ['deserializeBinary']
     caveStream:     `std::cerr`
 
+    enumFlags: false
     enumIsScoped: true
+    enumCodePrefix: ''
+    enumCodeSuffix: ''
+    enumCodeCase: ''
 
     classOrStruct:  'class'
     outputForm:     compiled  // or headerOnly, or anything else in outupt

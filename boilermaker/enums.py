@@ -3,15 +3,25 @@ from .props import Scribe
 
 
 class EnumVal:
-    def __init__(self, enumType, bomaName, numberValue, numberValueSpecified, isDuplicate, props):
+    def __init__(self, enumType, bomaName, numberValue, isNumberValueSpecified, isDuplicate, props):
         self.enumType = enumType
         self.bomaName = bomaName
         self.props = props
         self.codeDecl = ''
         self.fullCodeDecl = ''
         self.numberValue = numberValue
-        self.numberValueSpecified = numberValueSpecified
+        self.isNumberValueSpecified = isNumberValueSpecified
         self.isDuplicate = isDuplicate
+
+
+#   enumVals: [
+#       aaa
+#       bbb
+#       [ccc, 4]            //  set numeric value
+#       [ddd, [4, 8]]       //  set numeric flags value 4 | 8       -- note, we do not shift these
+#       [eee, aaa]          //  set numeric value previously defined
+#       [fff, [bbb, ccc]]   //  sst numeric flags value previously defined
+#   ]
 
 
 class EnumType(Type):
@@ -22,38 +32,95 @@ class EnumType(Type):
         s = Scribe(props)
         self.namespace = s.getXProp('namespace')
 
+        isFlags = s.getXProp('enumFlags')
+
         vals = []
         if type(typeBlock['values']) is list:
             vals = typeBlock['values']
 
         self.vals = []
-        cidx = 0
+        nextAutoVal = 0
         seenNums = set()
         seenVals = dict()
-        for val in vals:
-            idx = -1
-            if type(val) is list and type(val) is not str:
-                if type(val[1]) is int:
-                    idx = int(val[1])    # TODO: Allow idx to be a name we've seen earlier
-                #elif type(val[1]) is str:
-                #    idx = seenVals.get(val[1], val[1])
-                val = val[0]
-                ev = EnumVal(self, val, idx, True, idx in seenNums, props)
-                self.vals.append(ev)
-                cidx = idx
-            else:
-                idx = cidx
-                ev = EnumVal(self, val, idx, False, idx in seenNums, props)
-                self.vals.append(ev)
-            seenNums.add(idx)
-            seenVals[val] = idx
-            cidx += 1
 
-        #self.isScoped = enumProps.get('isScoped', True)
-        #self.flags = enumProps.get('flags', False)
-        #self.toDecl_prefix = enumProps.get('codePrefix', '')
-        #self.toDecl_suffix = enumProps.get('codeSuffix', '')
-        #self.toDecl_case = enumProps.get('codeCase', '')
+        if isFlags == False:
+            name = ''
+            num = -1
+
+            for val in vals:
+                # val is a string; just record the name with an increasing numeric value
+                if type(val) is str:
+                    name = val
+                    num = nextAutoVal
+                    ev = EnumVal(self, name, num, False, num in seenNums, props)
+                    self.vals.append(ev)
+
+                # val is a list; we need to set a numeric
+                elif type(val) is list:
+                    name = val[0]
+                    if type(val[1]) is int:
+                        num = val[1]
+                    elif type(val[1]) is str:
+                        if val[1] in seenVals:
+                            num = seenVals[val[1]]
+                        else:
+                            raise RuntimeError(f"Invalid enum value '{val[1]}' in {self.name}")
+                    else:
+                        raise RuntimeError(f"malformed enum vals in {self.name}")
+
+                    ev = EnumVal(self, name, num, True, num in seenNums, props)
+                    self.vals.append(ev)
+
+                seenNums.add(num)
+                seenVals[name] = num
+                nextAutoVal = num + 1
+
+        else:
+            name = ''
+            num = -1
+            nextFlagVal = 1
+
+            for val in vals:
+                # val is a string; just record the name with an increasing numeric value
+                if type(val) is str:
+                    name = val
+                    num = nextFlagVal
+                    nextFlagVal *= 2
+                    ev = EnumVal(self, name, num, True, num in seenNums, props)
+                    self.vals.append(ev)
+
+                # val is a list; we need to set a numeric
+                elif type(val) is list:
+                    name = val[0]
+                    if type(val[1]) is int:
+                        num = val[1]
+                        nextFlagVal = num * 2
+                    elif type(val[1]) is str:
+                        if val[1] in seenVals:
+                            num = seenVals[val[1]]
+                        else:
+                            raise RuntimeError(f"Invalid enum value '{val[1]}' in {self.name}")
+                    elif type(val[1]) is list:
+                        flags = val[1]
+                        num = 0
+                        for flag in flags:
+                            if type(flag) is int:
+                                num += flag
+                            elif type(flag) is str:
+                                if flag in seenVals:
+                                    num += seenVals[flag]
+                                else:
+                                    raise RuntimeError(f"Invalid enum flag value '{flag}' in {self.name}")
+                    else:
+                        raise RuntimeError(f"malformed enum vals in {self.name}")
+
+                    ev = EnumVal(self, name, num, True, num in seenNums, props)
+                    self.vals.append(ev)
+
+                seenNums.add(num)
+                seenVals[name] = num
+                nextAutoVal = num + 1
+
         self.alreadyDefined = False
 
 
