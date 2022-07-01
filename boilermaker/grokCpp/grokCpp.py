@@ -1,60 +1,48 @@
-from ...plugin import Provider
-from ...props import Scribe, Props, PropertyBag
-from ...enums import EnumType
 from .getSearchPaths_gnu import getSearchPaths as getSearchPaths_gnu
+from ..props import Scribe, Props, PropertyBag
+from ..enums import EnumType
 import pygccxml
 from pathlib import Path
 
 
-class grokCppProvider(Provider):
-    def start(self, runDefs, props):
-        print (f'starting grokCppProvider')
-        self.runDefs = runDefs
+class GrokkedEnumVal:
+    def __init__(self, name, numericValue, codeDecl, fullCodeDecl):
+        self.name = name
+        self.numericValue = numericValue
+        self.codeDecl = codeDecl
+        self.fullCodeDecl = fullCodeDecl
+
+
+class GrokkedEnum:
+    def __init__(self, name, values, include, namespace, hasCodeDefs, isFlags, isScoped):
+        self.name = name
+        self.values = values
+        self.include = include
+        self.namespace = namespace
+        self.hasCodeDefs = hasCodeDefs
+        self.isFlags = isFlags
+        self.isScoped = isScoped
+
+
+class GrokCpp:
+    def __init__(self, runDefs, props):
         self.props = props
-
-
-    def do(self, op, seq):
-        print (f'grokCppProvider doing op {op} at sequence {seq}')
-        if op == 'makeEnums':
-            self._parseSources()
-
-
-    def stop(self):
-        print (f'stopping grokCppProvider')
-
-
-    def _parseSources(self):
-        s = Scribe(self.props)
+        self.runDefs = runDefs
+        s = Scribe(props)
         projectDir = Path(s.getXProp('projectDir'))
-
         self.quotedSearchPaths, self.systemSearchPaths  = getSearchPaths_gnu(projectDir)
 
-        sources = self.runDefs['sources']
-        if type(sources) is str:
-            sources = [sources]
-            self.runDefs['sources'] = sources
 
-        # at some point this might be like
-        # enums = {} / types = {} / e, t = self._processSource(source)
-        enums = {}
-        for source in sources:
-            enums.update(self._processSource(source))
-
-        # update the boma enums dict with the new enums
-        bomaEnums = self.props.getProp('bomaEnums')
-        bomaEnums.update(enums)
-
-
-    def _processSource(self, sourceFilename):
+    def processSource(self, include):
         s = Scribe(self.props)
         tools = s.X(self.runDefs.get('tools', ''))
 
         generator_path, generator_name = pygccxml.utils.find_xml_generator()
 
-        isSystemInclude = sourceFilename.startswith('<') and sourceFilename.endswith('>')
-        isLocalInclude = sourceFilename.startswith('"') and sourceFilename.endswith('"')
+        isSystemInclude = include.startswith('<') and include.endswith('>')
+        isLocalInclude = include.startswith('"') and include.endswith('"')
         if isSystemInclude or isLocalInclude:
-            sourceFilename = sourceFilename[1:len(sourceFilename) - 1]
+            include = include[1:len(include) - 1]
 
         # Configure the xml generator
         if isSystemInclude:
@@ -103,23 +91,48 @@ class grokCppProvider(Provider):
             define_symbols=defines)
 
         # Parse the include file
-        decls = pygccxml.parser.parse([sourceFilename], xml_generator_config)
+        decls = pygccxml.parser.parse([include], xml_generator_config)
 
         # Get access to the global namespace
         global_namespace = pygccxml.declarations.get_global_namespace(decls)
 
-        return self._processNamespace(global_namespace, language == 'c++')
+        return self._processNamespace(global_namespace, language == 'c++', include)
 
 
-    def _processNamespace(self, ns, isScoped):
+    def _processNamespace(self, ns, isScoped, include):
         accruedEnums = {}
+        accruedChainStructEnums = {}
+        accruedChainStructs = {}
+
+        def captureStruct(declName, structChain):
+            if declName == structChain['baseProviderStructName']:
+                accruedChainStructs[declName] = {'members': [(v.name, v.decl_type.decl_string) for v in decl.variables() ],
+                                                 'sType': structChain['mainStructStype'],
+                                                 'max': 1}
+                print(f'{decl.class_type} {decl.name}')
+            elif struc := next((n for n in structChain['chainStructs'] if n['structName'] == declName), None):
+                if struc != None:
+                    accruedChainStructs[declName] = {'members': [(v.name, v.decl_type.decl_string) for v in decl.variables() ],
+                                                    'sType': struc['sType'],
+                                                    'max': struc.get('max', 1)}
+                    print(f'{decl.class_type} {decl.name}')
+
+        for decl in ns.classes().declarations:
+            for area, struc in self.runDefs.get('structureChains').items():
+                if len(struc):
+                    captureStruct(decl.name, struc)
+
+        for name, struc in accruedChainStructs.items():
+            e = self._makeChainStructEnum(name + '_members', struc, include)
+            accruedChainStructEnums[e.name] = e
+
         for decl in ns.declarations:
             if hasattr(decl, "elaborated_type_specifier"):
                 if decl.elaborated_type_specifier == "enum":
                     enumType = decl.partial_decl_string.replace('::', '.')
                     #self.enums[enumType] = CfamilyEnum(enumType, decl.values, isScoped, self)
                     # instead of above, just make the EnumType object, and then .provideDefinition
-                    e = self._extractEnum(decl, isScoped)
+                    e = self._extractEnum(decl, isScoped, include)
                     accruedEnums[e.name] = e
 
         for decl in ns.declarations:
@@ -134,10 +147,53 @@ class grokCppProvider(Provider):
         for decl in ns.namespaces(allow_empty=True):
             accruedEnums.update(self._processNamespace(decl, isScoped))
 
-        return accruedEnums
+        return (accruedEnums, accruedChainStructEnums, accruedChainStructs)
 
 
-    def _extractEnum(self, pygccxmlDecl, isScoped):
+    def _makeChainStructEnum(self, name, struc, include):
+        bomaEnumName = name
+        bomaNamespace = name[:-len(bomaEnumName)].replace('::', '.')
+
+        bomaVals = []
+        for i in range(0, len(struc['members'])):
+            memb = struc['members'][i][0]
+            if memb == 'sType' or memb == 'pNext':
+                continue
+            bomaVals.append(GrokkedEnumVal(memb, i, '', ''))
+
+        isScoped = (self.runDefs.get('isScoped', False) or
+                    self.runDefs.get('language', 'c++') == 'c++')
+
+        props = self.props
+        anchors = self.props.getProp('anchors')
+        if anchors and 'anchors' in anchors:
+            anch = props['anchors']
+            if 'vulkanEnums' in anch:
+                props = anch['vulkanEnums']
+
+        propBag = props.props
+        newBag = PropertyBag({
+            'enumIsScoped': isScoped,
+            'enumFlags': False,
+            'enumCodeCase': '',
+            'enumCodePrefix': '',
+            'enumCodeSuffix': ''
+        })
+        newBag.inherit(propBag)
+
+        #e = EnumType({'name': bomaEnumName, 'values': bomaVals}, Props(newBag))
+        #e.namespace = bomaNamespace
+        #e.include = include
+        #e.codeDecl = bomaEnumName
+        #e.fullCodeDecl = f'{bomaNamespace}{e.codeDecl}'.replace('.', '::')
+
+        e = GrokkedEnum(name=bomaEnumName, values=bomaVals, include = include,
+                        namespace = bomaNamespace, hasCodeDefs=False, isFlags = False, isScoped = isScoped)
+
+        return e
+
+
+    def _extractEnum(self, pygccxmlDecl, isScoped, include):
         bomaEnumName = pygccxmlDecl.name
         bomaNamespace = pygccxmlDecl.partial_decl_string[:-len(bomaEnumName)].replace('::', '.')
         declVals = []
@@ -172,12 +228,18 @@ class grokCppProvider(Provider):
             'enumCodeSuffix': ''
         })
         newBag.inherit(propBag)
-        e = EnumType({'name': bomaEnumName, 'values': bomaVals}, Props(newBag))
-        e.namespace = bomaNamespace
-        e.include = self.runDefs.get('sources', [])
-        e.codeDecl = bomaEnumName
-        e.fullCodeDecl = f'{bomaNamespace}{e.codeDecl}'.replace('.', '::')
+
+        #e = EnumType({'name': bomaEnumName, 'values': bomaVals}, Props(newBag))
+        #e.namespace = bomaNamespace
+        #e.include = include
+        #e.codeDecl = bomaEnumName
+        #e.fullCodeDecl = f'{bomaNamespace}{e.codeDecl}'.replace('.', '::')
+        #self._provideDeclValsToEnum(e, declVals)
+
+        e = GrokkedEnum(name=bomaEnumName, values=bomaVals, include = include,
+                        namespace = bomaNamespace, hasCodeDefs=True, isFlags = flags, isScoped = isScoped)
         self._provideDeclValsToEnum(e, declVals)
+
         return e
 
 
@@ -200,11 +262,16 @@ class grokCppProvider(Provider):
         cidx = 0
         for val in declVals:
             idx = val[1]
+
+            name = val[0]
+            numericValue = val[1]
+            codeDecl = translateEnumVal(val[0])
+            fullCodeDecl = translateEnumVal(val[0])
+
             if idx != cidx:
-                bomaVals.append([translateEnumVal(val[0]), idx])
                 cidx = idx
-            else:
-                bomaVals.append([translateEnumVal(val[0]), idx])
+
+            bomaVals.append(GrokkedEnumVal(name, numericValue, codeDecl, fullCodeDecl))
             cidx += 1
 
         return (bomaVals, eva.flags)
@@ -290,14 +357,14 @@ class grokCppProvider(Provider):
         return eva
 
 
-    def _provideDeclValsToEnum(self, enum :EnumType, declVals):
+    def _provideDeclValsToEnum(self, enum, declVals):
         enum.alreadyDefined = True
         for i in range(0, len(declVals)):
             declVal = declVals[i]
-            if enum.vals[i].numberValue != declVal[1]:
+            if enum.values[i].numericValue != declVal[1]:
                 raise RuntimeError(f'declVal / enum val mismatch')
-            enum.vals[i].codeDecl = declVal[0]
-            enum.vals[i].fullCodeDecl = f'{enum.namespace}{declVal[0]}'.replace('.', '::')
+            enum.values[i].codeDecl = declVal[0]
+            enum.values[i].fullCodeDecl = f'{enum.namespace}{declVal[0]}'.replace('.', '::')
 
 
     @staticmethod
@@ -336,7 +403,7 @@ class grokCppProvider(Provider):
         cev = strs[0]
         commonLength = len(cev)
         for ev in strs[1:]:
-            l = grokCppProvider.determineCommonPrefixAndSuffixLengthBetweenTwo(cev, ev, postfix, delimit)
+            l = GrokCpp.determineCommonPrefixAndSuffixLengthBetweenTwo(cev, ev, postfix, delimit)
             if l < commonLength:
                 commonLength = l
             if commonLength == 0:

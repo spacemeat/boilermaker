@@ -1,0 +1,11 @@
+------------------ Building $vkMainHeaderPath.
+$<in $inDir + '/vk.header.scribe'>
+
+------------------ Building $vkMainSourcePath.
+$<in $inDir + '/vk.source.scribe'>
+
+------------------ Building $vkChainStructsHeaderPath.
+$<in $inDir + '/chainStructs.header.scribe'>
+
+------------------ Building $vkChainStructsSourcePath.
+$<in $inDir + '/chainStructs.source.scribe'>

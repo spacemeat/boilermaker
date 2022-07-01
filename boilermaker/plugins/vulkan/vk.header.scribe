@@ -1,0 +1,6 @@
+$<out $vkMainHeaderFile>$+
+#pragma once
+
+$headerTopComment
+
+$<endout>

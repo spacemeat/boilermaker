@@ -1,0 +1,193 @@
+$<out $vkChainStructsHeaderPath>$+
+#pragma once
+
+$headerTopComment
+
+#include <vulkan/vulkan.h>
+#include "common.hpp"
+#include "enums.hpp"
+#include <fmt/format.h>
+
+$<join for header in $chainStructHeaders>$+
+#include $header
+$<endjoin>
+
+namespace og
+{
+    class Check
+    {
+        template <class T>
+        static bool member(T const & member, og::vkRequirements::reqOperator op,
+                           std::string_view value)
+        {
+            auto const & valueConv = hu::val<T>::extract(value);
+            if constexpr(std::is_enum_v<T>)
+            {
+                if (op == og::vkRequirements::reqOperator::has)
+                    { return (member & valueConv) == member; }
+                if (op == og::vkRequirements::reqOperator::eq)
+                    { return member == valueConv; }
+                if (op == og::vkRequirements::reqOperator::ne)
+                    { return member != valueConv; }
+                throw std::runtime_error(fmt::format("Invalid operator {}.", op));
+            }
+            else
+            {
+                return og::obeysInequality(member, valueConv, op);
+            }
+        }
+
+        static bool member(VkBool32 const & member, og::vkRequirements::reqOperator op,
+                           std::string_view value)
+        {
+            if (op != og::vkRequirements::reqOperator::eq &&
+                op != og::vkRequirements::reqOperator::ne)
+                { throw std::runtime_error(fmt::format("Invalid operator {}.", op)); }
+            if (value == "true")
+                { return member == (op == og::vkRequirements::reqOperator::eq ? VK_TRUE : VK_FALSE); }
+            if (value == "false")
+                { return member == (op == og::vkRequirements::reqOperator::ne ? VK_TRUE : VK_FALSE); }
+            throw std::runtime_error(fmt::format("Invalid operator {}.", op));
+        }
+
+
+        static bool member(uint8_t member[VK_UUID_SIZE], og::vkRequirements::reqOperator op,
+                           std::string_view value)
+        {
+            if (op != og::vkRequirements::reqOperator::eq && op != og::vkRequirements::reqOperator::ne)
+                { throw std::runtime_error(fmt::format("Invalid operator {}.", op)); }
+
+            if (value.size() != VK_UUID_SIZE * 2)
+                { throw std::runtime_error("Invalid format for uint8_t[VK_UUID_SIZE]."); }
+
+            // specially reading long hex string to match
+            for (int i = 0; i < VK_UUID_SIZE; ++i)
+            {
+                auto toHex = [& value](char c)
+                {
+                    if      (c >= '0' && c <= '9') { return c -= '0'; }
+                    else if (c >= 'A' && c <= 'F') { return c -= 'A'; }
+                    else if (c >= 'a' && c <= 'f') { return c -= 'F'; }
+                    else { throw std::runtime_error("Invalid format for uint8_t[VK_UUID_SIZE]."); }
+                };
+
+                auto h = toHex(value[i * 2]);
+                auto l = toHex(value[i * 2 + 1]);
+                auto val = (h << 4) + l;
+                if (val != static_cast<int>(member[i]))
+                    { return op == og::vkRequirements::reqOperator::ne; }
+            }
+
+            return op != og::vkRequirements::reqOperator::ne;
+        }
+
+        static bool member(char member[VK_MAX_DRIVER_NAME_SIZE],
+                           og::vkRequirements::reqOperator op, std::string_view value)
+        {
+            if (op != og::vkRequirements::reqOperator::eq && op != og::vkRequirements::reqOperator::ne)
+                { throw std::runtime_error(fmt::format("Invalid operator {}.", op)); }
+
+            if (std::string_view(member) != value)
+                { return op == og::vkRequirements::reqOperator::ne; }
+
+            return op != og::vkRequirements::reqOperator::ne;
+        }
+    };
+
+
+    $<join for struct in $structureChains>$+
+
+    struct $<$struct.name>
+    {
+        void init(std::vector<std::string_view> const & providers)
+        {
+            void ** ppNext = & baseProvider.pNext;
+            for (auto const & provider : providers)
+            {
+                if      $<join for member in $struct.chainStructs>$+
+                (provider == "$<$member.providerName>") { if ($<$member.providerName>) { continue; } $<$member.providerName> = std::make_unique<$<$member.structName>>(new $<$member.structName> { $<$member.sType> }); *ppNext = & (* $<$member.providerName>); ppNext = & $<$member.providerName>->pNext; }
+                $<delim>else if $<endjoin>
+                else { throw std::runtime_error("Woops"); }
+            }
+        }
+
+        $<$struct.name> copyAndReset()
+        {
+            $<$struct.name> newCh { baseProvider };
+
+            void ** ppNext = & newCh.baseProvider.pNext;
+
+            VkBaseOutStructure * pThisNext = static_cast<VkBaseOutStructure *>(baseProvider.pNext);
+            while (pThisNext != nullptr)
+            {
+                switch(pThisNext->sType)
+                {
+                $<join for member in $struct.chainStructs>$+
+                case $<$member.sType>: { newCh.$<$member.providerName> = std::make_unique<$<$member.structName>>(new $<$member.structName> { $<$member.sType> }); *ppNext = & (* newCh.$<$member.providerName>); ppNext = & newCh.$<$member.providerName>->pNext; break; }
+                $<endjoin>
+                }
+                pThisNext = pThisNext->pNext;
+            }
+
+            return newCh;
+        }
+
+        /*
+        bool checkFeature(std::string_view feature)
+        {
+            return checkFeature_$<$struct.baseProviderName>(feature);
+        }
+
+        bool checkFeature(VkStructureType sType, std::string_view feature)
+        {
+            switch(sType)
+            {
+            case $<$struct.mainStructStype>: return checkFeature_$<$struct.baseProviderName>(feature);
+            $<join for struc in $struct.chainStructs>$+
+            case $<$struc.sType>: return checkFeature_$<$struct.baseProviderName>(feature);
+            $<endjoin>
+            }
+            return false;
+        }
+        */
+
+        template <class struc>
+        bool checkFeature(struc provider)
+        {
+            return check(provider, og::vkRequirements::reqOperator::eq, VK_TRUE);
+        }
+
+        bool check($<$struct.baseProviderStructName> const & provider,
+                   og::vkRequirements::reqOperator op,
+                   std::string_view value)
+        {
+            switch (provider)
+            {
+            $<join for providerMember in $enumVals('$struct.mainStructName')>$+
+            case $<$struct.baseProviderStructName>::$providerMember: return Check.member(baseProvider.$<$struct.baseProviderMemberName>.$providerMember, op, value);
+            $<endjoin>
+            }
+        }
+
+        $<join for struc in $struct.chainStructs>$+
+        bool check($<$struc.structName>_members member)
+        {
+            switch (member)
+            {
+            $<join for featureMember in $enumVals('$member.mainStructName')>$+
+            case $<$struc.structName>_members::$featureMember: return baseProvider.$<$struct.baseProviderMemberName>.$featureMember == VK_TRUE;
+            $<endjoin>
+            }
+            return false;
+        }
+        $<endjoin>
+
+        $<$struct.mainStructName> baseProvider = { $<$struct.mainStructStype> };
+        $<join for struc in $struct.chainStructs>$+
+        std::unique_ptr<$<$struc.structName>$> $<$struc.providerName>;
+        $<endjoin>
+    };
+    $<endjoin>
+}
+
+$<endout>

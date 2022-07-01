@@ -2,9 +2,10 @@
 {
     run: {
         name:           vulkan
-        plugin:         grokCpp
+        plugin:         vulkan
         provider:       provider
-        ops:            { makeEnums: 1.1 }
+        output:         output
+        ops:            { parseSources: 1.0 makeEnums: 1.1 makeChainStructs: 1.2 }
         sources:        ['<vulkan/vulkan.h>']
         macros:         { }
         tools:          gnu
@@ -30,5 +31,88 @@
                 encode: lower
             }
         }
+
+        structureChains: {
+            features: {
+                mainStructName: VkPhysicalDeviceFeatures2
+                mainStructStype: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2
+                baseProviderName: vulkan_1_0
+                baseProviderStructName: VkPhysicalDeviceFeatures
+                baseProviderMemberName: features
+                chainStructs: [ {
+                        structName: VkPhysicalDeviceVulkan11Features
+                        providerName: vulkan_1_1
+                        sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES
+                    }, {
+                        structName: VkPhysicalDeviceVulkan12Features
+                        providerName: vulkan_1_2
+                        sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES
+                    }, {
+                        structName: VkPhysicalDeviceVulkan13Features
+                        providerName: vulkan_1_3
+                        sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES
+                    }
+                ]
+            }
+            properties: {
+                mainStructName: VkPhysicalDeviceProperties2
+                mainStructStype: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2
+                baseProviderName: vulkan_1_0
+                baseProviderStructName: VkPhysicalDeviceProperties
+                baseProviderMemberName: properties
+                chainStructs: [ {
+                        structName: VkPhysicalDeviceVulkan11Properties
+                        providerName: vulkan_1_1
+                        sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES
+                    }, {
+                        structName: VkPhysicalDeviceVulkan12Properties
+                        providerName: vulkan_1_2
+                        sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES
+                    }, {
+                        structName: VkPhysicalDeviceVulkan13Properties
+                        providerName: vulkan_1_3
+                        sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES
+                    }
+                ]
+            }
+            queueFamilies: {
+                mainStructName: VkQueueFamilyProperties2
+                mainStructStype: VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2
+                baseProviderName: vulkan_1_0
+                baseProviderStructName: VkQueueFamilyProperties
+                baseProviderMemberName: queueFamilyProperties
+                chainStructs: [ {
+                        structName: VkQueueFamilyCheckpointProperties2NV
+                        providerName: device_diagnostic_checkpoints2
+                        sType: VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_2_NV
+                    }, {
+                        structName: VkQueueFamilyCheckpointPropertiesNV
+                        providerName: device_diagnostic_checkpoints
+                        sType: VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV
+                    }, {
+                        structName: VkQueueFamilyGlobalPriorityPropertiesKHR
+                        providerName: global_priority
+                        sType: VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES_KHR
+                    }/*, {
+                        structName: VkQueueFamilyQueryResultStatusProperties2KHR
+                        providerName: video_queue_query
+                        sType: VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_2_KHR
+                    }, {
+                        structName: VkVideoQueueFamilyProperties2KHR
+                        providerName: video_queue
+                        sType: VK_STRUCTURE_TYPE_VIDEO_QUEUE_FAMILY_PROPERTIES_2_KHR
+                    }*/
+                ]
+            }
+        }
     }
+
+    vkMainHeaderFile: vk.hpp
+    vkMainHeaderPath: $sharedCodeHeaderDir/vk.hpp
+    vkMainSourceFile: vk.cpp
+    vkMainSourcePath: $sharedCodeSourceDir/vk.cpp
+    vkChainStructsHeaderFile: vkChainStructs.hpp
+    vkChainStructsHeaderPath: $sharedCodeHeaderDir/$vkChainStructsHeaderFile
+    vkChainStructsSourceFile: vkChainStructs.cpp
+    vkChainStructsSourcePath: $sharedCodeSourceDir/$vkChainStructsSourceFile
 }

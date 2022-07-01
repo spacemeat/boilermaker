@@ -1,9 +1,7 @@
-from ... import utilities
-from ...enums import Enums, Enum, EnumTypedef
+from .enums import Enums, Enum
 from .getSearchPaths_gnu import getSearchPaths as getSearchPaths_gnu
 from pathlib import Path
-import pygccxml
-from ...props import Scribe
+from ..props import Scribe
 
 
 class CfamilyEnums(Enums):

@@ -1,4 +1,4 @@
-from ... import utilities
+from .. import utilities
 
 def getSearchPaths(defsPath):
     quotedSearchPaths = []

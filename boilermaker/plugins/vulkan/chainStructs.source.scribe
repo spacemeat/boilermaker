@@ -1,0 +1,6 @@
+$<out $vkChainStructsSourcePath>$+
+
+$sourceTopComment
+
+#include "$srcToHeader/$vkChainStructsHeaderFile"
+
