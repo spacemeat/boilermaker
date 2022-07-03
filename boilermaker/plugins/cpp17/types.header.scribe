@@ -236,7 +236,7 @@ $+            $<else>$' 'noexcept;$+
     $+  $<join for member in $t.members>$''
         $+  $<if $setByCopy and $movable>
         void set_$<$member.name>($<$rescope($member.type)> new_$<$member.name>)$+
-            $<if $inlineSetters>$''$<fmt left $maxLen - len($member.type.codeDecl) + 3>$<endfmt> { $+
+            $<if $inlineSetters>$''$<#fmt left $maxLen - len($member.type.codeDecl) + 3>$<#endfmt> { $+
                 $<if $useCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
                 $<else>$<$member.name> = std::move(new_$<$member.name>);$+
                 $<endif> $+
@@ -245,7 +245,7 @@ $+            $<else>$' 'noexcept;$+
             $<endif>$+
         $<elif $setByCopy and not $movable>
         void set_$<$member.name>($<if not $useCopySwap>$<$const($rescope($member.type))>$<else>$<$rescope($member.type)>$<endif> & new_$<$member.name>)$+
-            $<if $inlineSetters>$''$<fmt left $maxLen - len($member.type.codeDecl) + 3>$<endfmt> { $+
+            $<if $inlineSetters>$''$<#fmt left $maxLen - len($member.type.codeDecl) + 3>$<#endfmt> { $+
                 $<if $useCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
                 $<else>$<$member.name> = new_$<$member.name>;$+
                 $<endif> $+
@@ -255,7 +255,7 @@ $+            $<else>$' 'noexcept;$+
         $<endif>$''
         $+  $<if $setByMove>
         void set_$<$member.name>($<$rescope($member.type)> && new_$<$member.name>)$+
-            $<if $inlineSetters>$''$<fmt left $maxLen - len($member.type.codeDecl)>$<endfmt> { $+
+            $<if $inlineSetters>$''$<#fmt left $maxLen - len($member.type.codeDecl)>$<#endfmt> { $+
                 $<if $useCopySwap>using std::swap; swap($<$member.name>, new_$<$member.name>);$+
                 $<else>$<$member.name> = std::move(new_$<$member.name>);$+
                 $<endif> $+

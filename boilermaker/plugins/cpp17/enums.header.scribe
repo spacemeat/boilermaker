@@ -17,11 +17,11 @@ $+$<join for enum in $enums>$+
         $<set scope as $namespaceForCode>
 namespace $namespaceForCode
 {
-    enum $<if $enum.isScoped()>class $<endif>$<$enum.codeDecl>
+    enum $<if $enumIsScoped>class $<endif>$<$enum.codeDecl>
     {
-        $<join for val in $enum.vals>$+
+        $<join for val in $enum.bomaEnum.values>$+
         $+  $<if $val.isNumberValueSpecified>$+
-        $<$val.codeDecl> = $<$val.numberValue>$+
+        $<$val.codeDecl> = $<$val.numericValue>$+
         $+  $<else>$+
         $<$val.codeDecl>$+
         $+  $<endif>$<delim>,
@@ -65,12 +65,12 @@ namespace hu
         static inline $<$rescope($enum)> extract(std::string_view valStr) noexcept
         {
             auto enumVal = valStr.data();
-            $+  $<join for val in $enum.vals>$+
-            if (std::strncmp(enumVal, "$<$val.bomaName>", $<len($val.bomaName)>) == 0) { return $+
+            $+  $<join for val in $enum.bomaEnum.values>$+
+            if (std::strncmp(enumVal, "$<$val.name>", $<len($val.name)>) == 0) { return $+
             $<if $enumIsScoped>$+
                 $<$rescope($enum)>::$<$val.codeDecl>$+
             $<else>$+
-                $<$rescope($val)>$+
+                $<$val.codeDecl>$+
             $<endif>$+
                     ; }
             $<endjoin>$+

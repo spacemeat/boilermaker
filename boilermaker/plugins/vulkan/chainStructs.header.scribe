@@ -14,7 +14,7 @@ $<endjoin>
 
 namespace og
 {
-    class Check
+    struct Check
     {
         template <class T>
         static bool member(T const & member, og::vkRequirements::reqOperator op,
@@ -101,7 +101,7 @@ namespace og
     {
         void init(std::vector<std::string_view> const & providers)
         {
-            void ** ppNext = & baseProvider.pNext;
+            void ** ppNext = & mainStruct.pNext;
             for (auto const & provider : providers)
             {
                 if      $<join for member in $struct.chainStructs>$+
@@ -113,18 +113,18 @@ namespace og
 
         $<$struct.name> copyAndReset()
         {
-            $<$struct.name> newCh { baseProvider };
+            $<$struct.name> newCh { mainStruct };
 
-            void ** ppNext = & newCh.baseProvider.pNext;
+            void ** ppNext = & newCh.mainStruct.pNext;
 
-            VkBaseOutStructure * pThisNext = static_cast<VkBaseOutStructure *>(baseProvider.pNext);
+            VkBaseOutStructure * pThisNext = static_cast<VkBaseOutStructure *>(mainStruct.pNext);
             while (pThisNext != nullptr)
             {
                 switch(pThisNext->sType)
                 {
                 $<join for member in $struct.chainStructs>$+
                 case $<$member.sType>: { newCh.$<$member.providerName> = std::make_unique<$<$member.structName>>(new $<$member.structName> { $<$member.sType> }); *ppNext = & (* newCh.$<$member.providerName>); ppNext = & newCh.$<$member.providerName>->pNext; break; }
-                $<endjoin>
+                $<endjoin>$+
                 }
                 pThisNext = pThisNext->pNext;
             }
@@ -132,61 +132,48 @@ namespace og
             return newCh;
         }
 
-        /*
-        bool checkFeature(std::string_view feature)
-        {
-            return checkFeature_$<$struct.baseProviderName>(feature);
-        }
-
-        bool checkFeature(VkStructureType sType, std::string_view feature)
-        {
-            switch(sType)
-            {
-            case $<$struct.mainStructStype>: return checkFeature_$<$struct.baseProviderName>(feature);
-            $<join for struc in $struct.chainStructs>$+
-            case $<$struc.sType>: return checkFeature_$<$struct.baseProviderName>(feature);
-            $<endjoin>
-            }
-            return false;
-        }
-        */
-
         template <class struc>
-        bool checkFeature(struc provider)
+        bool check(struc member)
         {
-            return check(provider, og::vkRequirements::reqOperator::eq, VK_TRUE);
+            return check(member, og::vkRequirements::reqOperator::eq, VK_TRUE);
         }
 
-        bool check($<$struct.baseProviderStructName> const & provider,
+        bool check($<$struct.baseProviderStructName>_members member,
                    og::vkRequirements::reqOperator op,
                    std::string_view value)
         {
-            switch (provider)
-            {
-            $<join for providerMember in $enumVals('$struct.mainStructName')>$+
-            case $<$struct.baseProviderStructName>::$providerMember: return Check.member(baseProvider.$<$struct.baseProviderMemberName>.$providerMember, op, value);
-            $<endjoin>
-            }
-        }
-
-        $<join for struc in $struct.chainStructs>$+
-        bool check($<$struc.structName>_members member)
-        {
             switch (member)
             {
-            $<join for featureMember in $enumVals('$member.mainStructName')>$+
-            case $<$struc.structName>_members::$featureMember: return baseProvider.$<$struct.baseProviderMemberName>.$featureMember == VK_TRUE;
-            $<endjoin>
+            $<join for providerMember in $enumVals($struct.baseProviderStructName)>$+
+            case $<$struct.baseProviderStructName>_members::$providerMember: return Check::member(mainStruct.$<$struct.baseProviderMemberName>.$providerMember, op, value);
+            $<endjoin>$+
             }
             return false;
         }
-        $<endjoin>
 
-        $<$struct.mainStructName> baseProvider = { $<$struct.mainStructStype> };
+        $<join for struc in $struct.chainStructs>$+
+        bool check($<$struc.structName>_members member,
+                   og::vkRequirements::reqOperator op,
+                   std::string_view value)
+        {
+            auto const & chainStructUp = $<$struc.providerName>;
+            switch (member)
+            {
+            $<join for featureMember in $enumVals($struc.structName)>$+
+            case $<$struc.structName>_members::$featureMember: return Check::member(chainStructUp->$featureMember, op, value);
+            $<endjoin>$+
+            }
+            return false;
+        }
+
+        $<endjoin>$+
+
+        $<$struct.mainStructName> mainStruct = { $<$struct.mainStructStype> };
         $<join for struc in $struct.chainStructs>$+
         std::unique_ptr<$<$struc.structName>$> $<$struc.providerName>;
         $<endjoin>
     };
+
     $<endjoin>
 }
 

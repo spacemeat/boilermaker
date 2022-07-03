@@ -9,7 +9,7 @@ class Type:
     def __init__(self, name, props):
         self.name = name
         self.props = props
-        self.namespace = ''
+        #self.namespace = ''
         self.include = []
         self.usedInBomaType = False
         self.knows = []
@@ -160,8 +160,8 @@ class BomaTypeMember:
                 if type(defaultValue) is list:
                     values = []
                     for dvc in defaultValue:
-                        for ev in enumType.vals:
-                            if ev.bomaName == dvc:
+                        for ev in enumType.bomaEnum.values:
+                            if ev.name == dvc:
                                 if enumType.isScoped:
                                     values.append(f'static_cast<std::underlying_type<{self.type.fullCodeDecl}>>({ev.fullCodeDecl})')
                                 else:
@@ -172,8 +172,8 @@ class BomaTypeMember:
                     if isInty(defaultValue):
                         allValues = f'static_cast<{self.type.fullCodeDecl}>({defaultValue})'
                     else:
-                        for ev in enumType.vals:
-                            if ev.bomaName == defaultValue:
+                        for ev in enumType.bomaEnum.values:
+                            if ev.name == defaultValue:
                                 allValues = ev.fullCodeDecl
                                 break
                 self.defaultValue = f'{allValues}'
@@ -181,7 +181,7 @@ class BomaTypeMember:
             elif isInty(defaultValue):
                 self.defaultValue = f'static_cast<{self.type.fullCodeDecl}>({defaultValue})'
             else:
-                for ev in enumType.vals:
+                for ev in enumType.bomaEnum.values:
                     if ev.bomaName == defaultValue:
                         self.defaultValue = ev.fullCodeDecl
                         break
@@ -217,8 +217,8 @@ class BomaType(Type):
         name = typeBlock.get('name', '')
         super().__init__(name, props)
 
-        s = Scribe(props)
-        self.namespace = s.X('namespace')
+        #s = Scribe(props)
+        #self.namespace = s.X('namespace')
 
         self.members = dict()
         for memberName, memProperties in typeBlock['members'].items():

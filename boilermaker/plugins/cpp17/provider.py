@@ -3,13 +3,14 @@ import os
 from ...plugin import Provider, PluginCollection
 from ...props import Scribe
 from ...type import Type, BomaSubtype
-from ...enums import EnumVal
+from ...enums import BomaEnumVal
 from ...utilities import getRelativePath
 
 
 class StandardType(Type):
-    def __init__(self, name, namespace, declName, include):
-        super().__init__(name, namespace)
+    def __init__(self, name, namespace, declName, include, props):
+        super().__init__(name, props)
+        #self.namespace = namespace
         self.codeDecl = declName
         self.fullCodeDecl = declName
         self.alreadyDefined = True
@@ -97,7 +98,7 @@ class cpp17Provider(Provider):
                 s = Scribe(atype.props)
                 currentScope = s.getXProp('scope').split('::')
             fullName = ''
-            if isinstance(atype, Type) or isinstance(atype, EnumVal) or isinstance(atype, BomaSubtype):
+            if isinstance(atype, Type) or isinstance(atype, BomaEnumVal) or isinstance(atype, BomaSubtype):
                 fullName = atype.fullCodeDecl.split('::')
             else:
                 fullName = atype.split('::')
@@ -108,6 +109,8 @@ class cpp17Provider(Provider):
                 else:
                     break
             name = '::'.join(fullName[skip:])
+            if len(name) == 0:
+                breakpoint()
             if getattr(atype, 'subtypes', False) and len(atype.subtypes) > 0:
 
                 ofos = [rescope(ofo) for ofo in atype.subtypes]
@@ -127,20 +130,20 @@ class cpp17Provider(Provider):
         self.props.setProp('types', bomaTypes)
 
         standardTypes = {
-            'string':       StandardType('string',      'std', 'std::string',               '<string>'),
-            'stringView':   StandardType('stringView',  'std', 'std::string_view',          '<string_view>'),
-            'cstring':      StandardType('cstring',     'std', '',                          '<cstring>' ),
-            'array':        StandardType('array',       'std', 'std::array',                '<array>'),
-            'pair':         StandardType('pair',        'std', 'std::pair',                 '<utility>'),
-            'tuple':        StandardType('tuple',       'std', 'std::tuple',                '<tuple>'),
-            'vector':       StandardType('vector',      'std', 'std::vector',               '<vector>'),
-            'set':          StandardType('set',         'std', 'std::set',                  '<set>'),
-            'unorderedSet': StandardType('unorderedSet','std', 'std::unordered_set',        '<unordered_set>'),
-            'map':          StandardType('map',         'std', 'std::map',                  '<map>'),
-            'unorderedMap': StandardType('unorderedMap','std', 'std::unordered_map',        '<unordered_map>'),
-            'optional':     StandardType('optional',    'std', 'std::optional',             '<optional>'),
-            'variant':      StandardType('variant',     'std', 'std::variant',              '<variant>' ),
-            'function':     StandardType('function',    'std', 'std::function',             '<functional>' )
+            'string':       StandardType('string',      'std', 'std::string',               '<string>',         self.props),
+            'stringView':   StandardType('stringView',  'std', 'std::string_view',          '<string_view>',    self.props),
+            'cstring':      StandardType('cstring',     'std', '',                          '<cstring>',        self.props),
+            'array':        StandardType('array',       'std', 'std::array',                '<array>',          self.props),
+            'pair':         StandardType('pair',        'std', 'std::pair',                 '<utility>',        self.props),
+            'tuple':        StandardType('tuple',       'std', 'std::tuple',                '<tuple>',          self.props),
+            'vector':       StandardType('vector',      'std', 'std::vector',               '<vector>',         self.props),
+            'set':          StandardType('set',         'std', 'std::set',                  '<set>',            self.props),
+            'unorderedSet': StandardType('unorderedSet','std', 'std::unordered_set',        '<unordered_set>',  self.props),
+            'map':          StandardType('map',         'std', 'std::map',                  '<map>',            self.props),
+            'unorderedMap': StandardType('unorderedMap','std', 'std::unordered_map',        '<unordered_map>',  self.props),
+            'optional':     StandardType('optional',    'std', 'std::optional',             '<optional>',       self.props),
+            'variant':      StandardType('variant',     'std', 'std::variant',              '<variant>',        self.props),
+            'function':     StandardType('function',    'std', 'std::function',             '<functional>',     self.props)
                 # TODO: multisdet, multimap, list, pmr things
         }
 
@@ -151,8 +154,22 @@ class cpp17Provider(Provider):
             self.computeDecl(t)
 
         # compute translated names for enums that aren't already defined
-        for _, e in bomaEnums.items():
-            e.computeDeclVals(lambda val: f'{e.fullCodeDecl}::{val.codeDecl}')
+        def computeDeclsForEnumVals(bomaEnum):
+            s = Scribe(bomaEnum.props)
+            ns = s.X('$namespaceForCode') + '::'
+            #if bomaEnum.bomaEnum.hasCodeDefs:
+            #    ns = bomaEnum.namespace.replace('.', '::')
+            #if bomaEnum.name.find('Result') != -1:
+            #    breakpoint()
+
+            #breakpoint()
+            for val in bomaEnum.bomaEnum.values:
+                if not bomaEnum.bomaEnum.hasCodeDefs:
+                    val.codeDecl = bomaEnum.translateEnumVal(val.name)
+                val.fullCodeDecl = ns + val.codeDecl
+
+        for e in bomaEnums.values():
+            computeDeclsForEnumVals(e)
 
         # allow scribes to access $std.string.usedInBomaType, say
         class AllStandardObjects:
@@ -223,8 +240,9 @@ class cpp17Provider(Provider):
             for bomaEnum in bomaEnums.values():
                 enumHeaders = list()
                 if bomaEnum.alreadyDefined:
-                    for inc in bomaEnum.include:
-                        enumHeaders.append(inc)
+                    pass
+                    #for inc in bomaEnum.bomaEnum.include:
+                    #    enumHeaders.append(inc)
                 else:
                     bomaEnum.include = [s.X('$enumsHeaderFile')]
                 bomaEnum.dependencyIncludes = list(enumHeaders)
@@ -272,7 +290,7 @@ class cpp17Provider(Provider):
                 eo = bomaEnums.get(st.type)
                 if eo:
                     eo.usedInBomaType = True
-                    for inc in eo.include:
+                    for inc in eo.bomaEnum.include:
                         if inc[0] == '<':
                             typeHeaders.append(inc)
                         else:
@@ -394,8 +412,9 @@ class cpp17Provider(Provider):
 
 
     def computeDecl(self, t :Type):
-        if t.alreadyDefined:
-            return
+        if not t.alreadyDefined:
+            t.codeDecl = t.name.replace('.', '::')
         s = Scribe(t.props)
-        t.codeDecl = t.name.replace('.', '::')
-        t.fullCodeDecl = s.X('$namespaceForCode') + '::' + t.name.replace('.', '::')
+        #if t.name == "VkResult":
+        #    breakpoint()
+        t.fullCodeDecl = s.getXProp('namespaceForCode') + '::' + t.codeDecl

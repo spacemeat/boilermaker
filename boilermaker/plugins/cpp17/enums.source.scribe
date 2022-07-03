@@ -17,21 +17,21 @@ namespace $sharedCodeNamespaceForCode
         $+  $<if not $enumFlags>
         switch(* obj)
         {
-        $+  $<join for val in $enum.vals>$+
+        $+  $<join for val in $enum.bomaEnum.values>$+
         $+  $<if not $val.isDuplicate>$+
                 $<if $enumIsScoped>$+
                     case $<$rescope($enum)>::$<$val.codeDecl>$+
                 $<else>$+
                     case $<$rescope($val)>$+    $<#$val.fullCodeDecl>$+
                 $<endif>$+
-                        : out << "$<$val.bomaName>"; break;
+                        : out << "$<$val.name>"; break;
         $+  $<endif>$+
         $<endjoin>$+
         default: out << static_cast<enumIntType$>(* obj); break;
         }$<else>
         enumIntType bits = static_cast<enumIntType$>(* obj);
         out << "[";
-        $+  $<join for val in $enum.vals>$+
+        $+  $<join for val in $enum.bomaEnum.values>$+
         if (bits & static_cast<enumIntType>($+
             $<if $enumIsScoped>$+
                 $<$rescope($enum)>::$<$val.codeDecl>$+
@@ -40,7 +40,7 @@ namespace $sharedCodeNamespaceForCode
             $<endif>$+
         ))
         {
-            out << " $<$val.bomaName>";
+            out << " $<$val.name>";
             bits &= ~static_cast<enumIntType>($+
             $<if $enumIsScoped>$+
                 $<$rescope($enum)>::$<$val.codeDecl>$+

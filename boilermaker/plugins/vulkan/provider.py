@@ -1,6 +1,6 @@
 from ...plugin import Provider, PluginCollection
 from ...props import Scribe, Props, PropertyBag
-from ...enums import EnumType
+from ...enums import BomaEnumType
 from ...grokCpp.grokCpp import GrokCpp
 from pathlib import Path
 import os
@@ -93,6 +93,7 @@ class vulkanProvider(Provider):
                 props = anch['vulkanEnums']
 
         enums = {}
+        #breakpoint()
         enums.update({k: self.makeEnum(v, props, True) for k, v in self.parsedEnums.items()})
         enums.update({k: self.makeEnum(v, props, False) for k, v in self.parsedChainStructEnums.items()})
 
@@ -112,13 +113,13 @@ class vulkanProvider(Provider):
         newBag.inherit(propBag)
         props = Props(newBag)   # every enum gets its own props
 
-        typeBlock = {'name': grokkedEnum.name, 'values': [[v.name, i] for i, v in enumerate(grokkedEnum.values)]}
-        et = EnumType(typeBlock, props)
-        et.namespace = grokkedEnum.namespace
-        et.include = grokkedEnum.include
-        et.codeDecl = grokkedEnum.name
-        et.fullCodeDecl = f'{et.namespace}{et.codeDecl}'.replace('.', '::')
-        et.alreadyDefined = alreadyDefined
+        #typeBlock = {'name': grokkedEnum.name, 'values': [[v.name, i] for i, v in enumerate(grokkedEnum.values)]}
+        et = BomaEnumType(grokkedEnum, props)
+        #et.namespace = grokkedEnum.namespace
+        #et.include = grokkedEnum.include
+        #et.codeDecl = grokkedEnum.name
+        #et.fullCodeDecl = f'{et.namespace}{et.codeDecl}'.replace('.', '::')
+        #et.alreadyDefined = alreadyDefined
 
         return et
 
@@ -136,10 +137,10 @@ class vulkanProvider(Provider):
         self.props.setProp('structureChains', structureChains)
 
         def enumVals(providerStructEnum):
-            grokkedEnum = self.parsedEnums.get(providerStructEnum)
+            grokkedEnum = self.parsedChainStructEnums.get(providerStructEnum + '_members')
             if grokkedEnum:
                 for value in grokkedEnum.values:
-                    yield value[0]
+                    yield value.name
 
         self.props.setProp('enumVals', enumVals)
 

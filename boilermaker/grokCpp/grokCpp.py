@@ -1,27 +1,8 @@
 from .getSearchPaths_gnu import getSearchPaths as getSearchPaths_gnu
 from ..props import Scribe, Props, PropertyBag
-from ..enums import EnumType
+from ..enums import BomaEnumVal, BomaEnum
 import pygccxml
 from pathlib import Path
-
-
-class GrokkedEnumVal:
-    def __init__(self, name, numericValue, codeDecl, fullCodeDecl):
-        self.name = name
-        self.numericValue = numericValue
-        self.codeDecl = codeDecl
-        self.fullCodeDecl = fullCodeDecl
-
-
-class GrokkedEnum:
-    def __init__(self, name, values, include, namespace, hasCodeDefs, isFlags, isScoped):
-        self.name = name
-        self.values = values
-        self.include = include
-        self.namespace = namespace
-        self.hasCodeDefs = hasCodeDefs
-        self.isFlags = isFlags
-        self.isScoped = isScoped
 
 
 class GrokCpp:
@@ -33,16 +14,16 @@ class GrokCpp:
         self.quotedSearchPaths, self.systemSearchPaths  = getSearchPaths_gnu(projectDir)
 
 
-    def processSource(self, include):
+    def processSource(self, includeDecl):
         s = Scribe(self.props)
         tools = s.X(self.runDefs.get('tools', ''))
 
         generator_path, generator_name = pygccxml.utils.find_xml_generator()
 
-        isSystemInclude = include.startswith('<') and include.endswith('>')
-        isLocalInclude = include.startswith('"') and include.endswith('"')
+        isSystemInclude = includeDecl.startswith('<') and includeDecl.endswith('>')
+        isLocalInclude = includeDecl.startswith('"') and includeDecl.endswith('"')
         if isSystemInclude or isLocalInclude:
-            include = include[1:len(include) - 1]
+            include = includeDecl[1:len(includeDecl) - 1]
 
         # Configure the xml generator
         if isSystemInclude:
@@ -96,7 +77,7 @@ class GrokCpp:
         # Get access to the global namespace
         global_namespace = pygccxml.declarations.get_global_namespace(decls)
 
-        return self._processNamespace(global_namespace, language == 'c++', include)
+        return self._processNamespace(global_namespace, language == 'c++', includeDecl)
 
 
     def _processNamespace(self, ns, isScoped, include):
@@ -126,6 +107,7 @@ class GrokCpp:
             e = self._makeChainStructEnum(name + '_members', struc, include)
             accruedChainStructEnums[e.name] = e
 
+        #breakpoint()
         for decl in ns.declarations:
             if hasattr(decl, "elaborated_type_specifier"):
                 if decl.elaborated_type_specifier == "enum":
@@ -152,34 +134,35 @@ class GrokCpp:
 
     def _makeChainStructEnum(self, name, struc, include):
         bomaEnumName = name
-        bomaNamespace = name[:-len(bomaEnumName)].replace('::', '.')
+        bomaNamespace = None
 
         bomaVals = []
         for i in range(0, len(struc['members'])):
             memb = struc['members'][i][0]
             if memb == 'sType' or memb == 'pNext':
                 continue
-            bomaVals.append(GrokkedEnumVal(memb, i, '', ''))
+            bomaVals.append(BomaEnumVal(memb, len(bomaVals), ''))
 
-        isScoped = (self.runDefs.get('isScoped', False) or
-                    self.runDefs.get('language', 'c++') == 'c++')
+        isScoped = True
+        if self.runDefs.get('isScoped', None) != None:
+            isScoped = self.runDefs['isScoped']
 
-        props = self.props
-        anchors = self.props.getProp('anchors')
-        if anchors and 'anchors' in anchors:
-            anch = props['anchors']
-            if 'vulkanEnums' in anch:
-                props = anch['vulkanEnums']
+        #props = self.props
+        #anchors = self.props.getProp('anchors')
+        #if anchors and 'anchors' in anchors:
+        #    anch = props['anchors']
+        #    if 'vulkanEnums' in anch:
+        #        props = anch['vulkanEnums']
 
-        propBag = props.props
-        newBag = PropertyBag({
-            'enumIsScoped': isScoped,
-            'enumFlags': False,
-            'enumCodeCase': '',
-            'enumCodePrefix': '',
-            'enumCodeSuffix': ''
-        })
-        newBag.inherit(propBag)
+        #propBag = props.props
+        #newBag = PropertyBag({
+        #    'enumIsScoped': isScoped,
+        #    'enumFlags': False,
+        #    'enumCodeCase': '',
+        #    'enumCodePrefix': '',
+        #    'enumCodeSuffix': ''
+        #})
+        #newBag.inherit(propBag)
 
         #e = EnumType({'name': bomaEnumName, 'values': bomaVals}, Props(newBag))
         #e.namespace = bomaNamespace
@@ -187,64 +170,36 @@ class GrokCpp:
         #e.codeDecl = bomaEnumName
         #e.fullCodeDecl = f'{bomaNamespace}{e.codeDecl}'.replace('.', '::')
 
-        e = GrokkedEnum(name=bomaEnumName, values=bomaVals, include = include,
-                        namespace = bomaNamespace, hasCodeDefs=False, isFlags = False, isScoped = isScoped)
+        e = BomaEnum(name=bomaEnumName, values=bomaVals, codeDecl='', include = [include],
+                     namespace = bomaNamespace, hasCodeDefs=False, isFlags = False, isScoped = isScoped)
 
         return e
 
 
     def _extractEnum(self, pygccxmlDecl, isScoped, include):
         bomaEnumName = pygccxmlDecl.name
-        bomaNamespace = pygccxmlDecl.partial_decl_string[:-len(bomaEnumName)].replace('::', '.')
-        declVals = []
-        bomaVals = []
+        bomaNamespace = pygccxmlDecl.partial_decl_string[:-len(bomaEnumName)].replace('::', '.')[:-1]
+
+        vals = []
         cidx = 0
         for val in pygccxmlDecl.values:
             idx = val[1]
             if idx != cidx:
-                bomaVals.append([val[0], idx])
                 cidx = idx
-            else:
-                bomaVals.append(val[0])
-            declVals.append([val[0], val[1]])
+            vals.append(BomaEnumVal('', idx, val[0]))
 
-        bomaVals, flags = self._translateDeclValsToBomaVals(bomaEnumName, declVals)
+        flags = self._translateDeclValsToBomaVals(bomaEnumName, vals)
         isScoped = (self.runDefs.get('isScoped', False) or
                     self.runDefs.get('language', 'c++') == 'c++')
 
-        props = self.props
-        anchors = self.props.getProp('anchors')
-        if anchors and 'anchors' in anchors:
-            anch = props['anchors']
-            if 'vulkanEnums' in anch:
-                props = anch['vulkanEnums']
-
-        propBag = props.props
-        newBag = PropertyBag({
-            'enumIsScoped': isScoped,
-            'enumFlags': flags,
-            'enumCodeCase': '',
-            'enumCodePrefix': '',
-            'enumCodeSuffix': ''
-        })
-        newBag.inherit(propBag)
-
-        #e = EnumType({'name': bomaEnumName, 'values': bomaVals}, Props(newBag))
-        #e.namespace = bomaNamespace
-        #e.include = include
-        #e.codeDecl = bomaEnumName
-        #e.fullCodeDecl = f'{bomaNamespace}{e.codeDecl}'.replace('.', '::')
-        #self._provideDeclValsToEnum(e, declVals)
-
-        e = GrokkedEnum(name=bomaEnumName, values=bomaVals, include = include,
-                        namespace = bomaNamespace, hasCodeDefs=True, isFlags = flags, isScoped = isScoped)
-        self._provideDeclValsToEnum(e, declVals)
-
+        e = BomaEnum(name=bomaEnumName, values=vals, codeDecl=bomaEnumName.replace('.', '::'), include = [include],
+                     namespace = bomaNamespace, hasCodeDefs=True, isFlags = flags, isScoped = isScoped)
         return e
 
 
-    def _translateDeclValsToBomaVals(self, enumName, declVals):
-        declValStrings = [v[0] if type(v) is list else v for v in declVals]
+    def _translateDeclValsToBomaVals(self, enumName, vals):
+        #breakpoint()
+        declValStrings = [v[0].codeDecl if type(v) is list else v.codeDecl for v in vals]
         eva = self._computeAttributes(enumName, declValStrings)
 
         def translateEnumVal(enumVal):
@@ -258,23 +213,10 @@ class GrokCpp:
                 val = val.upper()
             return val
 
-        bomaVals = []
-        cidx = 0
-        for val in declVals:
-            idx = val[1]
+        for val in vals:
+            val.name = translateEnumVal(val.codeDecl)
 
-            name = val[0]
-            numericValue = val[1]
-            codeDecl = translateEnumVal(val[0])
-            fullCodeDecl = translateEnumVal(val[0])
-
-            if idx != cidx:
-                cidx = idx
-
-            bomaVals.append(GrokkedEnumVal(name, numericValue, codeDecl, fullCodeDecl))
-            cidx += 1
-
-        return (bomaVals, eva.flags)
+        return eva.flags
 
 
     def _computeAttributes(self, enumName, declStringValues):
@@ -364,7 +306,8 @@ class GrokCpp:
             if enum.values[i].numericValue != declVal[1]:
                 raise RuntimeError(f'declVal / enum val mismatch')
             enum.values[i].codeDecl = declVal[0]
-            enum.values[i].fullCodeDecl = f'{enum.namespace}{declVal[0]}'.replace('.', '::')
+            s = Scribe(enum.props)
+            enum.values[i].fullCodeDecl = f'{s.getXProp("namespaceForCode")}{declVal[0]}'.replace('.', '::')
 
 
     @staticmethod

@@ -5,7 +5,7 @@ from .props import Props, PropertyBag, Scribe
 from pathlib import Path
 from .plugin import PluginCollection
 from .type import BomaType
-from .enums import EnumType
+from .enums import BomaEnumVal, BomaEnum, BomaEnumType
 
 # read ${captured}, when not preceded by a '\'
 defArgumentPattern = r'(?<!\\)\$\s*\<\s*([A-Za-z0-9_.]+?)\s*\>'
@@ -88,6 +88,98 @@ class Project:
         # TODO: Possibly search other paths for boma files
 
 
+    def makeBomaEnum(self, typeBlock, isFlags, isScoped, include):
+        vals = []
+        if type(typeBlock['values']) is list:
+            vals = typeBlock['values']
+
+        bomaVals = []
+        nextAutoVal = 0
+        seenNums = set()
+        seenVals = dict()
+
+        if isFlags == False:
+            name = ''
+            num = -1
+
+            for val in vals:
+                # val is a string; just record the name with an increasing numeric value
+                if type(val) is str:
+                    name = val
+                    num = nextAutoVal
+                    ev = BomaEnumVal(name, num, '')
+                    bomaVals.append(ev)
+
+                # val is a list; we need to set a numeric
+                elif type(val) is list:
+                    name = val[0]
+                    if type(val[1]) is int:
+                        num = val[1]
+                    elif type(val[1]) is str:
+                        if val[1] in seenVals:
+                            num = seenVals[val[1]]
+                        else:
+                            raise RuntimeError(f"Invalid enum value '{val[1]}' in {self.name}")
+                    else:
+                        raise RuntimeError(f"malformed enum vals in {self.name}")
+
+                    ev = BomaEnumVal(name, num, '')
+                    bomaVals.append(ev)
+
+                seenNums.add(num)
+                seenVals[name] = num
+                nextAutoVal = num + 1
+
+        else:
+            name = ''
+            num = -1
+            nextFlagVal = 1
+
+            for val in vals:
+                # val is a string; just record the name with an increasing numeric value
+                if type(val) is str:
+                    name = val
+                    num = nextFlagVal
+                    nextFlagVal *= 2
+                    ev = BomaEnumVal(name, num, '')
+                    bomaVals.append(ev)
+
+                # val is a list; we need to set a numeric
+                elif type(val) is list:
+                    name = val[0]
+                    if type(val[1]) is int:
+                        num = val[1]
+                        nextFlagVal = num * 2
+                    elif type(val[1]) is str:
+                        if val[1] in seenVals:
+                            num = seenVals[val[1]]
+                        else:
+                            raise RuntimeError(f"Invalid enum value '{val[1]}' in {self.name}")
+                    elif type(val[1]) is list:
+                        flags = val[1]
+                        num = 0
+                        for flag in flags:
+                            if type(flag) is int:
+                                num += flag
+                            elif type(flag) is str:
+                                if flag in seenVals:
+                                    num += seenVals[flag]
+                                else:
+                                    raise RuntimeError(f"Invalid enum flag value '{flag}' in {self.name}")
+                    else:
+                        raise RuntimeError(f"malformed enum vals in {self.name}")
+
+                    ev = BomaEnumVal(name, num, '')
+                    bomaVals.append(ev)
+
+                seenNums.add(num)
+                seenVals[name] = num
+                nextAutoVal = num + 1
+
+        bomEnum = BomaEnum(typeBlock['name'], bomaVals, '', include, None, False, isFlags, isScoped)
+        return bomEnum
+
+
     def loadProps(self):
         enums = {}
         types = {}
@@ -123,7 +215,15 @@ class Project:
                         newBag.inherit(bag)
                         props = Props(newBag)
                         props.push({**{'name': 'commandLine'}, **self.propAdds})
-                        enums[typeName] = EnumType(typeBlock, props)
+                        s = Scribe(props)
+                        isFlags = s.getXProp('enumFlags')
+                        isScoped = s.getXProp('enumIsScoped')
+                        include = bagPath
+                        enums[typeName] = BomaEnumType(
+                            self.makeBomaEnum(
+                                typeBlock, isFlags, isScoped,
+                                [str(include)]),
+                            props)
 
                 if 'run' in propsDict:
                     typeBlocks = propsDict['run']
