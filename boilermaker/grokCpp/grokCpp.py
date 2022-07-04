@@ -85,18 +85,55 @@ class GrokCpp:
         accruedChainStructEnums = {}
         accruedChainStructs = {}
 
+        def findDecl(declName):
+            for decl in ns.declarations:
+                if decl.name == declName:
+                    return decl
+            return None
+
         def captureStruct(declName, structChain):
+            def makeSubstructMembers(prefixName, memberVar, members):
+                if memberVar.name == 'maxComputeWorkGroupCount':
+                    breakpoint()
+                numElements = 1
+                nestedObj = None
+                if hasattr(memberVar.decl_type, "size"):
+                    numElements = memberVar.decl_type.size
+                    nestedObj = findDecl(memberVar.decl_type.base.decl_string)
+                elif hasattr(memberVar.decl_type, "declaration"):
+                    nestedObj = findDecl(memberVar.decl_type.declaration.name)
+
+                for i in range(0, numElements):
+                    array_elem = f"_{i}" if numElements > 1 else ""
+                    if nestedObj:
+                        if hasattr(nestedObj, "elaborated_type_specifier"):
+                            if nestedObj.elaborated_type_specifier == 'struct':
+                                for v in nestedObj.variables():
+                                    makeSubstructMembers(f'{prefixName}{memberVar.name}{array_elem}.', v, members)
+                    else:
+                        members.append((f'{prefixName}{memberVar.name}{array_elem}', memberVar.decl_type.decl_string))
+
+                return members
+
             if declName == structChain['baseProviderStructName']:
-                accruedChainStructs[declName] = {'members': [(v.name, v.decl_type.decl_string) for v in decl.variables() ],
+                members = []
+                for v in decl.variables():
+                    makeSubstructMembers('', v, members)
+
+                #if declName == 'VkPhysicalDeviceProperties':
+                #    breakpoint()
+                accruedChainStructs[declName] = {'members': members,
                                                  'sType': structChain['mainStructStype'],
                                                  'max': 1}
-                print(f'{decl.class_type} {decl.name}')
             elif struc := next((n for n in structChain['chainStructs'] if n['structName'] == declName), None):
                 if struc != None:
-                    accruedChainStructs[declName] = {'members': [(v.name, v.decl_type.decl_string) for v in decl.variables() ],
+                    members = []
+                    for v in decl.variables():
+                        makeSubstructMembers('', v, members)
+
+                    accruedChainStructs[declName] = {'members': members,
                                                     'sType': struc['sType'],
                                                     'max': struc.get('max', 1)}
-                    print(f'{decl.class_type} {decl.name}')
 
         for decl in ns.classes().declarations:
             for area, struc in self.runDefs.get('structureChains').items():
@@ -141,34 +178,11 @@ class GrokCpp:
             memb = struc['members'][i][0]
             if memb == 'sType' or memb == 'pNext':
                 continue
-            bomaVals.append(BomaEnumVal(memb, len(bomaVals), ''))
+            bomaVals.append(BomaEnumVal(memb.replace('.', '_'), len(bomaVals), ''))
 
         isScoped = True
         if self.runDefs.get('isScoped', None) != None:
             isScoped = self.runDefs['isScoped']
-
-        #props = self.props
-        #anchors = self.props.getProp('anchors')
-        #if anchors and 'anchors' in anchors:
-        #    anch = props['anchors']
-        #    if 'vulkanEnums' in anch:
-        #        props = anch['vulkanEnums']
-
-        #propBag = props.props
-        #newBag = PropertyBag({
-        #    'enumIsScoped': isScoped,
-        #    'enumFlags': False,
-        #    'enumCodeCase': '',
-        #    'enumCodePrefix': '',
-        #    'enumCodeSuffix': ''
-        #})
-        #newBag.inherit(propBag)
-
-        #e = EnumType({'name': bomaEnumName, 'values': bomaVals}, Props(newBag))
-        #e.namespace = bomaNamespace
-        #e.include = include
-        #e.codeDecl = bomaEnumName
-        #e.fullCodeDecl = f'{bomaNamespace}{e.codeDecl}'.replace('.', '::')
 
         e = BomaEnum(name=bomaEnumName, values=bomaVals, codeDecl='', include = [include],
                      namespace = bomaNamespace, hasCodeDefs=False, isFlags = False, isScoped = isScoped)

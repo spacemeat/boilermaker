@@ -218,11 +218,10 @@ class Project:
                         s = Scribe(props)
                         isFlags = s.getXProp('enumFlags')
                         isScoped = s.getXProp('enumIsScoped')
-                        include = bagPath
                         enums[typeName] = BomaEnumType(
                             self.makeBomaEnum(
                                 typeBlock, isFlags, isScoped,
-                                [str(include)]),
+                                []),
                             props)
 
                 if 'run' in propsDict:

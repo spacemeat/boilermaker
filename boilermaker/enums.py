@@ -67,6 +67,7 @@ class BomaEnumType(Type):
 
         #if self.name == "VkResult":
         #    breakpoint()
+        self.include = self.bomaEnum.include
 
         if self.bomaEnum.namespace != None:
             self.props.setProp('namespace', self.bomaEnum.namespace)

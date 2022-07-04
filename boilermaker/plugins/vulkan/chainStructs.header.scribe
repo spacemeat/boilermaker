@@ -17,6 +17,22 @@ namespace og
     struct Check
     {
         template <class T>
+        static bool obeysInequality(T lhs, T rhs, vkRequirements::reqOperator op)
+        {
+            switch(op)
+            {
+            case vkRequirements::reqOperator::eq: return lhs == rhs;
+            case vkRequirements::reqOperator::ne: return lhs != rhs;
+            case vkRequirements::reqOperator::lt: return lhs < rhs;
+            case vkRequirements::reqOperator::gt: return lhs > rhs;
+            case vkRequirements::reqOperator::le: return lhs <= rhs;
+            case vkRequirements::reqOperator::ge: return lhs >= rhs;
+            default:
+                throw Ex(fmt::format("Invalid operator '{}' for criteria '{}'", op, lhs));
+            }
+        }
+
+        template <class T>
         static bool member(T const & member, og::vkRequirements::reqOperator op,
                            std::string_view value)
         {
@@ -33,7 +49,7 @@ namespace og
             }
             else
             {
-                return og::obeysInequality(member, valueConv, op);
+                return obeysInequality(member, valueConv, op);
             }
         }
 
@@ -67,7 +83,7 @@ namespace og
                 {
                     if      (c >= '0' && c <= '9') { return c -= '0'; }
                     else if (c >= 'A' && c <= 'F') { return c -= 'A'; }
-                    else if (c >= 'a' && c <= 'f') { return c -= 'F'; }
+                    else if (c >= 'a' && c <= 'f') { return c -= 'a'; }
                     else { throw std::runtime_error("Invalid format for uint8_t[VK_UUID_SIZE]."); }
                 };
 
@@ -105,7 +121,7 @@ namespace og
             for (auto const & provider : providers)
             {
                 if      $<join for member in $struct.chainStructs>$+
-                (provider == "$<$member.providerName>") { if ($<$member.providerName>) { continue; } $<$member.providerName> = std::make_unique<$<$member.structName>>(new $<$member.structName> { $<$member.sType> }); *ppNext = & (* $<$member.providerName>); ppNext = & $<$member.providerName>->pNext; }
+                (provider == "$<$member.providerName>") { if ($<$member.providerName>) { continue; } $<$member.providerName> = std::unique_ptr<$<$member.structName>>(new $<$member.structName> { $<$member.sType> }); *ppNext = & (* $<$member.providerName>); ppNext = & $<$member.providerName>->pNext; }
                 $<delim>else if $<endjoin>
                 else { throw std::runtime_error("Woops"); }
             }
@@ -123,7 +139,7 @@ namespace og
                 switch(pThisNext->sType)
                 {
                 $<join for member in $struct.chainStructs>$+
-                case $<$member.sType>: { newCh.$<$member.providerName> = std::make_unique<$<$member.structName>>(new $<$member.structName> { $<$member.sType> }); *ppNext = & (* newCh.$<$member.providerName>); ppNext = & newCh.$<$member.providerName>->pNext; break; }
+                case $<$member.sType>: { newCh.$<$member.providerName> = std::unique_ptr<$<$member.structName>>(new $<$member.structName> { $<$member.sType> }); *ppNext = & (* newCh.$<$member.providerName>); ppNext = & newCh.$<$member.providerName>->pNext; break; }
                 $<endjoin>$+
                 }
                 pThisNext = pThisNext->pNext;

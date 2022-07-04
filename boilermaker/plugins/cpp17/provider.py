@@ -170,6 +170,10 @@ class cpp17Provider(Provider):
 
         for e in bomaEnums.values():
             computeDeclsForEnumVals(e)
+            if len(e.include) == 0:
+                #breakpoint()
+                s = Scribe(e.props)
+                e.include = [s.getXProp('enumsHeaderPath')]
 
         # allow scribes to access $std.string.usedInBomaType, say
         class AllStandardObjects:
@@ -241,8 +245,8 @@ class cpp17Provider(Provider):
                 enumHeaders = list()
                 if bomaEnum.alreadyDefined:
                     pass
-                    #for inc in bomaEnum.bomaEnum.include:
-                    #    enumHeaders.append(inc)
+                    for inc in bomaEnum.bomaEnum.include:
+                        enumHeaders.append(inc)
                 else:
                     bomaEnum.include = [s.X('$enumsHeaderFile')]
                 bomaEnum.dependencyIncludes = list(enumHeaders)

@@ -113,13 +113,7 @@ class vulkanProvider(Provider):
         newBag.inherit(propBag)
         props = Props(newBag)   # every enum gets its own props
 
-        #typeBlock = {'name': grokkedEnum.name, 'values': [[v.name, i] for i, v in enumerate(grokkedEnum.values)]}
         et = BomaEnumType(grokkedEnum, props)
-        #et.namespace = grokkedEnum.namespace
-        #et.include = grokkedEnum.include
-        #et.codeDecl = grokkedEnum.name
-        #et.fullCodeDecl = f'{et.namespace}{et.codeDecl}'.replace('.', '::')
-        #et.alreadyDefined = alreadyDefined
 
         return et
 
