@@ -4,7 +4,10 @@ from ...enums import BomaEnumType
 from ...grokCpp.grokCpp import GrokCpp
 from pathlib import Path
 import os
+import re
 
+
+arrayRef = re.compile('(.*)-(\d+)$')
 
 class ChainStruct:
     def __init__(self, structName, providerName, sType):
@@ -62,6 +65,24 @@ class vulkanProvider(Provider):
         def nsToCode(string):
             return string.replace('.', '::')
         self.props.setProp('nsToCode', nsToCode)
+
+        # provider member to code
+        # can turn 'limits_maxComputeWorkGroupCount_0' to 'limits.maxComputeWorkGroupCount[0]'
+        def toReference(providerMember):
+            #if 'limits' in providerMember:
+            #    breakpoint()
+            string = providerMember
+            if match := arrayRef.match(string):
+                string = match[1] + '[' + match[2] + ']'
+            string = string.replace('-', '.')
+            return string
+        self.props.setProp('toReference', toReference)
+
+        def toMemberName(providerMember):
+            string = providerMember.replace('-', '_')
+            return string
+        self.props.setProp('toMemberName', toMemberName)
+
 
         # relative paths for local #includes
         # TODO: Retire these for more precise relpath using utility fn
@@ -122,7 +143,7 @@ class vulkanProvider(Provider):
 
         structureChains = {}
         for rdcsName, rdcs in self.runDefs['structureChains'].items():
-            sc = StructureChain(rdcsName, rdcs['mainStructName'], rdcs['mainStructStype'],
+            sc = StructureChain(rdcs['structureChainName'], rdcs['mainStructName'], rdcs['mainStructStype'],
                 rdcs['baseProviderName'], rdcs['baseProviderStructName'], rdcs['baseProviderMemberName'],
                 [ChainStruct(rdscm['structName'], rdscm['providerName'], rdscm['sType']) for rdscm in rdcs['chainStructs']])
             structureChains[rdcsName] = sc

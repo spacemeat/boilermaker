@@ -165,7 +165,7 @@ class cpp17Provider(Provider):
             #breakpoint()
             for val in bomaEnum.bomaEnum.values:
                 if not bomaEnum.bomaEnum.hasCodeDefs:
-                    val.codeDecl = bomaEnum.translateEnumVal(val.name)
+                    val.codeDecl = bomaEnum.translateEnumVal(val.name.replace('-', '_'))
                 val.fullCodeDecl = ns + val.codeDecl
 
         for e in bomaEnums.values():

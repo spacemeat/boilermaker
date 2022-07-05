@@ -93,23 +93,29 @@ class GrokCpp:
 
         def captureStruct(declName, structChain):
             def makeSubstructMembers(prefixName, memberVar, members):
-                if memberVar.name == 'maxComputeWorkGroupCount':
-                    breakpoint()
+                #if memberVar.name == 'apiVersion':
+                #    breakpoint()
                 numElements = 1
                 nestedObj = None
                 if hasattr(memberVar.decl_type, "size"):
                     numElements = memberVar.decl_type.size
-                    nestedObj = findDecl(memberVar.decl_type.base.decl_string)
+                    baseType = memberVar.decl_type.base.decl_string
+                    if 'uint8_t' in baseType or 'int8_t' in baseType or 'char' in baseType:
+                        numElements = 1
+                    nestedObj = findDecl(baseType)
                 elif hasattr(memberVar.decl_type, "declaration"):
+                    #baseType = memberVar.decl_type.declaration.decl_string
+                    #if 'char' in baseType:
+                    #    numElements = 1
                     nestedObj = findDecl(memberVar.decl_type.declaration.name)
 
                 for i in range(0, numElements):
-                    array_elem = f"_{i}" if numElements > 1 else ""
-                    if nestedObj:
-                        if hasattr(nestedObj, "elaborated_type_specifier"):
-                            if nestedObj.elaborated_type_specifier == 'struct':
-                                for v in nestedObj.variables():
-                                    makeSubstructMembers(f'{prefixName}{memberVar.name}{array_elem}.', v, members)
+                    array_elem = f"-{i}" if numElements > 1 else ""
+                    if (nestedObj and
+                        hasattr(nestedObj, "elaborated_type_specifier") and
+                        nestedObj.elaborated_type_specifier == 'struct'):
+                        for v in nestedObj.variables():
+                            makeSubstructMembers(f'{prefixName}{memberVar.name}{array_elem}-', v, members)
                     else:
                         members.append((f'{prefixName}{memberVar.name}{array_elem}', memberVar.decl_type.decl_string))
 
@@ -178,7 +184,7 @@ class GrokCpp:
             memb = struc['members'][i][0]
             if memb == 'sType' or memb == 'pNext':
                 continue
-            bomaVals.append(BomaEnumVal(memb.replace('.', '_'), len(bomaVals), ''))
+            bomaVals.append(BomaEnumVal(memb, len(bomaVals), ''))
 
         isScoped = True
         if self.runDefs.get('isScoped', None) != None:

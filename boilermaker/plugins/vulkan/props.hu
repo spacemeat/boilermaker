@@ -34,6 +34,7 @@
 
         structureChains: {
             features: {
+                structureChainName: VkFeatures
                 mainStructName: VkPhysicalDeviceFeatures2
                 mainStructStype: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2
                 baseProviderName: vulkan_1_0
@@ -55,6 +56,7 @@
                 ]
             }
             properties: {
+                structureChainName: VkProperties
                 mainStructName: VkPhysicalDeviceProperties2
                 mainStructStype: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2
                 baseProviderName: vulkan_1_0
@@ -76,6 +78,7 @@
                 ]
             }
             queueFamilies: {
+                structureChainName: VkQueueFamilies
                 mainStructName: VkQueueFamilyProperties2
                 mainStructStype: VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2
                 baseProviderName: vulkan_1_0

@@ -161,7 +161,7 @@ namespace og
             switch (member)
             {
             $<join for providerMember in $enumVals($struct.baseProviderStructName)>$+
-            case $<$struct.baseProviderStructName>_members::$providerMember: return Check::member(mainStruct.$<$struct.baseProviderMemberName>.$providerMember, op, value);
+            case $<$struct.baseProviderStructName>_members::$<$toMemberName($providerMember)>: return Check::member(mainStruct.$<$struct.baseProviderMemberName>.$<$toReference($providerMember)>, op, value);
             $<endjoin>$+
             }
             return false;
@@ -175,8 +175,8 @@ namespace og
             auto const & chainStructUp = $<$struc.providerName>;
             switch (member)
             {
-            $<join for featureMember in $enumVals($struc.structName)>$+
-            case $<$struc.structName>_members::$featureMember: return Check::member(chainStructUp->$featureMember, op, value);
+            $<join for providerMember in $enumVals($struc.structName)>$+
+            case $<$struc.structName>_members::$<$toMemberName($providerMember)>: return Check::member(chainStructUp->$<$toReference($providerMember)>, op, value);
             $<endjoin>$+
             }
             return false;
