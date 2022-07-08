@@ -151,7 +151,25 @@ namespace og
         template <class struc>
         bool check(struc member)
         {
-            return check(member, og::vkRequirements::reqOperator::eq, VK_TRUE);
+            return check(member, og::vkRequirements::reqOperator::eq, "true");
+        }
+
+        bool check(std::string_view providerName,
+                   std::string_view featureName)
+        {
+            return check(providerName, featureName, og::vkRequirements::reqOperator::eq, "true");
+        }
+
+        bool check(std::string_view providerName,
+                   std::string_view memberName,
+                   og::vkRequirements::reqOperator op,
+                   std::string_view value)
+        {
+            if      (providerName == "$<$struct.baseProviderName>") { return check(hu::val<$<$struct.baseProviderStructName>_members>::extract(memberName), op, value); }
+            $<join for member in $struct.chainStructs>$+
+            else if (providerName == "$<$member.providerName>") { return check(hu::val<$<$member.structName>_members>::extract(memberName), op, value); }
+            $<endjoin>$+
+            else { throw std::runtime_error("Woops"); }
         }
 
         bool check($<$struct.baseProviderStructName>_members member,
