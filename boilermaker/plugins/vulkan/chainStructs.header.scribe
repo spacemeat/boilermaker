@@ -28,7 +28,7 @@ namespace og
             case vkRequirements::reqOperator::le: return lhs <= rhs;
             case vkRequirements::reqOperator::ge: return lhs >= rhs;
             default:
-                throw Ex(fmt::format("Invalid operator '{}' for criteria '{}'", op, lhs));
+                throw std::runtime_error(fmt::format("Invalid operator '{}' for criteria '{}'", op, lhs));
             }
         }
 
@@ -97,7 +97,49 @@ namespace og
             return op != og::vkRequirements::reqOperator::ne;
         }
 
+        static bool member(uint8_t const member[VK_UUID_SIZE], og::vkRequirements::reqOperator op,
+                           std::string_view value)
+        {
+            if (op != og::vkRequirements::reqOperator::eq && op != og::vkRequirements::reqOperator::ne)
+                { throw std::runtime_error(fmt::format("Invalid operator {}.", op)); }
+
+            if (value.size() != VK_UUID_SIZE * 2)
+                { throw std::runtime_error("Invalid format for uint8_t[VK_UUID_SIZE]."); }
+
+            // specially reading long hex string to match
+            for (int i = 0; i < VK_UUID_SIZE; ++i)
+            {
+                auto toHex = [& value](char c)
+                {
+                    if      (c >= '0' && c <= '9') { return c -= '0'; }
+                    else if (c >= 'A' && c <= 'F') { return c -= 'A'; }
+                    else if (c >= 'a' && c <= 'f') { return c -= 'a'; }
+                    else { throw std::runtime_error("Invalid format for uint8_t[VK_UUID_SIZE]."); }
+                };
+
+                auto h = toHex(value[i * 2]);
+                auto l = toHex(value[i * 2 + 1]);
+                auto val = (h << 4) + l;
+                if (val != static_cast<int>(member[i]))
+                    { return op == og::vkRequirements::reqOperator::ne; }
+            }
+
+            return op != og::vkRequirements::reqOperator::ne;
+        }
+
         static bool member(char member[VK_MAX_DRIVER_NAME_SIZE],
+                           og::vkRequirements::reqOperator op, std::string_view value)
+        {
+            if (op != og::vkRequirements::reqOperator::eq && op != og::vkRequirements::reqOperator::ne)
+                { throw std::runtime_error(fmt::format("Invalid operator {}.", op)); }
+
+            if (std::string_view(member) != value)
+                { return op == og::vkRequirements::reqOperator::ne; }
+
+            return op != og::vkRequirements::reqOperator::ne;
+        }
+
+        static bool member(char const member[VK_MAX_DRIVER_NAME_SIZE],
                            og::vkRequirements::reqOperator op, std::string_view value)
         {
             if (op != og::vkRequirements::reqOperator::eq && op != og::vkRequirements::reqOperator::ne)
@@ -127,7 +169,7 @@ namespace og
             }
         }
 
-        $<$struct.name> copyAndReset()
+        $<$struct.name> copyAndReset() const
         {
             $<$struct.name> newCh { mainStruct };
 
@@ -149,13 +191,13 @@ namespace og
         }
 
         template <class struc>
-        bool check(struc member)
+        bool check(struc member) const
         {
             return check(member, og::vkRequirements::reqOperator::eq, "true");
         }
 
         bool check(std::string_view providerName,
-                   std::string_view featureName)
+                   std::string_view featureName) const
         {
             return check(providerName, featureName, og::vkRequirements::reqOperator::eq, "true");
         }
@@ -163,7 +205,7 @@ namespace og
         bool check(std::string_view providerName,
                    std::string_view memberName,
                    og::vkRequirements::reqOperator op,
-                   std::string_view value)
+                   std::string_view value) const
         {
             if      (providerName == "$<$struct.baseProviderName>") { return check(hu::val<$<$struct.baseProviderStructName>_members>::extract(memberName), op, value); }
             $<join for member in $struct.chainStructs>$+
@@ -174,7 +216,7 @@ namespace og
 
         bool check($<$struct.baseProviderStructName>_members member,
                    og::vkRequirements::reqOperator op,
-                   std::string_view value)
+                   std::string_view value) const
         {
             switch (member)
             {
@@ -188,7 +230,7 @@ namespace og
         $<join for struc in $struct.chainStructs>$+
         bool check($<$struc.structName>_members member,
                    og::vkRequirements::reqOperator op,
-                   std::string_view value)
+                   std::string_view value) const
         {
             auto const & chainStructUp = $<$struc.providerName>;
             switch (member)
@@ -201,6 +243,49 @@ namespace og
         }
 
         $<endjoin>$+
+
+        $<if $struct.hasSetters>
+
+        void set(std::string_view providerName,
+                 std::string_view memberName,
+                 VkBool32 value)
+        {
+            if      (providerName == "$<$struct.baseProviderName>") { set(hu::val<$<$struct.baseProviderStructName>_members>::extract(memberName), value); }
+            $<join for member in $struct.chainStructs>$+
+            else if (providerName == "$<$member.providerName>") { set(hu::val<$<$member.structName>_members>::extract(memberName), value); }
+            $<endjoin>$+
+            else { throw std::runtime_error("nope"); }
+        }
+
+        void set($<$struct.baseProviderStructName>_members member,
+                 VkBool32 value)
+        {
+            switch (member)
+            {
+            $<join for providerMember in $enumVals($struct.baseProviderStructName)>$+
+            case $<$struct.baseProviderStructName>_members::$<$toMemberName($providerMember)>: mainStruct.$<$struct.baseProviderMemberName>.$<$toReference($providerMember)> = value; break;
+            $<endjoin>$+
+            default: throw std::runtime_error("huh");
+            }
+        }
+
+        $<join for struc in $struct.chainStructs>$+
+        void set($<$struc.structName>_members member,
+                 VkBool32 value)
+        {
+            auto const & chainStructUp = $<$struc.providerName>;
+            switch (member)
+            {
+            $<join for providerMember in $enumVals($struc.structName)>$+
+            case $<$struc.structName>_members::$<$toMemberName($providerMember)>: chainStructUp->$<$toReference($providerMember)> = value; break;
+            $<endjoin>$+
+            default: throw std::runtime_error("come on");
+            }
+        }
+
+        $<endjoin>$+
+
+        $<endif>
 
         $<$struct.mainStructName> mainStruct = { $<$struct.mainStructStype> };
         $<join for struc in $struct.chainStructs>$+

@@ -40,6 +40,7 @@
                 baseProviderName: vulkan_1_0
                 baseProviderStructName: VkPhysicalDeviceFeatures
                 baseProviderMemberName: features
+                hasSetters: true
                 chainStructs: [ {
                         structName: VkPhysicalDeviceVulkan11Features
                         providerName: vulkan_1_1
@@ -62,6 +63,7 @@
                 baseProviderName: vulkan_1_0
                 baseProviderStructName: VkPhysicalDeviceProperties
                 baseProviderMemberName: properties
+                hasSetters: false
                 chainStructs: [ {
                         structName: VkPhysicalDeviceVulkan11Properties
                         providerName: vulkan_1_1
@@ -84,6 +86,7 @@
                 baseProviderName: vulkan_1_0
                 baseProviderStructName: VkQueueFamilyProperties
                 baseProviderMemberName: queueFamilyProperties
+                hasSetters: false
                 chainStructs: [ {
                         structName: VkQueueFamilyCheckpointProperties2NV
                         providerName: device_diagnostic_checkpoints2

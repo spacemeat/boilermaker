@@ -17,13 +17,14 @@ class ChainStruct:
 
 
 class StructureChain:
-    def __init__(self, name, mainStructName, mainStructStype, baseProviderName, baseProviderStructName, baseProviderMemberName, chainStructs):
+    def __init__(self, name, mainStructName, mainStructStype, baseProviderName, baseProviderStructName, baseProviderMemberName, hasSetters, chainStructs):
         self.name = name
         self.mainStructName = mainStructName
         self.mainStructStype = mainStructStype
         self.baseProviderName = baseProviderName
         self.baseProviderStructName = baseProviderStructName
         self.baseProviderMemberName = baseProviderMemberName
+        self.hasSetters = hasSetters
         self.chainStructs = chainStructs
 
     def getChainStructs(self):
@@ -145,6 +146,7 @@ class vulkanProvider(Provider):
         for rdcsName, rdcs in self.runDefs['structureChains'].items():
             sc = StructureChain(rdcs['structureChainName'], rdcs['mainStructName'], rdcs['mainStructStype'],
                 rdcs['baseProviderName'], rdcs['baseProviderStructName'], rdcs['baseProviderMemberName'],
+                rdcs['hasSetters'] == 'true',
                 [ChainStruct(rdscm['structName'], rdscm['providerName'], rdscm['sType']) for rdscm in rdcs['chainStructs']])
             structureChains[rdcsName] = sc
 

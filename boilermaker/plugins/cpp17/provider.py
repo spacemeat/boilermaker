@@ -271,9 +271,11 @@ class cpp17Provider(Provider):
                 self.props.pop()
 
         for bomaType in bomaTypes.values():
+            includeEnumHeader = False
             typeHeaders = list()
             for knownTypeName in bomaType.knows:
                 if knownTypeName in bomaEnums:
+                    includeEnumHeader = True
                     knownType = bomaEnums[knownTypeName]
                     for inc in knownType.include:
                         if inc[0] == '<':
@@ -293,6 +295,7 @@ class cpp17Provider(Provider):
             for st in subtypes:
                 eo = bomaEnums.get(st.type)
                 if eo:
+                    includeEnumHeader = True
                     eo.usedInBomaType = True
                     for inc in eo.bomaEnum.include:
                         if inc[0] == '<':
@@ -315,6 +318,8 @@ class cpp17Provider(Provider):
                             for inc in so.include:
                                 typeHeaders.append(inc)
             bomaType.dependencyIncludes = list(dict.fromkeys(typeHeaders))
+            if includeEnumHeader:
+                bomaType.dependencyIncludes.append('"' + getRelativePath(Path(Scribe(bomaType.props).getXProp('headerDir')), Path(Scribe(self.props).getXProp('headerDir')) / s.X('$enumsHeaderFile')) + '"')
 
         for stdType in standardTypes.values():
             for inc in stdType.include:
