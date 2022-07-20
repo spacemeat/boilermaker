@@ -144,6 +144,10 @@ class BomaTypeMember:
         if not defaultValue:
             return
 
+        def isBooly(val):
+            try: bool(val); return True
+            except ValueError: return False
+
         def isInty(val):
             try: int(val); return True
             except ValueError: return False
@@ -186,7 +190,7 @@ class BomaTypeMember:
                         self.defaultValue = ev.fullCodeDecl
                         break
 
-        elif isInty(defaultValue) or isFloaty(defaultValue):
+        elif isBooly(defaultValue) or isInty(defaultValue) or isFloaty(defaultValue):
             self.defaultValue = defaultValue
 
         elif (self.type.type == 'string' or

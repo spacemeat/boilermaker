@@ -162,10 +162,11 @@ namespace og
             void ** ppNext = & mainStruct.pNext;
             for (auto const & provider : providers)
             {
-                if      $<join for member in $struct.chainStructs>$+
-                (provider == "$<$member.providerName>") { if ($<$member.providerName>) { continue; } $<$member.providerName> = std::unique_ptr<$<$member.structName>>(new $<$member.structName> { $<$member.sType> }); *ppNext = & (* $<$member.providerName>); ppNext = & $<$member.providerName>->pNext; }
-                $<delim>else if $<endjoin>
-                else { throw std::runtime_error("Woops"); }
+                if      (provider == "$<$struct.baseProviderName>") { continue; }
+                $<join for member in $struct.chainStructs>$+
+                else if (provider == "$<$member.providerName>") { if ($<$member.providerName>) { continue; } $<$member.providerName> = std::unique_ptr<$<$member.structName>>(new $<$member.structName> { $<$member.sType> }); *ppNext = & (* $<$member.providerName>); ppNext = & $<$member.providerName>->pNext; }
+                $<endjoin>$+
+                else { throw std::runtime_error(fmt::format("$<$struct.name> init(): invalid provider {}", provider)); }
             }
         }
 
@@ -211,7 +212,8 @@ namespace og
             $<join for member in $struct.chainStructs>$+
             else if (providerName == "$<$member.providerName>") { return check(hu::val<$<$member.structName>_members>::extract(memberName), op, value); }
             $<endjoin>$+
-            else { throw std::runtime_error("Woops"); }
+            else { throw std::runtime_error(fmt::format("$<$struct.name> check(): invalid provider {}", providerName)); }
+            return false;
         }
 
         bool check($<$struct.baseProviderStructName>_members member,
@@ -254,7 +256,7 @@ namespace og
             $<join for member in $struct.chainStructs>$+
             else if (providerName == "$<$member.providerName>") { set(hu::val<$<$member.structName>_members>::extract(memberName), value); }
             $<endjoin>$+
-            else { throw std::runtime_error("nope"); }
+            else { throw std::runtime_error(fmt::format("$<$struct.name> check(): invalid provider {}", providerName)); }
         }
 
         void set($<$struct.baseProviderStructName>_members member,
@@ -265,7 +267,6 @@ namespace og
             $<join for providerMember in $enumVals($struct.baseProviderStructName)>$+
             case $<$struct.baseProviderStructName>_members::$<$toMemberName($providerMember)>: mainStruct.$<$struct.baseProviderMemberName>.$<$toReference($providerMember)> = value; break;
             $<endjoin>$+
-            default: throw std::runtime_error("huh");
             }
         }
 
@@ -279,7 +280,6 @@ namespace og
             $<join for providerMember in $enumVals($struc.structName)>$+
             case $<$struc.structName>_members::$<$toMemberName($providerMember)>: chainStructUp->$<$toReference($providerMember)> = value; break;
             $<endjoin>$+
-            default: throw std::runtime_error("come on");
             }
         }
 

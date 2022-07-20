@@ -42,9 +42,14 @@ namespace $namespaceForCode
     $<endif>$''$+
     $<if 'humon' in $deserializeFrom>
     $<$rescope($t)>::$<$t.name>($<$const('hu::Node')> & node)
-     : $<join for member in $t.members>$<$member.name>(node / "$<$member.name>" % hu::val<$<$rescope($member.type)>>{})$<delim>,
+     : $<join for member in $t.members>$+
+            $<if len($member.defaultValue) $> 0>
+            $<$member.name>(node % "$<$member.name>" ? node / "$<$member.name>" % hu::val<$<$rescope($member.type)>>{} : $<$member.name>)$+
+            $<else>
+            $<$member.name>(node / "$<$member.name>" % hu::val<$<$rescope($member.type)>>{})$+
+            $<endif>$<delim>,
        $<endjoin>
-    {
+$''    {
     }
 
     $<endif>$''$+
