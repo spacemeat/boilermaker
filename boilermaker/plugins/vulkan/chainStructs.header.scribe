@@ -235,6 +235,9 @@ namespace og
                    std::string_view value) const
         {
             auto const & chainStructUp = $<$struc.providerName>;
+            if (chainStructUp == nullptr)
+                { return false; }
+
             switch (member)
             {
             $<join for providerMember in $enumVals($struc.structName)>$+

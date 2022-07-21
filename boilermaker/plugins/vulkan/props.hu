@@ -53,6 +53,10 @@
                         structName: VkPhysicalDeviceVulkan13Features
                         providerName: vulkan_1_3
                         sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES
+                    }, {
+                        structName: VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR
+                        providerName: global_priority_query
+                        sType: VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES_KHR
                     }
                 ]
             }
