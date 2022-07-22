@@ -49,10 +49,16 @@ namespace og
             }
             else
             {
+                if ((op == og::vkRequirements::reqOperator::eq && value == "true") ||
+                    (op == og::vkRequirements::reqOperator::ne && value == "false"))
+                    { return member != 0; }
+                if ((op == og::vkRequirements::reqOperator::ne && value == "true") ||
+                    (op == og::vkRequirements::reqOperator::eq && value == "false"))
+                    { return member == 0; }
                 return obeysInequality(member, valueConv, op);
             }
         }
-
+        /*
         static bool member(VkBool32 const & member, og::vkRequirements::reqOperator op,
                            std::string_view value)
         {
@@ -65,7 +71,7 @@ namespace og
                 { return member == (op == og::vkRequirements::reqOperator::ne ? VK_TRUE : VK_FALSE); }
             throw std::runtime_error(fmt::format("Invalid operator {}.", op));
         }
-
+        */
 
         static bool member(uint8_t member[VK_UUID_SIZE], og::vkRequirements::reqOperator op,
                            std::string_view value)
