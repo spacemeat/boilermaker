@@ -40,6 +40,7 @@
                 baseProviderName: vulkan_1_0
                 baseProviderStructName: VkPhysicalDeviceFeatures
                 baseProviderMemberName: features
+                hasConstructors: true
                 hasSetters: true
                 chainStructs: [ {
                         structName: VkPhysicalDeviceVulkan11Features

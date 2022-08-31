@@ -870,6 +870,8 @@ class Scribe:
 
                 if type(vals) is dict:
                     vals = [v for k, v in vals.items()]
+                else:
+                    vals = list(vals)
 
                 for vidx, val in enumerate(vals):
                     self.props.push({varname: val})
