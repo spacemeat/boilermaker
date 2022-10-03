@@ -6,6 +6,10 @@ from ...ansi import Ansi as a
 import subprocess
 import os
 import operator
+import sys
+
+
+compileErrorsPath = './.gegstash'
 
 
 def ensureDirExists(dir :Path, clearExisting :bool):
@@ -88,7 +92,7 @@ class ConstructProvider(Provider):
         if type(commands) is not list:
             commands = [commands]
         for command in commands:
-            results = self.runShellCommand(command, captureStdOut, captureStdError)
+            results = self.runShellCommand(command, captureStdOut, captureStdError, combineStdOutAndError)
             returns.append(results)
             if type(results) is tuple and results[0] != 0:
                 break
@@ -128,6 +132,9 @@ class ConstructProvider(Provider):
         self.props.push()
         s = Scribe(self.props)
 
+        self.didGeg = False
+        self.compileErrorsFile = open(compileErrorsPath, 'w')
+
         builds = self.props.getProp('builds', {})
         # builds has keys like 'assetDb.lib', 'assetDb.test', ...
         targets = s.getXProp('targets', '').split()
@@ -160,6 +167,12 @@ class ConstructProvider(Provider):
             elif buildType == 'staticArchive':
                 self.buildStaticArchive(build)
             self.reportErrors(build)
+        
+        if self.didGeg:
+            print ('ending geg output')
+        else:
+            print ('no geg output')
+            os.unlink(compileErrorsPath)
 
 
     def reset(self):
@@ -302,7 +315,9 @@ class ConstructProvider(Provider):
                 print(f'  {self.substepColor_dk}returned: {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
                 if ret != 0:
                     source.setDidNotCompile()
-                source.buildErrors += err
+                    source.buildErrors += err
+                    print(err, file=self.compileErrorsFile)
+                    self.didGeg = True
             else:
                 print(f'{self.substepColor_lt}Skip it. {a.p(outputObjectPath, self.substepFileColor)}{self.substepColor_dk} already up to date.{a.all_off}')
         else:
@@ -379,7 +394,9 @@ class ConstructProvider(Provider):
                 print(f'  {self.substepColor_dk}returned: {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
                 if ret != 0:
                     self.errors.append('didNotCompileOrLink' if buildExecutable else 'didNotCompile')
-                self.buildErrors += err
+                    self.buildErrors += err
+                    print(err, file=self.compileErrorsFile)
+                    self.didGeg = True
             else:
                 print(f'  {self.substepColor_lt}{outputPath}{self.substepColor_dk} already up to date.{a.all_off}')
         else:
@@ -612,6 +629,9 @@ class ConstructProvider(Provider):
         if type(cOpts) is not list:
             cOpts = [cOpts]
         cOpts = [f'-{o}' for o in cOpts]
+        dfmt = s.getXProp('diagnosticFormat')
+        if dfmt == 'json':
+            cOpts.append('-fdiagnostics-format=json')
         lOpts = s.getXProp('linkOptions') or []
         if type(lOpts) is not list:
             lOpts = [lOpts]

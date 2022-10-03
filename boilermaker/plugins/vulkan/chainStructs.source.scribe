@@ -4,3 +4,37 @@ $sourceTopComment
 
 #include "$srcToHeader/$vkChainStructsHeaderFile"
 
+namespace og
+{
+    $<join for struct in $structureChains>$+
+
+    $<if $struct.hasSetters>$+
+
+    $<$struct.baseProviderStructName> operator | ($<$struct.baseProviderStructName> const & lhs, $<$struct.baseProviderStructName> const & rhs)
+    {
+        return $<$struct.baseProviderStructName>
+        {
+            $<join for providerMember in $enumVals($struct.baseProviderStructName)>$+
+            .$<$toMemberName($providerMember)> = (lhs.$<$toMemberName($providerMember)> || rhs.$<$toMemberName($providerMember)>) ? VK_TRUE : VK_FALSE$<delim>,
+            $<endjoin>
+        };
+    }
+
+    $<join for member in $struct.chainStructs>
+
+    $<$member.structName> operator | ($<$member.structName> const & lhs, $<$member.structName> const & rhs)
+    {
+        return $<$member.structName>
+        {
+            .sType = $<$member.sType>,
+            .pNext = nullptr,
+            $<join for providerMember in $enumVals($member.structName)>$+
+            .$<$toMemberName($providerMember)> = (lhs.$<$toMemberName($providerMember)> || rhs.$<$toMemberName($providerMember)>) ? VK_TRUE : VK_FALSE$<delim>,
+            $<endjoin>
+        };
+    }
+
+    $<endjoin>
+    $<endif>
+    $<endjoin>
+}

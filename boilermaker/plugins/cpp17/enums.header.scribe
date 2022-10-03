@@ -4,6 +4,8 @@ $<out $enumsHeaderPath>$+
 $headerTopComment
 
 #include "$commonHeaderFile"
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 $+
 $<join for inc in $enumHeaderIncludes>$+
 #include $inc
@@ -109,7 +111,15 @@ $+  $<join for enum in $enums>$+
     std::ostream & operator <<(std::ostream & out, $<$const('HumonFormat<' + $rescope($enum) + '$>')> & obj);
     $<endjoin>
 }
+
 $<endif $<# humon>>$+
 $<endif $<# binary or humon>>$+
 $<endset>$+
+
+$<if 'humon' in $enumSerializeTo>$+
+$+  $<join for enum in $enums>$+
+template <> struct fmt::formatter<og::HumonFormat<$<$rescope($enum)>>> : ostream_formatter {};
+$+  $<endjoin>
+$<endif>
+
 $<endout>$+

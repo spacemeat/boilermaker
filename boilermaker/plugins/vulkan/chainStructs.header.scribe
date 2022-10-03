@@ -6,7 +6,8 @@ $headerTopComment
 #include <vulkan/vulkan.h>
 #include "common.hpp"
 #include "enums.hpp"
-#include <fmt/format.h>
+#include <fmt/core.h>
+#include <fmt/ostream.h>
 
 $<join for header in $chainStructHeaders>$+
 #include $header
@@ -28,7 +29,7 @@ namespace og
             case abilities::op::le: return lhs <= rhs;
             case abilities::op::ge: return lhs >= rhs;
             default:
-                throw std::runtime_error(fmt::format("Invalid operator '{}' for criteria '{}'", op, lhs));
+                throw std::runtime_error(fmt::format("Invalid operator '{}' for criteria '{}'", HumonFormat(op), lhs));
             }
         }
 
@@ -45,7 +46,7 @@ namespace og
                     { return member == valueConv; }
                 if (op == og::abilities::op::ne)
                     { return member != valueConv; }
-                throw std::runtime_error(fmt::format("Invalid operator {}.", op));
+                throw std::runtime_error(fmt::format("Invalid operator {}.", HumonFormat(op)));
             }
             else
             {
@@ -63,7 +64,7 @@ namespace og
                            std::string_view value)
         {
             if (op != og::abilities::op::eq && op != og::abilities::op::ne)
-                { throw std::runtime_error(fmt::format("Invalid operator {}.", op)); }
+                { throw std::runtime_error(fmt::format("Invalid operator {}.", HumonFormat(op))); }
 
             if (value.size() != VK_UUID_SIZE * 2)
                 { throw std::runtime_error("Invalid format for uint8_t[VK_UUID_SIZE]."); }
@@ -93,7 +94,7 @@ namespace og
                            std::string_view value)
         {
             if (op != og::abilities::op::eq && op != og::abilities::op::ne)
-                { throw std::runtime_error(fmt::format("Invalid operator {}.", op)); }
+                { throw std::runtime_error(fmt::format("Invalid operator {}.", HumonFormat(op))); }
 
             if (value.size() != VK_UUID_SIZE * 2)
                 { throw std::runtime_error("Invalid format for uint8_t[VK_UUID_SIZE]."); }
@@ -123,7 +124,7 @@ namespace og
                            og::abilities::op op, std::string_view value)
         {
             if (op != og::abilities::op::eq && op != og::abilities::op::ne)
-                { throw std::runtime_error(fmt::format("Invalid operator {}.", op)); }
+                { throw std::runtime_error(fmt::format("Invalid operator {}.", HumonFormat(op))); }
 
             if (std::string_view(member) != value)
                 { return op == og::abilities::op::ne; }
@@ -135,7 +136,7 @@ namespace og
                            og::abilities::op op, std::string_view value)
         {
             if (op != og::abilities::op::eq && op != og::abilities::op::ne)
-                { throw std::runtime_error(fmt::format("Invalid operator {}.", op)); }
+                { throw std::runtime_error(fmt::format("Invalid operator {}.", HumonFormat(op))); }
 
             if (std::string_view(member) != value)
                 { return op == og::abilities::op::ne; }
@@ -148,30 +149,10 @@ namespace og
 
     $<if $struct.hasSetters>$+
 
-    $<$struct.baseProviderStructName> operator | ($<$struct.baseProviderStructName> const & lhs, $<$struct.baseProviderStructName> const & rhs)
-    {
-        return $<$struct.baseProviderStructName>
-        {
-            $<join for providerMember in $enumVals($struct.baseProviderStructName)>$+
-            .$<$toMemberName($providerMember)> = (lhs.$<$toMemberName($providerMember)> || rhs.$<$toMemberName($providerMember)>) ? VK_TRUE : VK_FALSE$<delim>,
-            $<endjoin>
-        };
-    }
+    $<$struct.baseProviderStructName> operator | ($<$struct.baseProviderStructName> const & lhs, $<$struct.baseProviderStructName> const & rhs);
 
-    $<join for member in $struct.chainStructs>
-
-    $<$member.structName> operator | ($<$member.structName> const & lhs, $<$member.structName> const & rhs)
-    {
-        return $<$member.structName>
-        {
-            .sType = $<$member.sType>,
-            .pNext = nullptr,
-            $<join for providerMember in $enumVals($member.structName)>$+
-            .$<$toMemberName($providerMember)> = (lhs.$<$toMemberName($providerMember)> || rhs.$<$toMemberName($providerMember)>) ? VK_TRUE : VK_FALSE$<delim>,
-            $<endjoin>
-        };
-    }
-
+    $<join for member in $struct.chainStructs>$+
+    $<$member.structName> operator | ($<$member.structName> const & lhs, $<$member.structName> const & rhs);
     $<endjoin>
     $<endif>
     $<endjoin>
@@ -180,6 +161,69 @@ namespace og
 
     struct $<$struct.name>
     {
+        void resetPnext()
+        {
+            void ** ppNext = & mainStruct.pNext;
+            * ppNext = nullptr;
+            $<join for member in $struct.chainStructs>$+
+            if ($<$member.providerName>) { * ppNext = $<$member.providerName>.get(); ppNext = & $<$member.providerName>->pNext; * ppNext = nullptr; }$<delim>
+            $<endjoin>
+        }
+
+        $<$struct.name>()
+        {
+        }
+
+        $<$struct.name>($<$struct.mainStructName> const & mainStruct_rhs)
+        : mainStruct { mainStruct_rhs }
+        {
+            resetPnext();
+        }
+
+        $<$struct.name>($<$struct.name> const & rhs)
+        : mainStruct(rhs.mainStruct),
+          $<join for member in $struct.chainStructs>$+
+          $<$member.providerName>(rhs.$<$member.providerName> ? new $<$member.structName> { * rhs.$<$member.providerName> } : nullptr)$<delim>,
+          $<endjoin>
+        {
+            resetPnext();
+        }
+
+        $<$struct.name>($<$struct.name> && rhs)
+        : mainStruct(std::move(rhs.mainStruct)),
+          $<join for member in $struct.chainStructs>$+
+          $<$member.providerName>(std::move(rhs.$<$member.providerName>))$<delim>,
+          $<endjoin>
+        {
+            resetPnext();
+        }
+
+        $<$struct.name> & operator =($<$struct.name> const & rhs)
+        {
+            if (this != & rhs)
+            {
+                mainStruct = rhs.mainStruct;
+                $<join for member in $struct.chainStructs>$+
+                $<$member.providerName> = std::unique_ptr<$<$member.structName>> { rhs.$<$member.providerName> ? new $<$member.structName> { * rhs.$<$member.providerName> } : nullptr };$<delim>
+                $<endjoin>
+                resetPnext();
+            }
+            return * this;
+        }
+
+        $<$struct.name> & operator =($<$struct.name> && rhs)
+        {
+            if (this != & rhs)
+            {
+                mainStruct = std::move(rhs.mainStruct);
+                $<join for member in $struct.chainStructs>$+
+                $<$member.providerName> = std::move(rhs.$<$member.providerName>);$<delim>
+                $<endjoin>
+                resetPnext();
+            }
+            return * this;
+        }
+
         void init(std::vector<std::string_view> const & providers)
         {
             void ** ppNext = & mainStruct.pNext;
@@ -272,72 +316,6 @@ namespace og
 
         $<endjoin>$+
 
-        $<if $struct.hasConstructors>
-
-        void resetPnext()
-        {
-            void ** ppNext = & mainStruct.pNext;
-            * ppNext = nullptr;
-            $<join for member in $struct.chainStructs>$+
-            if ($<$member.providerName>) { * ppNext = $<$member.providerName>.get(); ppNext = & $<$member.providerName>->pNext; * ppNext = nullptr; }$<delim>
-            $<endjoin>
-        }
-
-        $<$struct.name>()
-        {
-        }
-
-        $<$struct.name>($<$struct.mainStructName> const & mainStruct_rhs)
-        : mainStruct { mainStruct_rhs }
-        {
-            resetPnext();
-        }
-
-        $<$struct.name>($<$struct.name> const & rhs)
-        : mainStruct(rhs.mainStruct),
-          $<join for member in $struct.chainStructs>$+
-          $<$member.providerName>(rhs.$<$member.providerName> ? new $<$member.structName> { * rhs.$<$member.providerName> } : nullptr)$<delim>,
-          $<endjoin>
-        {
-            resetPnext();
-        }
-
-        $<$struct.name>($<$struct.name> && rhs)
-        : mainStruct(std::move(rhs.mainStruct)),
-          $<join for member in $struct.chainStructs>$+
-          $<$member.providerName>(std::move(rhs.$<$member.providerName>))$<delim>,
-          $<endjoin>
-        {
-            resetPnext();
-        }
-
-        $<$struct.name> & operator =($<$struct.name> const & rhs)
-        {
-            if (this != & rhs)
-            {
-                mainStruct = rhs.mainStruct;
-                $<join for member in $struct.chainStructs>$+
-                $<$member.providerName> = std::unique_ptr<$<$member.structName>> { rhs.$<$member.providerName> ? new $<$member.structName> { * rhs.$<$member.providerName> } : nullptr };$<delim>
-                $<endjoin>
-                resetPnext();
-            }
-            return * this;
-        }
-
-        $<$struct.name> & operator =($<$struct.name> && rhs)
-        {
-            if (this != & rhs)
-            {
-                mainStruct = std::move(rhs.mainStruct);
-                $<join for member in $struct.chainStructs>$+
-                $<$member.providerName> = std::move(rhs.$<$member.providerName>);$<delim>
-                $<endjoin>
-                resetPnext();
-            }
-            return * this;
-        }
-
-        $<endif>$+
         $<if $struct.hasSetters>
 
         void set(std::string_view providerName,

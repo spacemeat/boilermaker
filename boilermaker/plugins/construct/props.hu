@@ -36,6 +36,7 @@
     language:           c++
     languageVersion:    2a
     languageStandard:   c++2a
+    diagnosticFormat:   json    // for geg; set this to test for traditional build
 
     warns:                  [Wall, Wextra, pedantic]
     compileOptions:         []
