@@ -9,7 +9,7 @@ import operator
 import sys
 
 
-compileErrorsPath = './.gegstash'
+compileErrorsPath = './.gegstash.json'
 
 
 def ensureDirExists(dir :Path, clearExisting :bool):
@@ -132,8 +132,10 @@ class ConstructProvider(Provider):
         self.props.push()
         s = Scribe(self.props)
 
-        self.didGeg = False
-        self.compileErrorsFile = open(compileErrorsPath, 'w')
+        self.doingGeg = s.getXProp('diagnosticFormat') == 'json'
+
+        if self.doingGeg:
+            self.compileErrorsFile = open(compileErrorsPath, 'w')
 
         builds = self.props.getProp('builds', {})
         # builds has keys like 'assetDb.lib', 'assetDb.test', ...
@@ -168,11 +170,9 @@ class ConstructProvider(Provider):
                 self.buildStaticArchive(build)
             self.reportErrors(build)
         
-        if self.didGeg:
+        if self.doingGeg:
+            self.compileErrorsFile.close()
             print ('ending geg output')
-        else:
-            print ('no geg output')
-            os.unlink(compileErrorsPath)
 
 
     def reset(self):
@@ -316,8 +316,8 @@ class ConstructProvider(Provider):
                 if ret != 0:
                     source.setDidNotCompile()
                     source.buildErrors += err
-                    print(err, file=self.compileErrorsFile)
-                    self.didGeg = True
+                    if self.doingGeg:
+                        print(err, file=self.compileErrorsFile)
             else:
                 print(f'{self.substepColor_lt}Skip it. {a.p(outputObjectPath, self.substepFileColor)}{self.substepColor_dk} already up to date.{a.all_off}')
         else:
@@ -353,6 +353,8 @@ class ConstructProvider(Provider):
                 print(f'  {self.substepColor_dk}returned: {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
                 if ret != 0:
                     self.errors.append('didNotLink')
+                    #if self.doingGeg:
+                    #    print(err, file=self.compileErrorsFile)
                 self.buildErrors += err
             else:
                 print(f'{self.substepColor_lt}Skip it. {a.p(outputPath, self.substepFileColor)}{self.substepColor_dk} already up to date.{a.all_off}')
@@ -395,8 +397,8 @@ class ConstructProvider(Provider):
                 if ret != 0:
                     self.errors.append('didNotCompileOrLink' if buildExecutable else 'didNotCompile')
                     self.buildErrors += err
-                    print(err, file=self.compileErrorsFile)
-                    self.didGeg = True
+                    if self.doingGeg:
+                        print(err, file=self.compileErrorsFile)
             else:
                 print(f'  {self.substepColor_lt}{outputPath}{self.substepColor_dk} already up to date.{a.all_off}')
         else:
@@ -581,6 +583,12 @@ class ConstructProvider(Provider):
                 print(f'  {self.substepColor_dk}returned: {a.lt_green_fg if ret == 0 else a.lt_red_fg}{ret}{a.all_off}')
                 if ret != 0:
                     source.setCouldNotGetDeps()
+                    if self.doingGeg:
+                        breakpoint()
+                        if err.endswith('compilation terminated.\n'):
+                            err = err[:-len('compilation terminated.\n')]
+                        print(err, file=self.compileErrorsFile)
+
                 self.buildErrors += err
 
                 out = out.replace('\\\n', '')
@@ -629,9 +637,13 @@ class ConstructProvider(Provider):
         if type(cOpts) is not list:
             cOpts = [cOpts]
         cOpts = [f'-{o}' for o in cOpts]
-        dfmt = s.getXProp('diagnosticFormat')
-        if dfmt == 'json':
-            cOpts.append('-fdiagnostics-format=json')
+        dOpts = s.getXProp('diagnosticOptions') or []
+        if type(dOpts) is not list:
+            dOpts = [dOpts]
+        if dfmt := s.getXProp('diagnosticFormat'):
+            dOpts.append(f'-fdiagnostics-format={dfmt}')
+        if dfmt := s.getXProp('diagnosticTemplateTrees'):
+            dOpts.append('-fdiagnostics-show-template-tree')
         lOpts = s.getXProp('linkOptions') or []
         if type(lOpts) is not list:
             lOpts = [lOpts]
@@ -654,7 +666,7 @@ class ConstructProvider(Provider):
 
             if operation == 'getHeaderDependencies':
                 source = kwargs.get('source')
-                return f'{compilerTool} -std={languageStandard} -E -M {" ".join(includeDirs)} {str(source.srcPath)} {" ".join(clOpts)} {" ".join(cOpts)} {" ".join(lOpts)}'
+                return f'{compilerTool} -std={languageStandard} -E -M {" ".join(includeDirs)} {str(source.srcPath)} {" ".join(clOpts)} {" ".join(cOpts)} {" ".join(dOpts)} {" ".join(lOpts)}'
 
             elif operation == 'getLinkerSearchPaths':
                 libs = kwargs.get('lib')
@@ -663,16 +675,16 @@ class ConstructProvider(Provider):
             elif operation == 'compileSourceToObject':
                 source = kwargs.get('source')
                 dotoPath = source.objPath
-                return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} -c {" ".join(opts)} {" ".join(includeDirs)} {str(source.srcPath)} -o{dotoPath} {" ".join(clOpts)} {" ".join(cOpts)}'
+                return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} -c {" ".join(opts)} {" ".join(includeDirs)} {str(source.srcPath)} -o{dotoPath} {" ".join(clOpts)} {" ".join(cOpts)} {" ".join(dOpts)}'
 
             elif operation == 'compileManySourcesToObject':
-                return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} -c {" ".join(opts)} {" ".join(includeDirs)} {" ".join([str(s.srcPath) for s in kwargs.get("sources", [])])} -o{outputProjectObjectPath} {" ".join(clOpts)} {" ".join(cOpts)}'
+                return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} -c {" ".join(opts)} {" ".join(includeDirs)} {" ".join([str(s.srcPath) for s in kwargs.get("sources", [])])} -o{outputProjectObjectPath} {" ".join(clOpts)} {" ".join(cOpts)} {" ".join(dOpts)}'
 
             elif operation == 'linkCompiledObjectsToExe':
-                return f'{compilerTool} {" ".join(warnflags)} {" ".join(opts)} {" ".join([str(o) for o in kwargs.get("sources", [])])} -o{outputPath} {" ".join(libraryDirs)} {" ".join(libs)} {" ".join(clOpts)} {" ".join(lOpts)}'
+                return f'{compilerTool} {" ".join(warnflags)} {" ".join(opts)} {" ".join([str(o) for o in kwargs.get("sources", [])])} -o{outputPath} {" ".join(libraryDirs)} {" ".join(libs)} {" ".join(clOpts)} {" ".join(lOpts)} {" ".join(dOpts)}'
 
             elif operation == 'compileManySourcesToExe':
-                return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} {" ".join(opts)} {" ".join(includeDirs)} {" ".join([str(s.srcPath) for s in kwargs.get("sources", [])])} -o{outputPath} {" ".join(libraryDirs)} {" ".join(libs)} {" ".join(clOpts)} {" ".join(cOpts)} {" ".join(lOpts)}'
+                return f'{compilerTool} -std={languageStandard} {" ".join(warnflags)} {" ".join(opts)} {" ".join(includeDirs)} {" ".join([str(s.srcPath) for s in kwargs.get("sources", [])])} -o{outputPath} {" ".join(libraryDirs)} {" ".join(libs)} {" ".join(clOpts)} {" ".join(cOpts)} {" ".join(lOpts)} {" ".join(dOpts)}'
 
             elif operation == 'archiveLibs':
                 return f'{archiveTool} csr  {outputLibPath} {" ".join([str(o) for o in kwargs.get("sources", [])])}'
