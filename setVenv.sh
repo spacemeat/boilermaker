@@ -1,1 +1,1 @@
-source .venv/boma/bin/activate
+source .venv/bin/activate

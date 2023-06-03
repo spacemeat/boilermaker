@@ -1,4 +1,4 @@
-#include "gen-cpp/boma/inc/boma.hpp"
+#include "gen/boma/inc/boma.hpp"
 #include <variant>
 #include <iostream>
 #include <humon/humon.hpp>

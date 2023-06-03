@@ -75,7 +75,7 @@ class Project:
         except BaseException as e:
             print (f'Encountered an error: {e}')
             raise e
-            return False
+            
 
 
     def getPathFromInherit(self, inh :str, originPath :Path):
