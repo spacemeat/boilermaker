@@ -1,6 +1,11 @@
-from .ansi import Ansi as ansi
 import re
-from .props import Scribe
+from .ansi import Ansi as ansi
+#from .props import Scribe
+
+# pylint: disable=invalid-name
+# pylint: disable=missing-function-docstring missing-class-docstring
+# pylint: disable=too-many-nested-blocks too-few-public-methods too-many-statements too-many-branches
+# pylint: disable=too-many-locals too-many-instance-attributes
 
 re_cppName = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
 
@@ -21,8 +26,8 @@ class Type:
 
 
 class BomaSubtype:
-    def __init__(self, typeData, name, props):
-        if type(typeData) is str:
+    def __init__(self, typeData: str | dict, name, props):
+        if isinstance(typeData, str):
             typeData = { 'type': typeData }
 
         self.name = name
@@ -34,12 +39,13 @@ class BomaSubtype:
         self.fullCodeDecl = ''
 
         ofo = typeData.get('of')
-        if ofo and type(ofo) is not list:
+        if ofo and not isinstance(ofo, list):
             typeData['of'] = [ofo]
 
         ofo = typeData.get('of')
         if ofo:
-            self.subtypes = [BomaSubtype(subsubtype, f'{name}_{idx}', props) for idx, subsubtype in enumerate(ofo)]
+            self.subtypes = [BomaSubtype(subsubtype, f'{name}_{idx}', props)
+                             for idx, subsubtype in enumerate(ofo)]
         else:
             self.subtypes = []
 
@@ -89,9 +95,9 @@ class BomaTypeMember:
         self.props = props
 
         def normalize(properties, name, idx):
-            if type(properties) is str:
+            if isinstance(properties, str):
                 properties = { 'type': properties }
-            elif type(properties) is dict:
+            elif isinstance(properties, dict):
                 properties = properties
             else:
                 raise RuntimeError(f'properites of member type {name} must be a str or dict')
@@ -100,7 +106,7 @@ class BomaTypeMember:
             properties['fullName'] = fullName
 
             ofo = properties.get('of')
-            if ofo and type(ofo) is not list:
+            if ofo and not isinstance(ofo, list):
                 properties['of'] = [ofo]
 
             ofo = properties.get('of')
@@ -111,6 +117,7 @@ class BomaTypeMember:
 
         self.properties = normalize(properties, fullName, 0)
         self.type = BomaSubtype(self.properties, self.fullName, props)
+        self.defaultValue = ''
 
 
     def __repr__(self):
@@ -121,18 +128,22 @@ class BomaTypeMember:
                 pv = properties.get(pn)
                 if not pv:
                     continue
-                if type(pv) is str:
-                    src += f'      {" " * level * 2}{ansi.dk_yellow_fg}{pn}{ansi.all_off}: {ansi.lt_yellow_fg}{pv}{ansi.all_off}{endl}'
-                elif type(pv) is list:
+                if isinstance(pv, str):
+                    src += (f'      {" " * level * 2}{ansi.dk_yellow_fg}{pn}{ansi.all_off}: '
+                            f'{ansi.lt_yellow_fg}{pv}{ansi.all_off}{endl}')
+                elif isinstance(pv, list):
                     src += f'      {" " * level * 2}{ansi.dk_yellow_fg}{pn}{ansi.all_off}:{endl}'
                     for pvi in pv:
                         src += recurse(pvi, level + 1)
-                elif type(pv) is dict:
-                    src += f'      {" " * level * 2}{ansi.dk_yellow_fg}{pn}{ansi.all_off}: {ansi.dk_yellow_fg}<some dict>{ansi.all_off}{endl}'
+                elif isinstance(pv, dict):
+                    src += (f'      {" " * level * 2}{ansi.dk_yellow_fg}{pn}{ansi.all_off}: '
+                            f'{ansi.dk_yellow_fg}<some dict>{ansi.all_off}{endl}')
             return src
 
+        src = ''
         for _, p in self.properties.items():
-            src = f'    member: {ansi.lt_blue_fg}{self.fullName}{ansi.all_off}:{endl}'
+            src = f'    member: {ansi.lt_blue_fg}{p}{ansi.all_off}:{endl}'
+            #src = f'    member: {ansi.lt_blue_fg}{self.fullName}{ansi.all_off}:{endl}'
 
         src += recurse(self.properties, 0)
         return src
@@ -145,29 +156,39 @@ class BomaTypeMember:
             return
 
         def isBooly(val):
-            try: bool(val); return True
-            except ValueError: return False
+            try:
+                bool(val)
+                return True
+            except ValueError:
+                return False
 
         def isInty(val):
-            try: int(val); return True
-            except ValueError: return False
+            try:
+                int(val)
+                return True
+            except ValueError:
+                return False
 
         def isFloaty(val):
-            try: float(val); return True
-            except ValueError: return False
+            try:
+                float(val)
+                return True
+            except ValueError:
+                return False
 
         if self.type.type in enumTypes:
             enumType = enumTypes[self.type.type]
 
             if enumType.flags:
                 allValues = ''
-                if type(defaultValue) is list:
+                if isinstance(defaultValue, list):
                     values = []
                     for dvc in defaultValue:
                         for ev in enumType.bomaEnum.values:
                             if ev.name == dvc:
                                 if enumType.isScoped:
-                                    values.append(f'static_cast<std::underlying_type<{self.type.fullCodeDecl}>>({ev.fullCodeDecl})')
+                                    values.append(f'static_cast<std::underlying_type'
+                                                  f'<{self.type.fullCodeDecl}>>({ev.fullCodeDecl})')
                                 else:
                                     values.append(f'{ev.fullCodeDecl}')
                                 break
@@ -192,9 +213,7 @@ class BomaTypeMember:
 
         elif isBooly(defaultValue) or isInty(defaultValue) or isFloaty(defaultValue):
             self.defaultValue = defaultValue
-
-        elif (self.type.type == 'string' or
-              self.type.type == 'stringView'):
+        elif self.type.type in ['string', 'stringView']:
             self.defaultValue = f'"{defaultValue}"'
         else:
             self.defaultValue = defaultValue
@@ -224,7 +243,7 @@ class BomaType(Type):
         #s = Scribe(props)
         #self.namespace = s.X('namespace')
 
-        self.members = dict()
+        self.members = {}
         for memberName, memProperties in typeBlock['members'].items():
             if re_cppName.match(memberName):
                 self.members[memberName] = BomaTypeMember(
@@ -238,7 +257,7 @@ class BomaType(Type):
                     # I'd rather reason about the type and do scoping stuff.
                     self.baseTypeDecl = memProperties
                 elif memberName == '-knows':
-                    if type(memProperties) is not list:
+                    if not isinstance(memProperties, list):
                         memProperties = [memProperties]
                     self.knows = memProperties
 

@@ -1,9 +1,14 @@
 import os
 from pathlib import Path
 import subprocess
-from humon import humon, enums as humonEnums
-from .ansi import Ansi as ansi
+#from humon import humon, enums as humonEnums
+import humon as h
+#from .ansi import Ansi as ansi
 
+# pylint: disable=invalid-name
+# pylint: disable=missing-function-docstring missing-class-docstring
+# pylint: disable=too-many-nested-blocks too-few-public-methods too-many-statements too-many-branches
+# pylint: disable=too-many-locals
 
 def doShellCommand(cmd):
     #print (f"{ansi.lt_black_fg}{cmd}{ansi.all_off}")
@@ -28,16 +33,46 @@ def getRelativePath(fromDir, toPath):
 
 def loadHumonFile(defsFile):
     '''Load a humon file and validate the version.'''
-    trove = humon.Trove.fromFile(str(defsFile))
+    trove = h.from_file(str(defsFile))
 
-    if not trove.getTroveAnnotations(key="app", value="boma"):
+    metatags = trove.metatags
+    if metatags.get('app') != 'boma':
+    #if not trove.getTroveAnnotations(key="app", value="boma"):
         raise ValueError(f"input file {defsFile} is not a 'boma' file.")
 
     bomaVersion = (1, 0, 0)
-    troveVersion = trove.getTroveAnnotations(key='boma-version')
+    troveVersion = metatags['boma-version']
     if troveVersion:
         bomaVersion = str(troveVersion).split(".")
         if len(bomaVersion) != 3:
-            raise ValueError(f"input file {defsFile}: boma-version must be a three-component semver.")
+            raise ValueError(f"input file {defsFile}: "
+                "boma-version must be a three-component semver.")
 
     return (trove, bomaVersion)
+
+
+def objectify_node(node: h.Node):
+    ''' Turns a humon Node into a dict. '''
+    if node.kind == h.NodeKind.DICT:
+        o = {}
+        for chi in range(0, node.num_children):
+            ch = node[chi]
+            o[ch.key] = objectify_node(ch)
+        return o
+    if node.kind == h.NodeKind.LIST:
+        o = []
+        for chi in range(0, node.num_children):
+            ch = node[chi]
+            o.append(objectify_node(ch))
+        return o
+    if node.kind == h.NodeKind.VALUE:
+        return node.value
+        try:
+            return int(node.value)
+        except ValueError:
+            try:
+                return float(node.value)
+            except ValueError:
+                return node.value
+    else:
+        raise ValueError('Null node cannot be objectified.')

@@ -1,4 +1,4 @@
-$<out $vkMainHeaderFile>$+
+$<out $vkMainHeaderPath>$+
 #pragma once
 
 $headerTopComment

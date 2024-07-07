@@ -1,6 +1,6 @@
 import sys
 import os
-from .ansi import Ansi
+#from .ansi import Ansi
 from .project import Project
 
 
@@ -28,9 +28,11 @@ Boma runs in phases:
     transform   (nop), call plugin.transform() in inherit order
     output      (prepares reports), call plugin.output() in inherit order
 
-In general, unless a plugin is disabled it will run transform. Output must be optional, and may not be called by boma.
+In general, unless a plugin is disabled it will run transform. Output must be optional,
+and may not be called by boma.
 '''
 
+# pylint: disable=invalid-name
 
 # cmdline:
 # $ python -m boilermaker boma.hu [--props || -p || --enums || -e || --types || -t || --write || -w]
@@ -46,6 +48,9 @@ def main():
                 propAdds[vals[i]] = vals[-1]
         else:
             propsFile = arg
+
+    if propsFile is None:
+        return 0
 
     path = os.path.abspath(propsFile)
     project = Project(path, propAdds)

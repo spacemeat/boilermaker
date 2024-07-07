@@ -118,9 +118,9 @@
     }
 
     vkMainHeaderFile: vk.hpp
-    vkMainHeaderPath: $sharedCodeHeaderDir/vk.hpp
+    vkMainHeaderPath: $sharedCodeHeaderDir/$vkMainHeaderFile
     vkMainSourceFile: vk.cpp
-    vkMainSourcePath: $sharedCodeSourceDir/vk.cpp
+    vkMainSourcePath: $sharedCodeSourceDir/$vkMainSourceFile
     vkChainStructsHeaderFile: vkChainStructs.hpp
     vkChainStructsHeaderPath: $sharedCodeHeaderDir/$vkChainStructsHeaderFile
     vkChainStructsSourceFile: vkChainStructs.cpp

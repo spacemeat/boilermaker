@@ -1,11 +1,19 @@
 import re
+from pathlib import Path
+
+import humon as h
+
 from . import utilities
 from .ansi import Ansi as ansi
 from .props import Props, PropertyBag, Scribe
-from pathlib import Path
 from .plugin import PluginCollection
 from .type import BomaType
 from .enums import BomaEnumVal, BomaEnum, BomaEnumType
+
+# pylint: disable=invalid-name
+# pylint: disable=missing-function-docstring missing-class-docstring
+# pylint: disable=too-many-nested-blocks too-few-public-methods too-many-statements too-many-branches
+# pylint: disable=too-many-locals
 
 # read ${captured}, when not preceded by a '\'
 defArgumentPattern = r'(?<!\\)\$\s*\<\s*([A-Za-z0-9_.]+?)\s*\>'
@@ -25,12 +33,14 @@ class Build:
 
 class Project:
     def __init__(self, propsPath, propAdds):
-        if type(propsPath) is not Path:
+        if not isinstance(propsPath, Path):
             propsPath = Path(propsPath)
         self.propsPath = propsPath
+        self.props: Props
         self.bomaPath = Path(__file__).parent
         self.loadedProviders = {}
         self.propAdds = propAdds
+        self.name = ''
 
     def run(self):
         try:
@@ -40,7 +50,8 @@ class Project:
             # Collect all the run operations.
             ops = []
             for runObject in self.props.getProp('bomaRuns').values():
-                s = Scribe(self.props)      # NOTE: using self.props, not runObject.props which is well up the parentage
+                # NOTE: using self.props, not runObject.props which is well up the parentage
+                s = Scribe(self.props)
                 runDefs = s.parseStructure(runObject.runBlock)
                 for op, seq in runDefs['ops'].items():
                     ops.append({
@@ -60,7 +71,8 @@ class Project:
                 seenProvs.add(providerName)
                 provider = self.loadProvider(providerName)
                 startOrder.append(provider)
-                provider.start(op['runDefs'], self.props) # NOTE: using self.props, not runObject.props which is well up the parentage
+                # NOTE: using self.props, not runObject.props which is well up the parentage
+                provider.start(op['runDefs'], self.props)
 
             for op in ops:
                 providerName = op['provider']
@@ -75,7 +87,6 @@ class Project:
         except BaseException as e:
             print (f'Encountered an error: {e}')
             raise e
-            
 
 
     def getPathFromInherit(self, inh :str, originPath :Path):
@@ -86,36 +97,38 @@ class Project:
         if inhPath.exists():
             return inhPath
         # TODO: Possibly search other paths for boma files
+        # TODO: Return originPath? raise hell? return None?
+        return originPath
 
 
     def makeBomaEnum(self, typeBlock, isFlags, isScoped, include):
         vals = []
-        if type(typeBlock['values']) is list:
+        if isinstance(typeBlock['values'], list):
             vals = typeBlock['values']
 
         bomaVals = []
         nextAutoVal = 0
         seenNums = set()
-        seenVals = dict()
+        seenVals = {}
 
-        if isFlags == False:
+        if isFlags is False:
             name = ''
             num = -1
 
             for val in vals:
                 # val is a string; just record the name with an increasing numeric value
-                if type(val) is str:
+                if isinstance(val, str):
                     name = val
                     num = nextAutoVal
                     ev = BomaEnumVal(name, num, '')
                     bomaVals.append(ev)
 
                 # val is a list; we need to set a numeric
-                elif type(val) is list:
+                elif isinstance(val, list):
                     name = val[0]
-                    if type(val[1]) is int:
+                    if isinstance(val[1], int):
                         num = val[1]
-                    elif type(val[1]) is str:
+                    elif isinstance(val[1], str):
                         if val[1] in seenVals:
                             num = seenVals[val[1]]
                         else:
@@ -137,7 +150,7 @@ class Project:
 
             for val in vals:
                 # val is a string; just record the name with an increasing numeric value
-                if type(val) is str:
+                if isinstance(val, str):
                     name = val
                     num = nextFlagVal
                     nextFlagVal *= 2
@@ -145,27 +158,34 @@ class Project:
                     bomaVals.append(ev)
 
                 # val is a list; we need to set a numeric
-                elif type(val) is list:
+                elif isinstance(val, list):
                     name = val[0]
-                    if type(val[1]) is int:
+
+                    try:
+                        val[1] = int(val[1])
+                    except ValueError:
+                        pass
+
+                    if isinstance(val[1], int):
                         num = val[1]
                         nextFlagVal = num * 2
-                    elif type(val[1]) is str:
+                    elif isinstance(val[1], str):
                         if val[1] in seenVals:
                             num = seenVals[val[1]]
                         else:
                             raise RuntimeError(f"Invalid enum value '{val[1]}' in {self.name}")
-                    elif type(val[1]) is list:
+                    elif isinstance(val[1], list):
                         flags = val[1]
                         num = 0
                         for flag in flags:
-                            if type(flag) is int:
+                            if isinstance(flag, int):
                                 num += flag
-                            elif type(flag) is str:
+                            elif isinstance(flag, str):
                                 if flag in seenVals:
                                     num += seenVals[flag]
                                 else:
-                                    raise RuntimeError(f"Invalid enum flag value '{flag}' in {self.name}")
+                                    raise RuntimeError(f"Invalid enum flag value '{flag}' "
+                                                       f"in {self.name}")
                     else:
                         raise RuntimeError(f"malformed enum vals in {self.name}")
 
@@ -188,10 +208,12 @@ class Project:
         builds = {}
         def rec(bagPath, bagg):
             print (f"{ansi.dk_white_fg}Loading props: {ansi.p(bagPath, 'cyan')}")
-            trove, defsFileVersion = utilities.loadHumonFile(bagPath)
-            propsDict = trove.root.objectify()
-            if type(propsDict) is not dict:
-                raise RuntimeError(f'Malformed boma props file')
+            trove, _ = utilities.loadHumonFile(bagPath)
+            propsDictNode = trove.root
+            if propsDictNode.kind != h.NodeKind.DICT:
+                raise RuntimeError('Malformed boma props file')
+
+            propsDict = utilities.objectify_node(propsDictNode)
 
             def recrec(propsDict, bagName, bag):
                 bag.setDict(propsDict)
@@ -209,7 +231,7 @@ class Project:
 
                 if 'enums' in propsDict:
                     for typeName, typeBlock in propsDict['enums'].items():
-                        if type(typeBlock) is list:
+                        if isinstance(typeBlock, list):
                             typeBlock = {'name': typeName, 'values': typeBlock}
                         newBag = PropertyBag({'name': typeName})
                         newBag.inherit(bag)
@@ -226,7 +248,7 @@ class Project:
 
                 if 'run' in propsDict:
                     typeBlocks = propsDict['run']
-                    if type(typeBlocks) is not list:
+                    if not isinstance(typeBlocks, list):
                         typeBlocks = [typeBlocks]
                     for typeBlock in typeBlocks:
                         name = typeBlock.get('name', bagPath.stem)
@@ -248,7 +270,7 @@ class Project:
 
                 if 'anchor' in propsDict:
                     anchs = propsDict['anchor']
-                    if type(anchs) is not list:
+                    if not isinstance(anchs, list):
                         anchs = [anchs]
                     for anch in anchs:
                         #newBag = PropertyBag({'name': anch})
@@ -272,12 +294,12 @@ class Project:
 
                 if 'inherit' in propsDict:
                     inhs = propsDict['inherit']
-                    if type(inhs) is str:
+                    if isinstance(inhs, str):
                         inhs = [inhs]
 
                     for inh in inhs:
                         newBagPath = self.getPathFromInherit(inh, Path(bagPath))
-                        if newBagPath == None:
+                        if newBagPath is None:
                             raise RuntimeError(f'Boilermaker file {inh} cannot be opened.')
                         newBag = PropertyBag({})
                         rec(newBagPath, newBag)

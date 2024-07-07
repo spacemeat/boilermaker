@@ -3,6 +3,10 @@ from pathlib import Path
 import re
 from .ansi import Ansi as ansi
 
+# pylint: disable=invalid-name
+# pylint: disable=missing-function-docstring missing-class-docstring
+# pylint: disable=too-many-nested-blocks
+
 re_comment = re.compile(r'^(#\s*)')
 re_if = re.compile(r'^(\s*if\s*)[^A-Za-z0-9_]?')
 re_elif = re.compile(r'^(\s*elif\s*)[^A-Za-z0-9_]?')
@@ -25,38 +29,38 @@ re_fmtexpr = re.compile(r'(right|left|center\s*)')
 
 
 class ClauseKind(Enum):
-    TEXT = auto(),
-    QUOTE = auto(),
-    COMMENT = auto(),
-    QUERY = auto(),
-    EXPRESSION = auto(),
-    IF = auto(),
-    THEN = auto(),
-    IFCONDITIONAL = auto(),
-    ELIFCONDITIONAL = auto(),
-    ELIF = auto(),
-    ELSE = auto(),
-    ENDIF = auto(),
-    JOIN = auto(),
-    JOINCOMPREHENSION = auto(),
-    DELIM = auto(),
-    ENDJOIN = auto(),
-    PATH = auto(),
-    OUT = auto(),
-    ENDOUT = auto(),
-    IN = auto(),
-    SET = auto(),
-    SETASSIGNMENT = auto(),
-    ENDSET = auto(),
-    FMT = auto(),
-    FMTCODE = auto(),
-    ENDFMT = auto(),
-    EATSPACE = auto(),
+    TEXT = auto()
+    QUOTE = auto()
+    COMMENT = auto()
+    QUERY = auto()
+    EXPRESSION = auto()
+    IF = auto()
+    THEN = auto()
+    IFCONDITIONAL = auto()
+    ELIFCONDITIONAL = auto()
+    ELIF = auto()
+    ELSE = auto()
+    ENDIF = auto()
+    JOIN = auto()
+    JOINCOMPREHENSION = auto()
+    DELIM = auto()
+    ENDJOIN = auto()
+    PATH = auto()
+    OUT = auto()
+    ENDOUT = auto()
+    IN = auto()
+    SET = auto()
+    SETASSIGNMENT = auto()
+    ENDSET = auto()
+    FMT = auto()
+    FMTCODE = auto()
+    ENDFMT = auto()
+    EATSPACE = auto()
     DEBUG = auto()
 
 class Clause:
     def __init__(self):
-        self.parent = None
+        self.parent: Clause# = None
         #self.siblingIdx = 0
         self.terms = []     # a term is either a string or another Clause
         self.kind = ClauseKind.TEXT
@@ -71,8 +75,8 @@ class Clause:
         return nc
 
     def append(self, string):
-        assert(type(string) is str)
-        if len(self.terms) > 0 and type(self.terms[-1]) is str:
+        assert isinstance(string, str)
+        if len(self.terms) > 0 and isinstance(self.terms[-1], str):
             self.terms[-1] += string
         else:
             self.terms.append(string)
@@ -105,9 +109,9 @@ class Clause:
         if len(self.terms) > 0:
             s += f'{ind0}<{self.kind}>:\n{ind0}{{\n'
             for t in self.terms:
-                if type(t) == str:
+                if isinstance(t, str):
                     s += f'{ind1}"{t}"\n'
-                elif type(t) == Clause:
+                elif isinstance(t, Clause):
                     s += f'{t.toStr(indent + 1)}'
                 else:
                     s += f'{ind1}<{t}:{type(t)}>\n'
@@ -124,21 +128,25 @@ class Clause:
 
 
 class PropertyBag:
-    def __init__(self, initialProps = {}):
-        self.props = initialProps
+    def __init__(self, initialProps = None):
+        self.props = initialProps or {}
         self.parents = []  # other PropertyBags
 
 
     def __str__(self):
         def toStr(self, depth):
-            s = ' ' * depth + f'{ansi.dk_blue_fg}name{ansi.all_off}: {ansi.lt_blue_fg}{self.props.get("name", "")}{ansi.all_off}\n'
+            s = (' ' * depth + f'{ansi.dk_blue_fg}name{ansi.all_off}: '
+                f'{ansi.lt_blue_fg}{self.props.get("name", "")}{ansi.all_off}\n')
             for [k, v] in self.props.items():
-                if k == 'types' or k == 'enums' or k == 'bomaTypes' or k == 'bomaEnums' or k == 'anchors' or k == 'props' or k.startswith('--'):
-                    s += ' ' * depth + f'{ansi.dk_blue_fg}{k}{ansi.all_off}: {ansi.lt_blue_fg}...{ansi.all_off}\n'
+                if k in ['types', 'enums', 'bomaTypes', 'bomaEnums',
+                         'anchors', 'props'] or k.startswith('--'):
+                    s += (' ' * depth + f'{ansi.dk_blue_fg}{k}{ansi.all_off}: '
+                         f'{ansi.lt_blue_fg}...{ansi.all_off}\n')
                 elif k == 'name':
                     continue
                 else:
-                    s += ' ' * depth + f'{ansi.dk_blue_fg}{k}{ansi.all_off}: {ansi.lt_blue_fg}{v}{ansi.all_off}\n'
+                    s += (' ' * depth + f'{ansi.dk_blue_fg}{k}{ansi.all_off}: '
+                         f'{ansi.lt_blue_fg}{v}{ansi.all_off}\n')
             for inh in reversed(self.parents):
                 s += toStr(inh, depth + 1)
             return s
@@ -149,7 +157,8 @@ class PropertyBag:
         def toRepr(self, depth):
             s = ' ' * depth + f'name: {self.props.get("name", "")}\n'
             for [k, v] in self.props.items():
-                if k == 'types' or k == 'enums' or k == 'bomaTypes' or k == 'bomaEnums' or k == 'anchors' or k == 'props' or k.startswith('--'):
+                if k in ['types', 'enums', 'bomaTypes', 'bomaEnums',
+                         'anchors', 'props'] or k.startswith('--'):
                     s += ' ' * depth + f'{k}: ...\n'
                 elif k == 'name':
                     continue
@@ -173,13 +182,15 @@ class PropertyBag:
     def getProp(self, key, default = None):
         if key in self.props:
             v = self.props[key]
-            if type(v) is str:
-                if v.lower() == 'true': v = True
-                elif v.lower() == 'false': v = False
+            if isinstance(v, str):
+                if v.lower() == 'true':
+                    v = True
+                elif v.lower() == 'false':
+                    v = False
             return v
         for inh in reversed(self.parents):
             v = inh.getProp(key)
-            if v != None:
+            if v is not None:
                 return v
         return default
 
@@ -188,9 +199,11 @@ class PropertyBag:
         vs = []
         if key in self.props:
             v = self.props[key]
-            if type(v) is str:
-                if v == 'true': v = True
-                elif v == 'false': v = False
+            if isinstance(v, str):
+                if v == 'true':
+                    v = True
+                elif v == 'false':
+                    v = False
             vs.append(v)
         for inh in reversed(self.parents):
             v = inh.getAll(key)
@@ -219,20 +232,23 @@ class PropertyBag:
 
     def ensureList(self, key):
         if key in self.props:
-            if type(self.props[key]) is not list:
+            if not isinstance(self.props[key], list):
                 self.props[key] = list(self.props[key])
         for inh in self.parents:
             inh.ensureList(key)
 
 
 class Props:
-    def __init__(self, initialProps = {}):
-        if type(initialProps) is PropertyBag:
+    def __init__(self, initialProps = None):
+        if not initialProps:
+            initialProps = {}
+        if isinstance(initialProps, PropertyBag):
             self.props = initialProps
-        elif type(initialProps) is dict:
+        elif isinstance(initialProps, dict):
             self.props = PropertyBag(initialProps)
         else:
-            raise RuntimeError(f'Props() must take a PropertyBag or dict')
+            raise RuntimeError('Props() must take a PropertyBag or dict')
+        self.debug = False
 
     def __str__(self):
         return str(self.props)
@@ -252,8 +268,8 @@ class Props:
     def getAll(self, key):
         return self.props.getAll(key)
 
-    def push(self, newProps = {}):
-        self.props.push(newProps)
+    def push(self, newProps = None):
+        self.props.push(newProps or {})
 
     def pop(self):
         self.props.pop()
@@ -266,9 +282,9 @@ class Props:
 
 
 class Scribe:
-    def __init__(self, props, execGlobals = {}):
+    def __init__(self, props, execGlobals = None):
         self.props = props
-        self.execGlobals = execGlobals
+        self.execGlobals = execGlobals or {}
         self.previousPaths = set()
         self.pathStack = []
         self.debug = False
@@ -280,7 +296,7 @@ class Scribe:
             # find all \a, and eat ws until non-ws or \v
             eat = False
             final = ''
-            for i, ch in enumerate(accum):
+            for _, ch in enumerate(accum):
                 if eat:
                     #breakpoint()
                     if ch not in [' ', '\r', '\n', '\t', '\a']:
@@ -304,14 +320,13 @@ class Scribe:
 
     def parseStructure(self, structure):
         def rec(elem):
-            if type(elem) is list:
+            if isinstance(elem, list):
                 return [rec(elemelem) for elemelem in elem]
-            elif type(elem) is dict:
+            if isinstance(elem, dict):
                 return {k: rec(v) for k, v in elem.items()}
-            elif type(elem) is str:
+            if isinstance(elem, str):
                 return self.parseText(elem)
-            else:
-                return elem
+            return elem
         return rec(structure)
 
 
@@ -326,14 +341,13 @@ class Scribe:
 
     def getXProp(self, key, default = None):
         def rec(v):
-            if type(v) is str:
+            if isinstance(v, str):
                 return self.parseText(v)
-            elif type(v) is list:
+            if isinstance(v, list):
                 return [rec(vv) for vv in v]
-            elif type(v) is dict:
+            if isinstance(v, dict):
                 return {k: rec(vv) for k, vv in v.items()}
-            else:
-                return v
+            return v
 
         v = rec(self.props.getProp(key, default))
         return v
@@ -341,14 +355,13 @@ class Scribe:
 
     def getXPropAll(self, key):
         def rec(v):
-            if type(v) is str:
+            if isinstance(v, str):
                 return self.parseText(v)
-            elif type(v) is list:
+            if isinstance(v, list):
                 return [rec(vv) for vv in v]
-            elif type(v) is dict:
+            if isinstance(v, dict):
                 return {k: rec(vv) for k, vv in v.items()}
-            else:
-                return v
+            return v
 
         vs = self.props.getAll(key)
         vs = [rec(v) for v in vs]
@@ -363,7 +376,7 @@ class Scribe:
         for s in reversed(self.pathStack):
             if s[0] == path:
                 return s[1]
-        f = open(path, openmode)
+        f = open(path, openmode, encoding = 'utf-8')
         self.pathStack.append((path, f))
         self.previousPaths.add(path)
         return f
@@ -378,17 +391,18 @@ class Scribe:
 
     def _eval(self, expr):
         expr = self.parseText(expr)
-        globlocs = {**self.execGlobals, 'props': self.props, 'scribe': self, 'true': True, 'false': False}
+        globlocs = {**self.execGlobals, 'props': self.props, 'scribe': self,
+                    'true': True, 'false': False}
         if self.debug:
             print (f'{ansi.dk_red_fg}Eval expression: {ansi.lt_red_fg}{expr}{ansi.all_off}')
         res = eval(expr, globlocs)
         if self.debug:
-            print (f'{ansi.dk_red_fg}     expression returned: {ansi.lt_red_fg}{res}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(res)}{ansi.dk_red_fg}){ansi.all_off}')
+            print (f'{ansi.dk_red_fg}     expression returned: {ansi.lt_red_fg}{res}'
+                   f'{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(res)}{ansi.dk_red_fg}){ansi.all_off}')
         return res
 
     def _exec(self, stmnts):
         stmnts = self.parseText(stmnts)
-        res = ''
         locs = {'props': self.props, 'res': '', 'scribe': self, 'true': True, 'false': False}
         globlocs = {**self.execGlobals, **locs}
         if self.debug:
@@ -398,10 +412,13 @@ class Scribe:
         except BaseException as e:
             if not self.debug:
                 print (f'{ansi.dk_red_fg}Exec statements:\n{ansi.lt_red_fg}{stmnts}{ansi.all_off}')
-            print (f'{ansi.dk_red_fg}     exception raised: {ansi.lt_red_fg}{e}{ansi.dk_red_fg}{ansi.all_off}')
+            print (f'{ansi.dk_red_fg}     exception raised: {ansi.lt_red_fg}{e}'
+                   f'{ansi.dk_red_fg}{ansi.all_off}')
             raise e
         if self.debug:
-            print (f'{ansi.dk_red_fg}     statements returned: {ansi.lt_red_fg}{locs["res"]}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(locs["res"])}{ansi.dk_red_fg}){ansi.all_off}')
+            print (f'{ansi.dk_red_fg}     statements returned: {ansi.lt_red_fg}'
+                   f'{locs["res"]}{ansi.dk_red_fg}: ({ansi.lt_red_fg}{type(locs["res"])}'
+                   f'{ansi.dk_red_fg}){ansi.all_off}')
         return globlocs['res']
 
     def _parseTagStructure(self, val):
@@ -419,7 +436,11 @@ class Scribe:
 
         def dbg(msg):
             if self.debug:
-                print (f'{ansi.lt_magenta_fg}({idx}{ansi.dk_magenta_fg}/{len(val)}) {line}, {col}: {ansi.dk_blue_fg}"{ansi.lt_blue_fg}{msg}{ansi.dk_blue_fg}"{ansi.all_off} {ansi.dk_yellow_fg}Tag counter: {ansi.dk_yellow_fg}{inTagCounter}{ansi.all_off}')
+                print (f'{ansi.lt_magenta_fg}({idx}{ansi.dk_magenta_fg}/'
+                       f'{len(val)}) {line}, {col}: {ansi.dk_blue_fg}'
+                       f'"{ansi.lt_blue_fg}{msg}{ansi.dk_blue_fg}"'
+                       f'{ansi.all_off} {ansi.dk_yellow_fg}Tag counter: {ansi.dk_yellow_fg}'
+                       f'{inTagCounter}{ansi.all_off}')
 
         def incIdx():
             nonlocal idx, line, col, val
@@ -452,7 +473,7 @@ class Scribe:
                 elif val[idx] == '<':
                     inTagCounter += 1
                     incIdx()
-                    dbg(f'start tag')
+                    dbg('start tag')
                     currentClause = currentClause.appendClause()
                     currentClause.kind = ClauseKind.EXPRESSION
 
@@ -461,31 +482,32 @@ class Scribe:
                     quotedClause = currentClause.appendClause()
                     quotedClause.kind = ClauseKind.QUOTE
                     quotedClause.append('$')
-                    dbg(f'$$ tag')
+                    dbg('$$ tag')
 
                 elif val[idx] == '>':   #  $> is a way to escape > so as not to close a tag.
                     incIdx()
                     quotedClause = currentClause.appendClause()
                     quotedClause.kind = ClauseKind.QUOTE
                     quotedClause.append('>')
-                    dbg(f'$> tag')
+                    dbg('$> tag')
 
                 elif val[idx] == '+':   #  $+ marks the next non-whitespace start
                     incIdx()
                     eatWsClause = currentClause.appendClause()
                     eatWsClause.kind = ClauseKind.EATSPACE
-                    dbg(f'$+ tag')
+                    dbg('$+ tag')
 
                 elif val[idx] == '!':   #  $! traps in a running debugger
                     incIdx()
                     eatWsClause = currentClause.appendClause()
                     eatWsClause.kind = ClauseKind.DEBUG
-                    dbg(f'$! tag')
+                    dbg('$! tag')
 
                 elif val[idx].isalpha() or val[idx] == '_':
                     # eval props.get which must resolve to a string (because we are not inTag)
                     accum = ''
-                    while idx < end and (val[idx].isalpha() or val[idx].isdigit() or val[idx] == '_'):
+                    while idx < end and (val[idx].isalpha() or
+                                         val[idx].isdigit() or val[idx] == '_'):
                         accum += val[idx]
                         incIdx()
                     #accum = f' props.get("{accum}")'
@@ -495,7 +517,8 @@ class Scribe:
                     dbg(f'query tag: {accum}')
 
                 else:
-                    raise RuntimeError(f'({line}, {col}): Naked query spec ($). Use $$ or $"$" to spec a "$" character.')
+                    raise RuntimeError(f'({line}, {col}): Naked query spec ($). '
+                                       'Use $$ or $"$" to spec a "$" character.')
 
             elif val[idx] == '>':
                 incIdx()
@@ -510,22 +533,22 @@ class Scribe:
 
                     # empty tag
                     if len(currentClause.terms) == 0:
-                        dbg(f'empty tag')
+                        dbg('empty tag')
                         # just a way of pruning this clause really
                         currentClause = currentClause.mergeToParent()
 
                     # First token isn't text - might be an expression or query.
                     # Either way, skip it for now. We're just examining structure
                     # and looking for keywords or text patterns.
-                    elif type(currentClause.terms[0]) is not str:
+                    elif not isinstance(currentClause.terms[0], str):
                         currentClause = currentClause.parent
-                        dbg(f'tag')
+                        dbg('tag')
 
                     elif m := re.match(re_comment, currentClause.terms[0]):
                         currentClause.kind = ClauseKind.COMMENT
                         currentClause.terms[0] = currentClause.terms[0][len(m.group(1)):]
                         currentClause = currentClause.parent
-                        dbg(f'comment tag')
+                        dbg('comment tag')
 
                     elif m := re.match(re_if, currentClause.terms[0]):
                         ifClause = currentClause.insertClause()
@@ -536,7 +559,7 @@ class Scribe:
                         currentClause = ifClause
                         currentClause = currentClause.appendClause()
                         currentClause.kind = ClauseKind.THEN
-                        dbg(f'if tag')
+                        dbg('if tag')
 
                     elif m := re.match(re_elif, currentClause.terms[0]):
                         thenClause = currentClause.parent
@@ -550,7 +573,7 @@ class Scribe:
                         currentClause = ifClause
                         currentClause = currentClause.appendClause()
                         currentClause.kind = ClauseKind.THEN
-                        dbg(f'elif tag')
+                        dbg('elif tag')
 
                     elif m := re.match(re_else, currentClause.terms[0]):
                         currentClause.terms = []
@@ -562,16 +585,17 @@ class Scribe:
                         currentClause = currentClause.parent    # pop out of ELSE
                         currentClause = currentClause.appendClause()
                         currentClause.kind = ClauseKind.THEN
-                        dbg(f'else tag')
+                        dbg('else tag')
 
                     elif m := re.match(re_endif, currentClause.terms[0]):
                         currentClause.terms = []
                         currentClause = currentClause.mergeToParent()
                         currentClause = currentClause.parent
                         if currentClause.kind != ClauseKind.IF:
-                            raise RuntimeError(f'{self.props.getProp("inFile")} ({line}, {col}): $<endif> does not match a preceding $<if>')
+                            raise RuntimeError(f'{self.props.getProp("inFile")} ({line}, {col}): '
+                                               '$<endif> does not match a preceding $<if>')
                         currentClause = currentClause.parent
-                        dbg(f'endif -> {accum}')
+                        dbg('endif -> {accum}')
 
                     elif m := re.match(re_join, currentClause.terms[0]):
                         joinClause = currentClause.insertClause()
@@ -582,7 +606,7 @@ class Scribe:
                         currentClause = joinClause
                         currentClause = currentClause.appendClause()
                         currentClause.kind = ClauseKind.THEN
-                        dbg(f'join tag')
+                        dbg('join tag')
 
                     elif m := re.match(re_delim, currentClause.terms[0]):
                         thenClause = currentClause.parent
@@ -595,16 +619,17 @@ class Scribe:
                         currentClause.mergeToParent()
                         currentClause = joinClause.appendClause()
                         currentClause.kind = ClauseKind.THEN
-                        dbg(f'delim tag')
+                        dbg('delim tag')
 
                     elif m := re.match(re_endjoin, currentClause.terms[0]):
                         currentClause.terms = []
                         currentClause = currentClause.mergeToParent()
                         currentClause = currentClause.parent
                         if currentClause.kind != ClauseKind.JOIN:
-                            raise RuntimeError(f'({line}, {col}): $<endjoin> does not match a preceding $<join>')
+                            raise RuntimeError(f'({line}, {col}): '
+                                               '$<endjoin> does not match a preceding $<join>')
                         currentClause = currentClause.parent
-                        dbg(f'endjoin tag')
+                        dbg('endjoin tag')
 
                     elif m := re.match(re_in, currentClause.terms[0]):
                         currentClause.kind = ClauseKind.PATH
@@ -612,7 +637,7 @@ class Scribe:
                         currentClause = currentClause.insertClause()
                         currentClause.kind = ClauseKind.IN
                         currentClause = currentClause.parent
-                        dbg(f'in tag')
+                        dbg('in tag')
 
                     elif m := re.match(re_out, currentClause.terms[0]):
                         currentClause.kind = ClauseKind.PATH
@@ -620,16 +645,17 @@ class Scribe:
                         outClause = currentClause.insertClause()
                         outClause.kind = ClauseKind.OUT
                         currentClause = outClause.appendClause()
-                        dbg(f'out tag')
+                        dbg('out tag')
 
                     elif m := re.match(re_endout, currentClause.terms[0]):
                         currentClause.terms = []
                         currentClause = currentClause.mergeToParent()
                         currentClause = currentClause.parent
                         if currentClause.kind != ClauseKind.OUT:
-                            raise RuntimeError(f'({line}, {col}): $<endout> does not match a preceding $<out>')
+                            raise RuntimeError(f'({line}, {col}): '
+                                               '$<endout> does not match a preceding $<out>')
                         currentClause = currentClause.parent
-                        dbg(f'endout tag')
+                        dbg('endout tag')
 
                     elif m := re.match(re_set, currentClause.terms[0]):
                         currentClause.kind = ClauseKind.SETASSIGNMENT
@@ -638,16 +664,17 @@ class Scribe:
                         setClause.kind = ClauseKind.SET
                         currentClause = setClause.appendClause()
                         currentClause.kind = ClauseKind.THEN
-                        dbg(f'set tag')
+                        dbg('set tag')
 
                     elif m := re.match(re_endset, currentClause.terms[0]):
                         currentClause.terms = []
                         currentClause = currentClause.mergeToParent()
                         currentClause = currentClause.parent
                         if currentClause.kind != ClauseKind.SET:
-                            raise RuntimeError(f'({line}, {col}): $<endset> does not match a preceding $<set>')
+                            raise RuntimeError(f'({line}, {col}): '
+                                               '$<endset> does not match a preceding $<set>')
                         currentClause = currentClause.parent
-                        dbg(f'endset tag')
+                        dbg('endset tag')
 
                     elif m := re.match(re_fmt, currentClause.terms[0]):
                         currentClause.kind = ClauseKind.FMTCODE
@@ -656,21 +683,22 @@ class Scribe:
                         fmtClause.kind = ClauseKind.FMT
                         currentClause = fmtClause.appendClause()
                         currentClause.kind = ClauseKind.THEN
-                        dbg(f'fmt tag')
+                        dbg('fmt tag')
 
                     elif m := re.match(re_endfmt, currentClause.terms[0]):
                         currentClause.terms = []
                         currentClause = currentClause.mergeToParent()
                         currentClause = currentClause.parent
                         if currentClause.kind != ClauseKind.FMT:
-                            raise RuntimeError(f'({line}, {col}): $<endfmt> does not match a preceding $<fmt>')
+                            raise RuntimeError(f'({line}, {col}): '
+                                               '$<endfmt> does not match a preceding $<fmt>')
                         currentClause = currentClause.parent
-                        dbg(f'endfmt tag')
+                        dbg('endfmt tag')
 
                     else:
                         currentClause.kind = ClauseKind.EXPRESSION
                         currentClause = currentClause.parent
-                        dbg(f'expr tag')
+                        dbg('expr tag')
 
             else:   # all other chars before $ or >
                 accum = ''
@@ -694,7 +722,8 @@ class Scribe:
             nonlocal acc
             acc += string
             if self.debug:
-                print (f'{ansi.dk_green_fg}Accum: {"  " * depth}{ansi.lt_green_fg}{string}{ansi.all_off}')
+                print (f'{ansi.dk_green_fg}Accum: {"  " * depth}'
+                       f'{ansi.lt_green_fg}{string}{ansi.all_off}')
         # def accum(string, quoted = False):
         #     nonlocal eatSpace, acc
         #     if quoted:
@@ -712,14 +741,14 @@ class Scribe:
 
         def dbg(msg):
             if self.debug:
-                if type(clause) is Clause:
+                if isinstance(clause, Clause):
                     print (f'Clause depth: {depth} at {clause.line}, {clause.col}: {clause.kind}')
-                elif type(clause) is str:
+                elif isinstance(clause, str):
                     print (f'Clause depth: {depth}: {ansi.lt_black_fg}{clause}{ansi.all_off}')
 
-        dbg(f' - foo')
+        dbg(' - foo')
 
-        if type(clause) is str:
+        if isinstance(clause, str):
             accum(clause)
 
         elif clause.kind == ClauseKind.DEBUG:
@@ -729,10 +758,9 @@ class Scribe:
         elif clause.kind == ClauseKind.COMMENT:
             pass
 
-        elif (clause.kind == ClauseKind.TEXT or
-              clause.kind == ClauseKind.THEN):
+        elif clause.kind in [ClauseKind.TEXT, ClauseKind.THEN]:
             for tidx, t in enumerate(clause.terms):
-                if type(t) is Clause and t.kind == ClauseKind.EATSPACE:
+                if isinstance(t, Clause) and t.kind == ClauseKind.EATSPACE:
                     accum('\a') #eatSpace = True
                 else:
                     accum(self._parseClause(t, depth + 1))
@@ -742,39 +770,38 @@ class Scribe:
 
         elif clause.kind == ClauseKind.QUERY:
             expr = f'scribe.getXProp("{clause.terms[0]}")'
-            if (clause.parent.kind == ClauseKind.EXPRESSION or
-                clause.parent.kind == ClauseKind.IFCONDITIONAL or
-                clause.parent.kind == ClauseKind.ELIFCONDITIONAL or
-                clause.parent.kind == ClauseKind.ELSE or
-                clause.parent.kind == ClauseKind.JOINCOMPREHENSION or
-                clause.parent.kind == ClauseKind.PATH or
-                clause.parent.kind == ClauseKind.SETASSIGNMENT or
-                clause.parent.kind == ClauseKind.FMTCODE):
+            if clause.parent.kind in [ClauseKind.EXPRESSION, 
+                                      ClauseKind.IFCONDITIONAL,
+                                      ClauseKind.ELIFCONDITIONAL,
+                                      ClauseKind.ELSE,
+                                      ClauseKind.JOINCOMPREHENSION,
+                                      ClauseKind.PATH,
+                                      ClauseKind.SETASSIGNMENT,
+                                      ClauseKind.FMTCODE]:
                 newvar = f'boma_{clause.terms[0]}'
                 fullexpr = f'{newvar} = {expr}\n'
                 accum(fullexpr)
             else:
                 res = self._eval(expr)
                 if res is not None:
-                    if type(res) is str:
+                    if isinstance(res, str):
                         res = self._parseText(res)
                     accum(str(res))
                 else:
                     accum(f'$<!{clause.terms[0]}>')
 
-        elif (clause.kind == ClauseKind.EXPRESSION or
-              clause.kind == ClauseKind.IFCONDITIONAL or
-              clause.kind == ClauseKind.ELIFCONDITIONAL or
-              clause.kind == ClauseKind.ELSE or
-              clause.kind == ClauseKind.JOINCOMPREHENSION or
-              clause.kind == ClauseKind.PATH or
-              clause.kind == ClauseKind.SETASSIGNMENT or
-              clause.kind == ClauseKind.FMTCODE):
-
+        elif clause.kind in [ClauseKind.EXPRESSION,
+                             ClauseKind.IFCONDITIONAL,
+                             ClauseKind.ELIFCONDITIONAL,
+                             ClauseKind.ELSE,
+                             ClauseKind.JOINCOMPREHENSION,
+                             ClauseKind.PATH,
+                             ClauseKind.SETASSIGNMENT,
+                             ClauseKind.FMTCODE]:
             setters = ''
             expr = ''
             for tidx, t in enumerate(clause.terms):
-                if type(t) is str:
+                if isinstance(t, str):
                     expr += self._parseClause(t, depth + 1)
                 elif t.kind == ClauseKind.QUERY:
                     setters += self._parseClause(t, depth + 1)
@@ -795,14 +822,14 @@ class Scribe:
         elif clause.kind == ClauseKind.IF:
             condClauses = []
             for tidx, t in enumerate(clause.terms):
-                if type(t) is str:
+                if isinstance(t, str):
                     continue
-                elif (t.kind == ClauseKind.IFCONDITIONAL or
-                      t.kind == ClauseKind.ELIFCONDITIONAL or
-                      t.kind == ClauseKind.ELSE):
+                if t.kind in [ClauseKind.IFCONDITIONAL,
+                              ClauseKind.ELIFCONDITIONAL,
+                              ClauseKind.ELSE]:
                     condClauses.append(tidx)
-                elif (t.kind == ClauseKind.THEN or
-                      t.kind == ClauseKind.ENDIF):
+                elif t.kind in [ClauseKind.THEN,
+                                ClauseKind.ENDIF]:
                     pass
                 else:
                     raise RuntimeError(f'Found a clause of type {t.kind} in an $<if> tag.')
@@ -811,7 +838,7 @@ class Scribe:
                 t = self._parseClause(clause.terms[tidx], depth + 1)
                 #   make expr
                 expr = False
-                if type(t) is str:
+                if isinstance(t, str):
                     expr = t
                 elif len(t.terms) > 0:
                     expr = "".join(t.terms)
@@ -821,10 +848,10 @@ class Scribe:
                 if res is None:
                     res = False
                 #assert(type(res) is bool)
-                if res != False:
+                if res is not False:
                 #       gather each text clause after idx
                     i = tidx + 1
-                    assert(clause.terms[i].kind == ClauseKind.THEN)
+                    assert clause.terms[i].kind == ClauseKind.THEN
                     accum(self._parseClause(clause.terms[i], depth + 1))
                     break
 
@@ -832,20 +859,20 @@ class Scribe:
             compIdx = -1
             delimIdx = -1
             for tidx, t in enumerate(clause.terms):
-                if type(t) is str:
+                if isinstance(t, str):
                     continue
-                elif t.kind == ClauseKind.JOINCOMPREHENSION:
+                if t.kind == ClauseKind.JOINCOMPREHENSION:
                     compIdx = tidx
                 elif t.kind == ClauseKind.DELIM:
                     delimIdx = tidx
-                elif (t.kind == ClauseKind.THEN or
-                    t.kind == ClauseKind.ENDJOIN):
+                elif t.kind in [ClauseKind.THEN,
+                                ClauseKind.ENDJOIN]:
                     pass
                 else:
                     raise RuntimeError(f'Found a clause of type {t.kind} in a $<join> tag.')
 
             if compIdx < 0:
-                raise RuntimeError(f'No comprehension found for join tag.')
+                raise RuntimeError('No comprehension found for join tag.')
 
             # parse 'for x in y' to set up the loop on x, y
             # for must be 'for'
@@ -868,8 +895,8 @@ class Scribe:
                 if vals is None:
                     vals = []
 
-                if type(vals) is dict:
-                    vals = [v for k, v in vals.items()]
+                if isinstance(vals, dict):
+                    vals = list(vals.values())
                 else:
                     vals = list(vals)
 
@@ -881,10 +908,13 @@ class Scribe:
                         # to this value. Enables $<join for x in y> to set props for
                         # objects of type y.
                         props = self.props
-                        if type(val) is dict and 'props' in val and type(val['props']) is Props:
+                        if (isinstance(val, dict) and 'props' in val and
+                            isinstance(val['props'], Props)):
                             props = val['props']
-                        elif getattr(val, 'props', False) and type(val.props) is Props:
-                            props = val.props
+                        else:
+                            props_ch = getattr(val, 'props', None)
+                            if props_ch is not None and isinstance(props_ch, Props):
+                                props = props_ch
                         self.props = props
                         th = self._parseClause(clause.terms[compIdx + 1], depth + 1)
                         d = ''
@@ -899,16 +929,17 @@ class Scribe:
                         accum(d)
 
             else:
-                raise RuntimeError(f'malformed join tag')
+                raise RuntimeError('malformed join tag')
 
         elif clause.kind == ClauseKind.IN:
             expr = self._parseClause(clause.terms[0], depth + 1)
             path = self._exec(expr)
-            if type(path) is str:
+            if isinstance(path, str):
                 path = self._parseText(path)
             try:
-                with open(path, 'r') as file:
-                    self.props.push({'inFile': Path(path).name, 'inPath': str(Path(path)), 'inDir': str(Path(path).parent)})
+                with open(path, 'r', encoding = 'utf-8') as file:
+                    self.props.push({'inFile': Path(path).name, 'inPath': str(Path(path)),
+                                     'inDir': str(Path(path).parent)})
                     string = file.read()
                     try:
                         string = self._parseText(string)
@@ -921,7 +952,7 @@ class Scribe:
         elif clause.kind == ClauseKind.OUT:
             expr = self._parseClause(clause.terms[0], depth + 1)
             path = self._exec(expr)
-            if type(path) is str:
+            if isinstance(path, str):
                 path = self._parseText(path)
             f = None
             try:
@@ -929,7 +960,7 @@ class Scribe:
                 newContent = ''
                 Path(path).parent.mkdir(exist_ok=True, parents=True)
                 if Path(path).is_file():
-                    with open(path) as f:
+                    with open(path, encoding = 'utf-8') as f:
                         oldContent = f.read()
 
                 try:
@@ -970,10 +1001,10 @@ class Scribe:
             expr = self._parseClause(tempClause, depth + 1)
 
             obj = self._exec(expr)
-            if type(obj) is str:
+            if isinstance(obj, str):
                 obj = self._parseText(obj)
                 self.props.push({varname: obj})
-            elif matched == 0 and type(obj) is dict:
+            elif matched == 0 and isinstance(obj, dict):
                 for k, v in obj.items():
                     varname = k
                     pv = self._parseText(v)
@@ -1011,12 +1042,16 @@ class Scribe:
             expr = self._parseClause(tempClause, depth + 1)
 
             width = self._exec(expr)
-            if type(width) is not int:
-                raise RuntimeError(f'fmt width expression must resolve to int type')
+            if not isinstance(width, int):
+                raise RuntimeError('fmt width expression must resolve to int type')
 
-            if justification == 'left': j = '<'
-            elif justification == 'right': j = '>'
-            elif justification == 'center': j = '^'
+            j = ''
+            if justification == 'left':
+                j = '<'
+            elif justification == 'right':
+                j = '>'
+            elif justification == 'center':
+                j = '^'
 
             fmtcode = f'{{0: {j}{width}}}'
             th = self._parseClause(clause.terms[fmtcodeIdx + 1], depth + 1)
@@ -1057,9 +1092,11 @@ if __name__ == "__main__":
             if res == exp:
                 print (f'  {passStr}')
             else:
-                print (f'  expected:\n{ansi.lt_blue_fg}{exp}{ansi.all_off}\n  {failStr}\n  result:\n{res}')
+                print (f'  expected:\n{ansi.lt_blue_fg}{exp}{ansi.all_off}'
+                       f'\n  {failStr}\n  result:\n{res}')
         except BaseException as e:
-            print (f'  expected:\n{ansi.lt_blue_fg}{exp}{ansi.all_off}\n  {failStr}\n  result:\n  Exception thrown: {e}')
+            print (f'  expected:\n{ansi.lt_blue_fg}{exp}{ansi.all_off}'
+                   f'\n  {failStr}\n  result:\n  Exception thrown: {e}')
             raise e
 
         p.debug = False
@@ -1080,11 +1117,14 @@ if __name__ == "__main__":
          'Deserialize from humon: yes')
     test('Deserialize from telepathy: $<if "telepathy" in $deserializeFrom>yes$<else>no$<endif>',
          'Deserialize from telepathy: no')
-    test('Deserialize from preferred method: $<if "telepathy" in $deserializeFrom>telepathy$<elif "binary" in $deserializeFrom>binary$<else>humon$<endif>',
+    test('Deserialize from preferred method: $<if "telepathy" in $deserializeFrom>telepathy'
+         '$<elif "binary" in $deserializeFrom>binary$<else>humon$<endif>',
          'Deserialize from preferred method: binary')
-    test('$<if $<if "binary" in $deserializeFrom>"Weeby"$<else>"Rude"$<endif> in $cats>Treats!$<else>Snacks!$<endif>',
+    test('$<if $<if "binary" in $deserializeFrom>"Weeby"$<else>"Rude"$<endif> in '
+         '$cats>Treats!$<else>Snacks!$<endif>',
          'Treats!')
-    test('Deserialize from: [$<join for method in $deserializeFrom> $method$<delim>,\n                   $<endjoin> ]',
+    test('Deserialize from: [$<join for method in $deserializeFrom> $method$<delim>,\n'
+         '$<endjoin> ]',
          '''Deserialize from: [ humon,
                     binary,
                     dna ]''')
@@ -1094,11 +1134,13 @@ if __name__ == "__main__":
          'foo bar')
     test('foo $<set test_output as $outputForm>test $test_output$<endset> bar',
          'foo test compiled bar')
-    test('foo $<set test_output as $outputForm>$test_output $<set test_output as "zing">$test_output$<endset> $test_output$<endset> bar',
+    test('foo $<set test_output as $outputForm>$test_output $<set test_output as "zing">'
+         '$test_output$<endset> $test_output$<endset> bar',
          'foo compiled zing compiled bar')
     test('foo $<set test_output as $serializeTo>test $<$test_output[2]>$<endset> bar',
          'foo test dna bar')
-    test('''Tabulated data: $<join for pay in $dollaz>$$$<fmt right $dataColumns>$pay$<endfmt>$<delim>
+    test('''Tabulated data: $<join for pay in $dollaz>$$$<fmt right $dataColumns>$pay$<endfmt>'''
+         '''$<delim>
                 $<endjoin>''',
          '''Tabulated data: $    1.23
                 $   -2.34
